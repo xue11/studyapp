@@ -1,0 +1,159 @@
+/**
+ * UnitSelector Layer
+ * V2.5.10 詳細設計書 第15章・第16章・第38.4〜38.7章 準拠
+ * 
+ * - 出題優先順位: 復習期限超過 → 復習当日 → Coverage/Weakness Phase → 通常ローテーション
+ * - Coverage Phase (< 14日): ローテーションバッグを優先
+ * - Weakness Phase (>= 14日): 40% ローテーション + 60% 弱点重み付け
+ * - 未学習unit (attempts = 0) は accuracy = null のため弱点重み付け対象外
+ */
+
+class UnitSelector {
+  /**
+   * 次の出題単元または復習項目を選択する
+   * @param {Object} profile 
+   * @param {Object} config 
+   * @param {string} localDateString (YYYY-MM-DD)
+   * @returns {{ type: "review"|"normal", unitId: string, reviewItem?: Object, phase: string }}
+   */
+  static selectNextUnit(profile, config = null, localDateString = null) {
+    const today = localDateString || new Date().toISOString().split("T")[0];
+    const currentGrade = profile.skill.subject.currentGrade;
+    const gradeKey = `grade${currentGrade}`;
+    const gradeProgress = profile.skill.subject.gradeProgress[gradeKey];
+    const level = gradeProgress.difficultyLevel;
+
+    // 1. 復習キューの確認（優先順位 ① 期限超過 ② 当日）
+    const activeReviews = (profile.reviewQueue || []).filter(r => 
+      r.status === "active" &&
+      r.grade === currentGrade &&
+      r.dueAt && r.dueAt <= today
+    );
+
+    if (activeReviews.length > 0) {
+      // dueAt が古い順 -> failCount が多い順 -> registeredAt が古い順
+      activeReviews.sort((a, b) => {
+        if (a.dueAt !== b.dueAt) return a.dueAt.localeCompare(b.dueAt);
+        if (a.failCount !== b.failCount) return b.failCount - a.failCount;
+        return (a.registeredAt || "").localeCompare(b.registeredAt || "");
+      });
+      const topReview = activeReviews[0];
+      return {
+        type: "review",
+        unitId: topReview.unitId,
+        reviewItem: topReview,
+        phase: "review"
+      };
+    }
+
+    // 2. 通常学習の単元選択 (Coverage vs Weakness Phase)
+    const availableUnits = this._getUnitsForLevel("math", currentGrade, level);
+    if (!availableUnits || availableUnits.length === 0) {
+      throw new Error(`UnitSelector: No units registered for grade ${currentGrade} level ${level}`);
+    }
+
+    const daysElapsed = this._calculateDaysElapsed(gradeProgress.learningStartDate, today);
+    const coveragePeriod = config?.math?.unitSelection?.coveragePeriodDays ?? 14;
+
+    if (daysElapsed < coveragePeriod) {
+      // Coverage Phase (< 14日)
+      const unitId = this._drawFromRotationBag(gradeProgress, availableUnits);
+      return {
+        type: "normal",
+        unitId: unitId,
+        phase: "coverage"
+      };
+    } else {
+      // Weakness Phase (>= 14日)
+      // 40% ローテーション、60% 弱点
+      const minRotationRatio = config?.math?.unitSelection?.minRotationRatio ?? 0.40;
+      const weakThreshold = config?.math?.unitSelection?.weakAccuracyThreshold ?? 0.80;
+
+      // 弱点unitの抽出 (attempts >= 1 かつ accuracy !== null かつ accuracy < 0.80)
+      const weakUnits = availableUnits.filter(u => {
+        const stats = gradeProgress.unitStats[u.id];
+        return stats && stats.attempts > 0 && stats.accuracy !== null && stats.accuracy < weakThreshold;
+      });
+
+      // 乱数で判定 (弱点unitが存在し、かつ 60% の枠に入った場合)
+      const roll = Math.random();
+      if (weakUnits.length > 0 && roll >= minRotationRatio) {
+        // 弱点重み付け選択: weight = 1 + max(0, 0.80 - accuracy) * 3
+        const selectedWeakUnitId = this._selectWeightedWeakUnit(weakUnits, gradeProgress.unitStats);
+        return {
+          type: "normal",
+          unitId: selectedWeakUnitId,
+          phase: "weakness"
+        };
+      } else {
+        // ローテーション出題
+        const unitId = this._drawFromRotationBag(gradeProgress, availableUnits);
+        return {
+          type: "normal",
+          unitId: unitId,
+          phase: "weakness_rotation"
+        };
+      }
+    }
+  }
+
+  static _drawFromRotationBag(gradeProgress, availableUnits) {
+    if (!Array.isArray(gradeProgress.unitRotationBag) || gradeProgress.unitRotationBag.length === 0) {
+      // バッグをシャッフルして再生成
+      const unitIds = availableUnits.map(u => u.id);
+      gradeProgress.unitRotationBag = this._shuffleArray([...unitIds]);
+    }
+    return gradeProgress.unitRotationBag.pop();
+  }
+
+  static _selectWeightedWeakUnit(weakUnits, unitStats) {
+    let totalWeight = 0;
+    const weightedList = weakUnits.map(u => {
+      const stats = unitStats[u.id];
+      const acc = stats?.accuracy ?? 0.80;
+      const weight = 1 + Math.max(0, 0.80 - acc) * 3;
+      totalWeight += weight;
+      return { id: u.id, weight: totalWeight };
+    });
+
+    const r = Math.random() * totalWeight;
+    for (const item of weightedList) {
+      if (r <= item.weight) {
+        return item.id;
+      }
+    }
+    return weakUnits[0].id;
+  }
+
+  static _calculateDaysElapsed(startDateStr, todayStr) {
+    if (!startDateStr) return 0;
+    const start = new Date(startDateStr);
+    const today = new Date(todayStr);
+    const diffTime = today.getTime() - start.getTime();
+    return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+  }
+
+  static _shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  static _getUnitsForLevel(subjectId, grade, level) {
+    if (typeof UnitRegistry !== "undefined") {
+      return UnitRegistry.getUnitsForLevel(subjectId, grade, level);
+    }
+    // Node.js 環境での require フォールバック
+    const { UnitRegistry: UR } = require("./registries.js");
+    return UR.getUnitsForLevel(subjectId, grade, level);
+  }
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { UnitSelector };
+} else {
+  window.UnitSelector = UnitSelector;
+}
+

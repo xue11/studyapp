@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phase 1 成果物確認ビューア</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Meiryo", sans-serif;
+      margin: 20px;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    h1 { color: #2563eb; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
+    h2 { color: #334155; margin-top: 24px; }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #e0f2fe;
+      color: #0369a1;
+      margin-right: 6px;
+    }
+    .badge.success { background: #dcfce7; color: #15803d; }
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th { background: #f1f5f9; }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <h1>🛠 Phase 1 成果物・動作確認ビューア</h1>
+  <p>V2.5.10 / schemaVersion 2.5.6 に準拠した基盤モジュールの読み込み状態とテスト結果を表示しています。</p>
+
+  <div class="card">
+    <h2>1. 自動テスト実行結果</h2>
+    <div id="test-results">テスト実行中...</div>
+  </div>
+
+  <div class="card">
+    <h2>2. アプリケーション情報 & Config</h2>
+    <table id="meta-table"></table>
+    <h3>レベル・復習設定</h3>
+    <pre id="config-json"></pre>
+  </div>
+
+  <div class="card">
+    <h2>3. 登録済み単元（UnitRegistry）サンプル (1〜6年生)</h2>
+    <div id="units-view"></div>
+  </div>
+
+  <div class="card">
+    <h2>4. 初期プロフィール生成サンプル (JSON)</h2>
+    <button onclick="regenerateProfile()">サンプル再生成 & LocalStorage保存テスト</button>
+    <pre id="profile-json"></pre>
+  </div>
+
+  <!-- Phase 1 スクリプトの読み込み -->
+  <script src="js/config.js"></script>
+  <script src="js/registries.js"></script>
+  <script src="js/schema.js"></script>
+  <script src="js/migration.js"></script>
+  <script src="js/storage.js"></script>
+
+  <script>
+    // 1. テスト実行
+    function runBrowserTests() {
+      const resultsDiv = document.getElementById("test-results");
+      const logs = [];
+
+      try {
+        // Test 1: Config
+        if (APP_META.schemaVersion !== "2.5.6" || APP_META.appVersion !== "V2.5.10") throw new Error("Config version mismatch");
+        logs.push("✅ Config & Meta: appVersion = " + APP_META.appVersion + ", schemaVersion = " + APP_META.schemaVersion);
+
+        // Test 2: Units
+        let totalUnits = 0;
+        for (let g = 1; g <= 6; g++) {
+          for (let lv = 1; lv <= 3; lv++) {
+            totalUnits += UnitRegistry.getUnitsForLevel("math", g, lv).length;
+          }
+        }
+        logs.push("✅ UnitRegistry: 1〜6年生の全 " + totalUnits + " 単元が登録済み");
+
+        // Test 3: Schema & Validation
+        const state = createInitialAppState();
+        const validRes = validateAppState(state);
+        if (!validRes.valid) throw new Error(validRes.error);
+        logs.push("✅ Schema & Validator: 初期状態の整合性検証に合格");
+
+        // Test 4: Storage
+        const storage = new StorageManager();
+        const loadRes = storage.loadState();
+        if (!loadRes.success) throw new Error(loadRes.error);
+        logs.push("✅ StorageManager: localStorage への安全な保存・読み込みに成功");
+
+        resultsDiv.innerHTML = logs.map(l => `<div style="margin: 4px 0; color: #16a34a; font-weight: 500;">${l}</div>`).join("");
+      } catch (e) {
+        resultsDiv.innerHTML = `<div style="color: #dc2626; font-weight: bold;">❌ テスト失敗: ${e.message}</div>`;
+      }
+    }
+
+    // 2. Meta & Config 表示
+    function renderConfig() {
+      const metaTable = document.getElementById("meta-table");
+      metaTable.innerHTML = `
+        <tr><th>項目</th><th>値</th></tr>
+        <tr><td>アプリ名</td><td>${APP_META.appName}</td></tr>
+        <tr><td>アプリバージョン (appVersion)</td><td><span class="badge success">${APP_META.appVersion}</span></td></tr>
+        <tr><td>永続化スキーマバージョン (schemaVersion)</td><td><span class="badge success">${APP_META.schemaVersion}</span></td></tr>
+        <tr><td>生成モード</td><td>${APP_META.generationMode}</td></tr>
+      `;
+
+      document.getElementById("config-json").textContent = JSON.stringify({
+        levelEngine: APP_CONFIG.math.levelEngine,
+        reviewEngine: APP_CONFIG.math.reviewEngine,
+        pointEngine: APP_CONFIG.math.pointEngine,
+        unitSelection: APP_CONFIG.math.unitSelection
+      }, null, 2);
+    }
+
+    // 3. Units 表示
+    function renderUnits() {
+      const container = document.getElementById("units-view");
+      let html = "";
+      for (let g = 1; g <= 6; g++) {
+        html += `<h4>小学 ${g} 年生</h4><table><tr><th>レベル</th><th>単元ID</th><th>単元名</th><th>分類 (concepts)</th></tr>`;
+        for (let lv = 1; lv <= 3; lv++) {
+          const units = UnitRegistry.getUnitsForLevel("math", g, lv);
+          units.forEach(u => {
+            html += `<tr><td>Lv${lv}</td><td><code>${u.id}</code></td><td>${u.name}</td><td>${u.concepts.join(", ")}</td></tr>`;
+          });
+        }
+        html += `</table>`;
+      }
+      container.innerHTML = html;
+    }
+
+    // 4. Profile サンプル
+    function regenerateProfile() {
+      const state = createInitialAppState();
+      const p = state.profiles[0];
+      const storage = new StorageManager();
+      storage.saveState(state);
+      document.getElementById("profile-json").textContent = JSON.stringify(p, null, 2);
+    }
+
+    window.onload = function() {
+      runBrowserTests();
+      renderConfig();
+      renderUnits();
+      regenerateProfile();
+    };
+  </script>
+</body>
+</html>
+

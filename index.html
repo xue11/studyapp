@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>小学生向け算数学習アプリ (V2.5.10)</title>
+  <meta name="description" content="サーバー不要・ブラウザだけで手軽に遊べる小学生向け算数学習Webアプリ">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- アプリ本体コンテナ -->
+  <div id="app-container">
+    <div style="padding: 40px; text-align: center; color: #64748b;">
+      <h2>アプリを読み込み中...</h2>
+    </div>
+  </div>
+
+  <!-- スクリプト群 (レイヤー順に読み込み) -->
+  <!-- 1. 設定 & レジストリ -->
+  <script src="js/config.js"></script>
+  <script src="js/registries.js"></script>
+
+  <!-- 2. スキーマ & ストレージ & マイグレーション -->
+  <script src="js/schema.js"></script>
+  <script src="js/migration.js"></script>
+  <script src="js/storage.js"></script>
+
+  <!-- 3. バリデータ & テンプレート & 生成系 -->
+  <script src="js/validator.js"></script>
+  <script src="js/templates_math.js"></script>
+  <script src="js/question_source.js"></script>
+
+  <!-- 4. 学習コアエンジン群 -->
+  <script src="js/learning_score_engine.js"></script>
+  <script src="js/learning_engine.js"></script>
+  <script src="js/unit_selector.js"></script>
+  <script src="js/review_engine.js"></script>
+  <script src="js/level_engine.js"></script>
+  <script src="js/gamification_engine.js"></script>
+  <script src="js/test_engine.js"></script>
+  <script src="js/session_coordinator.js"></script>
+
+  <!-- 5. 音響 & UIコントローラー -->
+  <script src="js/audio.js"></script>
+  <script src="js/ui.js"></script>
+
+  <script>
+    // アプリ初期化
+    window.addEventListener("DOMContentLoaded", () => {
+      app.init();
+    });
+  </script>
+</body>
+</html>
+

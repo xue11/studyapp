@@ -1,0 +1,862 @@
+/**
+ * UI & Screen Controller Layer
+ * V2.5.10 詳細設計書 第3章・第4章 準拠 (全10画面・タッチテンキー・アニメーション)
+ */
+
+class AppUI {
+  constructor() {
+    this.storage = new StorageManager();
+    this.state = null;
+    this.currentScreen = "home";
+    this.session = null; // 通常学習・テスト進行中のセッション状態
+    this.currentInput = "";
+    this.characterAvatars = {
+      cat: "🐱",
+      dog: "🐶",
+      owl: "🦉",
+      robot: "🤖",
+      dragon: "🐲"
+    };
+  }
+
+  init() {
+    const loadRes = this.storage.loadState();
+    this.state = loadRes.state;
+
+    // 初回起動時またはプロファイル未作成時はオンボーディング画面へ
+    if (loadRes.isNew || !this.state.profiles || this.state.profiles.length === 0) {
+      this.navigate("onboarding");
+    } else {
+      this.navigate("home");
+    }
+  }
+
+  getActiveProfile() {
+    return this.state.profiles.find(p => p.identity.id === this.state.activeProfileId) || this.state.profiles[0];
+  }
+
+  navigate(screenName, params = {}) {
+    this.currentScreen = screenName;
+    this.currentInput = "";
+    window.scrollTo(0, 0);
+    this.render(params);
+  }
+
+  render(params = {}) {
+    const container = document.getElementById("app-container");
+    if (!container) return;
+
+    const profile = this.getActiveProfile();
+
+    let html = "";
+    // ヘッダー (オンボーディングとプロフィール画面以外で表示)
+    if (this.currentScreen !== "onboarding" && this.currentScreen !== "profile_select") {
+      html += this._renderHeader(profile);
+    }
+
+    html += `<main class="app-content">`;
+    switch (this.currentScreen) {
+      case "profile_select":
+        html += this._renderProfileSelectScreen();
+        break;
+      case "onboarding":
+        html += this._renderOnboardingScreen(params);
+        break;
+      case "home":
+        html += this._renderHomeScreen(profile);
+        break;
+      case "learning":
+        html += this._renderLearningScreen();
+        break;
+      case "session_result":
+        html += this._renderSessionResultScreen(params);
+        break;
+      case "test":
+        html += this._renderTestScreen();
+        break;
+      case "test_result":
+        html += this._renderTestResultScreen(params);
+        break;
+      case "review_history":
+        html += this._renderReviewHistoryScreen(profile);
+        break;
+      case "settings":
+        html += this._renderSettingsScreen(profile);
+        break;
+      case "parent_mode":
+        html += this._renderParentScreen(profile);
+        break;
+      default:
+        html += `<div class="card">画面が見つかりません</div>`;
+    }
+    html += `</main>`;
+
+    container.innerHTML = html;
+    this._attachEventHandlers();
+  }
+
+  // ==========================================
+  // 1. ヘッダー
+  // ==========================================
+  _renderHeader(profile) {
+    if (!profile) return "";
+    const currentGrade = profile.skill.subject.currentGrade;
+    const gp = profile.skill.subject.gradeProgress[`grade${currentGrade}`];
+    return `
+      <header class="app-header">
+        <div class="app-title">
+          <span>${this.characterAvatars[profile.identity.character] || "🐱"}</span>
+          <span>小学${currentGrade}年・算数</span>
+        </div>
+        <div class="header-badges">
+          <span class="header-badge">Lv${gp.difficultyLevel}</span>
+          <span class="header-badge">⭐ ${profile.points.total}pt</span>
+        </div>
+      </header>
+    `;
+  }
+
+  // ==========================================
+  // 2. ホーム画面 (Screen 3)
+  // ==========================================
+  _renderHomeScreen(profile) {
+    const currentGrade = profile.skill.subject.currentGrade;
+    const gp = profile.skill.subject.gradeProgress[`grade${currentGrade}`];
+    const today = new Date().toISOString().split("T")[0];
+
+    // 復習通知の確認 (控えめな表示: 第4.3章)
+    const activeDueReviews = (profile.reviewQueue || []).filter(r => 
+      r.status === "active" && r.grade === currentGrade && r.dueAt && r.dueAt <= today
+    );
+
+    // Lv3到達時の学年変更導線通知 (第18.1.3章)
+    const showMaxLevelNotice = gp.difficultyLevel === 3;
+
+    return `
+      <div class="character-section">
+        <div class="character-avatar">${this.characterAvatars[profile.identity.character] || "🐱"}</div>
+        <div class="speech-bubble">
+          こんにちは、${profile.identity.name}さん！<br>
+          ${activeDueReviews.length > 0 ? "📝 復習できる単元があるよ！" : "きょうも楽しく算数をがんばろう！"}
+        </div>
+      </div>
+
+      ${activeDueReviews.length > 0 ? `
+        <div class="card" style="background: #fffbeb; border-color: #fde68a;">
+          <div style="font-weight:bold; color: #92400e; margin-bottom:4px;">⏰ ふくしゅうのじかん</div>
+          <div style="font-size:0.9rem; color:#b45309;">${activeDueReviews.length}件の復習問題があります。</div>
+        </div>
+      ` : ""}
+
+      ${showMaxLevelNotice ? `
+        <div class="card" style="background: #f0fdf4; border-color: #bbf7d0;">
+          <div style="font-weight:bold; color: #166534; margin-bottom:4px;">🌟 最高レベル到達！</div>
+          <div style="font-size:0.85rem; color:#15803d; margin-bottom:8px;">「もっとむずかしい問題に挑戦してみる？」</div>
+          <button class="btn btn-outline" style="min-height:36px; padding:6px 12px; font-size:0.85rem;" onclick="app.navigate('settings')">⚙️ 学年・レベル設定へ</button>
+        </div>
+      ` : ""}
+
+      <div class="card">
+        <div class="card-title">🏆 あなたの学習状況</div>
+        <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:4px;">
+          <span>達成レベル: <b>Lv${profile.points.achievementLevel || 1}</b></span>
+          <span>連続正解: <b>${profile.streaks?.correctStreak || 0}問</b> (最高 ${profile.streaks?.bestStreak || 0})</span>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar" style="width: ${Math.min(100, ((profile.points.total % 100) / 100) * 100)}%;"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:auto;">
+        <button class="btn btn-primary" onclick="app.startLearningSession()">🚀 学習をはじめる（10問）</button>
+        <button class="btn btn-secondary" onclick="app.startTestSession()">📝 テストを受ける（10問）</button>
+        <button class="btn btn-purple" onclick="app.navigate('review_history')">📚 ふくしゅう・きろく (${profile.reviewQueue?.filter(r=>r.status==='active').length || 0})</button>
+        <button class="btn btn-outline" onclick="app.navigate('settings')">⚙️ せってい・学年変更</button>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // 3. オンボーディング画面 (Screen 2)
+  // ==========================================
+  _renderOnboardingScreen(params) {
+    const step = params.step || 1;
+
+    if (step === 1) {
+      return `
+        <div class="card" style="text-align:center; margin-top:20px;">
+          <div style="font-size:2.5rem; margin-bottom:10px;">🎒</div>
+          <h2>何年生ですか？</h2>
+          <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:18px;">学年に合わせた問題が出題されます</p>
+          <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px;">
+            ${[1, 2, 3, 4, 5, 6].map(g => `
+              <button class="btn btn-outline" onclick="app.navigate('onboarding', { step: 2, grade: ${g} })">小学${g}年生</button>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    if (step === 2) {
+      return `
+        <div class="card" style="text-align:center; margin-top:20px;">
+          <div style="font-size:2.5rem; margin-bottom:10px;">✨</div>
+          <h2>パートナーキャラクターをえらぼう</h2>
+          <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-top:14px;">
+            ${Object.entries(this.characterAvatars).map(([key, emoji]) => `
+              <button class="btn btn-outline" style="flex-direction:column; padding:16px;" onclick="app.completeOnboarding(${params.grade}, '${key}')">
+                <span style="font-size:2.5rem; margin-bottom:6px;">${emoji}</span>
+                <span>${key === 'cat' ? 'ネコ' : key === 'dog' ? 'イヌ' : key === 'owl' ? 'フクロウ' : key === 'robot' ? 'ロボット' : 'ドラゴン'}</span>
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  completeOnboarding(grade, character) {
+    const newProf = createNewProfile(null, "チャレンジャー", grade, character);
+    if (!this.state.profiles) this.state.profiles = [];
+    this.state.profiles.push(newProf);
+    this.state.activeProfileId = newProf.identity.id;
+    this.storage.saveState(this.state);
+    Sound.playFanfare();
+    this.navigate("home");
+  }
+
+  // ==========================================
+  // 4. 学習セッション画面 (Screen 4)
+  // ==========================================
+  startLearningSession() {
+    const profile = this.getActiveProfile();
+    const currentGrade = profile.skill.subject.currentGrade;
+    const gp = profile.skill.subject.gradeProgress[`grade${currentGrade}`];
+
+    // 10問のセッションを準備
+    this.session = {
+      type: "learning",
+      currentIndex: 0,
+      totalCount: 10,
+      correctCount: 0,
+      earnedPointsTotal: 0,
+      questions: [],
+      currentAttemptCount: 0,
+      currentHintUsed: false,
+      historySummary: []
+    };
+
+    // 10問生成
+    for (let i = 0; i < 10; i++) {
+      const sel = UnitSelector.selectNextUnit(profile, APP_CONFIG);
+      const tReg = TemplateRegistry;
+      const templates = tReg.getByUnit("math", currentGrade, gp.difficultyLevel, sel.unitId);
+      const t = templates[Math.floor(Math.random() * templates.length)];
+      const qInstance = RuleBasedQuestionSource.generateQuestion(t.templateId, this.session.questions, {
+        isReview: sel.type === "review"
+      });
+      this.session.questions.push(qInstance);
+    }
+
+    Sound.playClick();
+    this.navigate("learning");
+  }
+
+  _renderLearningScreen() {
+    if (!this.session || !this.session.questions[this.session.currentIndex]) {
+      this.navigate("home");
+      return "";
+    }
+
+    const q = this.session.questions[this.session.currentIndex];
+    const progress = `${this.session.currentIndex + 1} / ${this.session.totalCount}`;
+
+    return `
+      <div class="question-meta">
+        <span><b>第 ${progress} 問</b></span>
+        <span><span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar" style="width: ${((this.session.currentIndex) / this.session.totalCount) * 100}%;"></div>
+      </div>
+
+      <div class="question-display">
+        <div class="question-text">${q.questionText}</div>
+        <div class="answer-input-display" id="answer-display">
+          ${this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>'}
+        </div>
+      </div>
+
+      <!-- タッチテンキー (0..9, ., /, Del, 決定) -->
+      <div class="numpad-grid">
+        <button class="numpad-btn" onclick="app.pressKey('7')">7</button>
+        <button class="numpad-btn" onclick="app.pressKey('8')">8</button>
+        <button class="numpad-btn" onclick="app.pressKey('9')">9</button>
+        <button class="numpad-btn" onclick="app.pressKey('4')">4</button>
+        <button class="numpad-btn" onclick="app.pressKey('5')">5</button>
+        <button class="numpad-btn" onclick="app.pressKey('6')">6</button>
+        <button class="numpad-btn" onclick="app.pressKey('1')">1</button>
+        <button class="numpad-btn" onclick="app.pressKey('2')">2</button>
+        <button class="numpad-btn" onclick="app.pressKey('3')">3</button>
+        <button class="numpad-btn action-btn" onclick="app.pressKey('.')">.</button>
+        <button class="numpad-btn" onclick="app.pressKey('0')">0</button>
+        <button class="numpad-btn action-btn" onclick="app.pressKey('backspace')">⌫ けす</button>
+        <button class="numpad-btn action-btn" style="grid-column: span 1;" onclick="app.pressKey('/')">/</button>
+        <button class="numpad-btn ok-btn" style="grid-column: span 2;" onclick="app.submitLearningAnswer()">こたえる ➔</button>
+      </div>
+
+      <div id="modal-container"></div>
+    `;
+  }
+
+  pressKey(key) {
+    Sound.playClick();
+    if (key === "backspace") {
+      this.currentInput = this.currentInput.slice(0, -1);
+    } else {
+      if (this.currentInput.length < 8) {
+        this.currentInput += key;
+      }
+    }
+    const display = document.getElementById("answer-display");
+    if (display) {
+      display.innerHTML = this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>';
+    }
+  }
+
+  // 通常学習の回答処理フロー (第4.4章)
+  submitLearningAnswer() {
+    if (!this.currentInput.trim()) return;
+
+    const q = this.session.questions[this.session.currentIndex];
+    this.session.currentAttemptCount++;
+    const isCorrect = this._checkAnswer(this.currentInput.trim(), q.answer);
+
+    if (isCorrect) {
+      // 正解処理
+      Sound.playCorrect();
+      this._handleLearningQuestionCompletion(true, this.session.currentAttemptCount, this.session.currentHintUsed);
+    } else {
+      // 不正解処理
+      Sound.playIncorrect();
+      if (this.session.currentAttemptCount === 1) {
+        // 1回目不正解: 「もういちど考えてみよう」
+        this._showModal("もういちど考えてみよう！", "おしい！もう一度計算を見直してみよう。", [
+          { text: "もう一度挑戦する", action: "app.closeModal()" }
+        ]);
+        this.currentInput = "";
+        const display = document.getElementById("answer-display");
+        if (display) display.innerHTML = '<span class="answer-placeholder">？</span>';
+      } else if (this.session.currentAttemptCount === 2) {
+        // 2回目不正解: ヒント表示
+        this.session.currentHintUsed = true;
+        Sound.playHint();
+        this._showModal("💡 ヒント", `
+          <div style="text-align:left; font-size:0.95rem;">
+            ${q.hintSteps.map((h, i) => `<div style="background:#fffbeb; padding:8px; border-radius:6px; margin-bottom:6px;"><b>ヒント${i+1}:</b> ${h}</div>`).join("")}
+          </div>
+        `, [
+          { text: "ヒントを使って答える", action: "app.closeModal()" }
+        ]);
+        this.currentInput = "";
+        const display = document.getElementById("answer-display");
+        if (display) display.innerHTML = '<span class="answer-placeholder">？</span>';
+      } else {
+        // 3回目不正解: 終了・正解表示・復習登録
+        this._handleLearningQuestionCompletion(false, 3, this.session.currentHintUsed);
+      }
+    }
+  }
+
+  _handleLearningQuestionCompletion(isCorrect, attemptCount, hintUsed) {
+    const q = this.session.questions[this.session.currentIndex];
+
+    // SessionCoordinator による原子的一括更新 (第34章)
+    const coordRes = SessionCoordinator.completeQuestionAtomic({
+      appState: this.state,
+      questionInstance: q,
+      answerResult: {
+        correct: isCorrect,
+        attemptCount: attemptCount,
+        hintUsed: hintUsed,
+        completed: true
+      },
+      config: APP_CONFIG,
+      storageManager: this.storage
+    });
+
+    if (coordRes.success) {
+      this.state = coordRes.nextState;
+      if (isCorrect) {
+        this.session.correctCount++;
+      }
+      this.session.earnedPointsTotal += coordRes.summary.pointsEarned;
+      this.session.historySummary.push({
+        qText: q.questionText,
+        isCorrect: isCorrect,
+        score: coordRes.summary.learningScore,
+        pts: coordRes.summary.pointsEarned
+      });
+
+      // 正解または3回目不正解時のモーダル表示
+      const title = isCorrect ? "🎉 せいかい！" : "惜しかったね！";
+      const ptsBadge = coordRes.summary.pointsEarned > 0 ? `<span class="badge success">+${coordRes.summary.pointsEarned} pt</span>` : "";
+
+      let bodyHtml = `
+        <div style="font-size:1.1rem; font-weight:bold; margin-bottom:8px;">正解: ${q.answer} ${ptsBadge}</div>
+        <div style="background:#eff6ff; padding:10px; border-radius:8px; text-align:left; font-size:0.9rem; margin-bottom:12px;">
+          <b>📖 解説:</b><br>${q.explanation}
+        </div>
+      `;
+
+      // 理解確認 (understandingCheck) のミニクイズ
+      if (isCorrect && q.understandingCheck && q.understandingCheck.enabled) {
+        const uc = q.understandingCheck;
+        bodyHtml += `
+          <div style="background:#fdf4ff; border:1px solid #e9d5ff; padding:10px; border-radius:8px; text-align:left; margin-bottom:12px;">
+            <div style="font-weight:bold; color:#7e22ce; font-size:0.9rem; margin-bottom:6px;">💡 理解確認ミニクイズ</div>
+            <div style="font-size:0.85rem; margin-bottom:8px;">${uc.question}</div>
+            <div>
+              ${uc.choices.map(c => `
+                <button class="choice-btn" onclick="app.checkMiniQuizAnswer('${c}', '${uc.answer}')">${c}</button>
+              `).join("")}
+            </div>
+            <div id="ucheck-feedback" style="font-size:0.85rem; font-weight:bold; margin-top:6px;"></div>
+          </div>
+        `;
+      }
+
+      this._showModal(title, bodyHtml, [
+        { text: this.session.currentIndex + 1 >= this.session.totalCount ? "結果を見る ➔" : "つぎの問題へ ➔", action: "app.nextLearningQuestion()" }
+      ]);
+    }
+  }
+
+  checkMiniQuizAnswer(selected, correct) {
+    const fb = document.getElementById("ucheck-feedback");
+    if (!fb) return;
+    if (selected === correct) {
+      Sound.playCorrect();
+      fb.innerHTML = "<span style='color:#16a34a;'>🎉 その通り！バッチリ理解できてるね！</span>";
+    } else {
+      Sound.playIncorrect();
+      fb.innerHTML = `<span style='color:#dc2626;'>もう一歩！正解は ${correct} だよ。</span>`;
+    }
+  }
+
+  nextLearningQuestion() {
+    this.closeModal();
+    this.session.currentIndex++;
+    this.session.currentAttemptCount = 0;
+    this.session.currentHintUsed = false;
+    this.currentInput = "";
+
+    if (this.session.currentIndex >= this.session.totalCount) {
+      // 10問完了 -> 結果画面へ
+      Sound.playFanfare();
+      this.navigate("session_result", {
+        correctCount: this.session.correctCount,
+        totalCount: this.session.totalCount,
+        earnedPoints: this.session.earnedPointsTotal
+      });
+    } else {
+      this.render();
+    }
+  }
+
+  // ==========================================
+  // 5. セッション結果画面 (Screen 5)
+  // ==========================================
+  _renderSessionResultScreen(params) {
+    const accuracyPct = Math.round((params.correctCount / params.totalCount) * 100);
+    return `
+      <div class="card" style="text-align:center; padding:24px 16px;">
+        <div style="font-size:3rem; margin-bottom:8px;">🏆</div>
+        <h2>学習セッション完了！</h2>
+        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:18px;">よくがんばりました！</p>
+
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:16px;">
+          <div style="background:var(--primary-light); padding:12px; border-radius:var(--radius-md);">
+            <div style="font-size:0.85rem; color:var(--text-muted);">正答数</div>
+            <div style="font-size:1.6rem; font-weight:bold; color:var(--primary);">${params.correctCount} / ${params.totalCount}</div>
+          </div>
+          <div style="background:var(--success-light); padding:12px; border-radius:var(--radius-md);">
+            <div style="font-size:0.85rem; color:var(--text-muted);">獲得ポイント</div>
+            <div style="font-size:1.6rem; font-weight:bold; color:var(--success);">+${params.earnedPoints} pt</div>
+          </div>
+        </div>
+
+        <div class="progress-container" style="height:12px;">
+          <div class="progress-bar" style="width: ${accuracyPct}%;"></div>
+        </div>
+        <div style="font-size:0.9rem; font-weight:bold; margin-top:4px; margin-bottom:20px;">正答率: ${accuracyPct}%</div>
+
+        <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // 6. テスト画面 (Screen 6) & テスト結果 (Screen 7)
+  // ==========================================
+  startTestSession() {
+    const profile = this.getActiveProfile();
+    try {
+      const testQuestions = TestEngine.generateTestQuestions(profile, APP_CONFIG);
+      this.session = {
+        type: "test",
+        currentIndex: 0,
+        totalCount: testQuestions.length,
+        questions: testQuestions,
+        userAnswers: []
+      };
+      Sound.playClick();
+      this.navigate("test");
+    } catch (err) {
+      alert("テスト問題の生成に失敗しました: " + err.message);
+    }
+  }
+
+  _renderTestScreen() {
+    if (!this.session || !this.session.questions[this.session.currentIndex]) {
+      this.navigate("home");
+      return "";
+    }
+
+    const q = this.session.questions[this.session.currentIndex];
+    const progress = `${this.session.currentIndex + 1} / ${this.session.totalCount}`;
+
+    return `
+      <div class="question-meta">
+        <span><b>📝 テスト 第 ${progress} 問</b></span>
+        <span class="badge warn">テストモード（1回解答）</span>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar" style="width: ${((this.session.currentIndex) / this.session.totalCount) * 100}%;"></div>
+      </div>
+
+      <div class="question-display">
+        <div class="question-text">${q.questionText}</div>
+        <div class="answer-input-display" id="answer-display">
+          ${this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>'}
+        </div>
+      </div>
+
+      <div class="numpad-grid">
+        <button class="numpad-btn" onclick="app.pressKey('7')">7</button>
+        <button class="numpad-btn" onclick="app.pressKey('8')">8</button>
+        <button class="numpad-btn" onclick="app.pressKey('9')">9</button>
+        <button class="numpad-btn" onclick="app.pressKey('4')">4</button>
+        <button class="numpad-btn" onclick="app.pressKey('5')">5</button>
+        <button class="numpad-btn" onclick="app.pressKey('6')">6</button>
+        <button class="numpad-btn" onclick="app.pressKey('1')">1</button>
+        <button class="numpad-btn" onclick="app.pressKey('2')">2</button>
+        <button class="numpad-btn" onclick="app.pressKey('3')">3</button>
+        <button class="numpad-btn action-btn" onclick="app.pressKey('.')">.</button>
+        <button class="numpad-btn" onclick="app.pressKey('0')">0</button>
+        <button class="numpad-btn action-btn" onclick="app.pressKey('backspace')">⌫ けす</button>
+        <button class="numpad-btn action-btn" style="grid-column: span 1;" onclick="app.pressKey('/')">/</button>
+        <button class="numpad-btn ok-btn" style="grid-column: span 2;" onclick="app.submitTestAnswer()">回答を確定 ➔</button>
+      </div>
+    `;
+  }
+
+  submitTestAnswer() {
+    if (!this.currentInput.trim()) return;
+    this.session.userAnswers.push(this.currentInput.trim());
+    this.currentInput = "";
+    this.session.currentIndex++;
+
+    if (this.session.currentIndex >= this.session.totalCount) {
+      // テスト完了・採点
+      const evalRes = TestEngine.completeTestSession({
+        appState: this.state,
+        testQuestions: this.session.questions,
+        userAnswers: this.session.userAnswers,
+        config: APP_CONFIG,
+        storageManager: this.storage
+      });
+
+      this.state = evalRes.nextState;
+      if (evalRes.testRecord.passed) {
+        Sound.playFanfare();
+      } else {
+        Sound.playIncorrect();
+      }
+
+      this.navigate("test_result", { testRecord: evalRes.testRecord });
+    } else {
+      Sound.playClick();
+      this.render();
+    }
+  }
+
+  _renderTestResultScreen(params) {
+    const record = params.testRecord;
+    const accuracyPct = Math.round(record.accuracy * 100);
+
+    return `
+      <div class="card" style="text-align:center;">
+        <div style="font-size:3rem; margin-bottom:8px;">${record.passed ? '🎉' : '📖'}</div>
+        <h2>${record.passed ? 'テスト合格！おめでとう！' : 'テスト終了'}</h2>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:14px;">合格ライン: 80%以上 (8問正解)</p>
+
+        <div style="display:flex; justify-content:center; gap:12px; margin-bottom:16px;">
+          <div class="card" style="margin:0; padding:10px 16px; background:${record.passed ? 'var(--success-light)' : 'var(--bg)'}">
+            <div style="font-size:0.8rem;">得点</div>
+            <div style="font-size:1.6rem; font-weight:bold; color:${record.passed ? 'var(--success)' : 'var(--text-main)'};">${record.correctCount} / ${record.questionCount}</div>
+          </div>
+          <div class="card" style="margin:0; padding:10px 16px; background:var(--primary-light);">
+            <div style="font-size:0.8rem;">獲得ポイント (2倍)</div>
+            <div style="font-size:1.6rem; font-weight:bold; color:var(--primary);">+${record.pointsEarned} pt</div>
+          </div>
+        </div>
+
+        <div style="text-align:left; font-size:0.9rem; font-weight:bold; margin-bottom:6px;">📋 問題別正誤一覧:</div>
+        <div style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:16px;">
+          <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+            ${record.details.map((d, i) => `
+              <tr style="border-bottom:1px solid var(--border); background:${d.isCorrect ? '#f0fdf4' : '#fef2f2'};">
+                <td style="padding:6px 8px;">${d.isCorrect ? '⭕' : '❌'} 問${i+1}</td>
+                <td style="padding:6px 8px;">${d.questionText}</td>
+                <td style="padding:6px 8px; text-align:right;">${d.isCorrect ? d.userAnswer : `${d.userAnswer} (正: ${d.correctAnswer})`}</td>
+              </tr>
+            `).join("")}
+          </table>
+        </div>
+
+        <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // 7. 復習・履歴画面 (Screen 8)
+  // ==========================================
+  _renderReviewHistoryScreen(profile) {
+    const reviews = profile.reviewQueue || [];
+    const active = reviews.filter(r => r.status === "active");
+    const graduated = reviews.filter(r => r.status === "graduated");
+
+    return `
+      <div class="card">
+        <div class="card-title">📚 復習キュー (${active.length} 件)</div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">間違えた問題は、忘れた頃（1日後・3日後・7日後・14日後）に再出題されます。</p>
+
+        ${active.length === 0 ? '<div style="color:var(--text-muted); font-size:0.9rem; padding:12px 0;">現在、復習待ちの単元はありません。完璧です！✨</div>' : `
+          <div style="max-height:240px; overflow-y:auto;">
+            ${active.map(r => `
+              <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-weight:bold; font-size:0.9rem;">${r.unitId}</div>
+                  <div style="font-size:0.8rem; color:var(--text-muted);">次回復習: ${r.dueAt} (間隔: ${r.intervalDays}日) / 成功: ${r.successCount}回</div>
+                </div>
+                <span class="badge warn">復習中</span>
+              </div>
+            `).join("")}
+          </div>
+        `}
+      </div>
+
+      ${graduated.length > 0 ? `
+        <div class="card">
+          <div class="card-title">🎓 復習クリア済み単元 (${graduated.length} 件)</div>
+          <div style="max-height:140px; overflow-y:auto; font-size:0.85rem;">
+            ${graduated.map(g => `
+              <div style="padding:4px 0; color:var(--text-muted);">✔ ${g.unitId} (14日間隔クリア)</div>
+            `).join("")}
+          </div>
+        </div>
+      ` : ""}
+
+      <button class="btn btn-outline" onclick="app.navigate('home')">🏠 ホームへもどる</button>
+    `;
+  }
+
+  // ==========================================
+  // 8. 設定画面 (Screen 9)
+  // ==========================================
+  _renderSettingsScreen(profile) {
+    const currentGrade = profile.skill.subject.currentGrade;
+
+    return `
+      <div class="card">
+        <div class="card-title">⚙️ 学年・レベル設定</div>
+        <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:6px;">学年を変更する:</label>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:14px;">
+          ${[1, 2, 3, 4, 5, 6].map(g => `
+            <button class="btn ${g === currentGrade ? 'btn-primary' : 'btn-outline'}" style="min-height:40px; padding:6px;" onclick="app.changeGrade(${g})">
+              小学${g}年 ${g === currentGrade ? '✔' : ''}
+            </button>
+          `).join("")}
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-muted);">※ 学年を変更しても、これまでのポイントや過去の学年の進捗はすべて保全されます。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💾 データバックアップ・引継ぎ</div>
+        <button class="btn btn-outline" onclick="app.exportData()">📤 JSON データを保存（エクスポート）</button>
+        <button class="btn btn-outline" onclick="document.getElementById('import-file').click()">📥 JSON データを読込（インポート）</button>
+        <input type="file" id="import-file" style="display:none;" accept=".json" onchange="app.importData(event)">
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 プロフィール切り替え・管理</div>
+        <button class="btn btn-outline" onclick="app.navigate('profile_select')">👤 別のプロフィールを選ぶ・新規作成</button>
+      </div>
+
+      <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
+    `;
+  }
+
+  changeGrade(newGrade) {
+    const profile = this.getActiveProfile();
+    if (profile.skill.subject.currentGrade === newGrade) return;
+
+    // 学年変更処理 (第18.1.3章)
+    profile.skill.subject.currentGrade = newGrade;
+    const gKey = `grade${newGrade}`;
+    if (!profile.skill.subject.gradeProgress[gKey]) {
+      profile.skill.subject.gradeProgress[gKey] = createGradeProgress(newGrade);
+    }
+
+    this.storage.saveState(this.state);
+    Sound.playClick();
+    alert(`学年を「小学${newGrade}年生」に変更しました！`);
+    this.navigate("home");
+  }
+
+  exportData() {
+    const jsonStr = this.storage.exportStateJSON(this.state);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `math_app_backup_${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const res = this.storage.importStateJSON(e.target.result);
+      if (res.success) {
+        this.state = res.state;
+        Sound.playFanfare();
+        alert("データの読み込みが完了しました！");
+        this.navigate("home");
+      } else {
+        alert("インポート失敗: " + res.error);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ==========================================
+  // 9. プロフィール選択画面 (Screen 1)
+  // ==========================================
+  _renderProfileSelectScreen() {
+    const profiles = this.state.profiles || [];
+    return `
+      <div class="card" style="text-align:center;">
+        <div style="font-size:2.5rem; margin-bottom:8px;">👥</div>
+        <h2>プロフィール選択</h2>
+        <div style="margin-top:14px;">
+          ${profiles.map(p => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="app.selectProfile('${p.identity.id}')">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:2rem;">${this.characterAvatars[p.identity.character] || "🐱"}</span>
+                <div style="text-align:left;">
+                  <div style="font-weight:bold;">${p.identity.name}</div>
+                  <div style="font-size:0.8rem; color:var(--text-muted);">小学${p.skill.subject.currentGrade}年 (⭐ ${p.points.total}pt)</div>
+                </div>
+              </div>
+              <span class="badge ${p.identity.id === this.state.activeProfileId ? 'success' : ''}">${p.identity.id === this.state.activeProfileId ? '選択中' : '選ぶ'}</span>
+            </div>
+          `).join("")}
+        </div>
+        <button class="btn btn-primary" onclick="app.navigate('onboarding', { step: 1 })">➕ 新しいプロフィールを作る</button>
+        <button class="btn btn-outline" onclick="app.navigate('home')">🏠 もどる</button>
+      </div>
+    `;
+  }
+
+  selectProfile(id) {
+    this.state.activeProfileId = id;
+    this.storage.saveState(this.state);
+    Sound.playClick();
+    this.navigate("home");
+  }
+
+  // ==========================================
+  // 10. 保護者画面 (Screen 10: プレースホルダー)
+  // ==========================================
+  _renderParentScreen(profile) {
+    return `
+      <div class="card">
+        <div class="card-title">🔒 保護者向けダッシュボード（雛形）</div>
+        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:12px;">
+          お子様の単元別習熟度や学習履歴のサマリーを確認できます。（将来バージョンでPINロック機能拡張予定）
+        </p>
+        <div style="background:var(--bg); padding:12px; border-radius:var(--radius-sm); font-size:0.85rem;">
+          <div>累計学習問数: ${profile.history.length} 問</div>
+          <div>累計ポイント: ${profile.points.total} pt</div>
+          <div>テスト受験回数: ${(profile.tests || []).length} 回</div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:16px;" onclick="app.navigate('home')">🏠 ホームへもどる</button>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // ユーティリティ
+  // ==========================================
+  _showModal(title, bodyHtml, buttons = []) {
+    const modalContainer = document.getElementById("modal-container");
+    if (!modalContainer) return;
+    modalContainer.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-card">
+          <h3 style="font-size:1.3rem; margin-bottom:10px;">${title}</h3>
+          <div style="margin-bottom:16px;">${bodyHtml}</div>
+          <div>
+            ${buttons.map(b => `<button class="btn btn-primary" onclick="${b.action}">${b.text}</button>`).join("")}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  closeModal() {
+    const modalContainer = document.getElementById("modal-container");
+    if (modalContainer) modalContainer.innerHTML = "";
+  }
+
+  _checkAnswer(userInput, correctAnswer) {
+    const cleanU = userInput.replace(/\s+/g, "");
+    const cleanA = correctAnswer.replace(/\s+/g, "");
+    if (cleanU === cleanA) return true;
+    const numU = parseFloat(cleanU);
+    const numA = parseFloat(cleanA);
+    return !isNaN(numU) && !isNaN(numA) && numU === numA;
+  }
+
+  _attachEventHandlers() {
+    // 必要に応じたキーボード・リスナー
+  }
+}
+
+const app = new AppUI();
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { AppUI, app };
+} else {
+  window.AppUI = AppUI;
+  window.app = app;
+}
+
