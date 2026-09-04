@@ -29,7 +29,7 @@ function migrateAppState(data) {
 
   state.schemaVersion = "2.5.6";
   if (!state.appMeta) state.appMeta = {};
-  state.appMeta.appVersion = "V2.5.10";
+  state.appMeta.appVersion = "V2.5.11";
 
   if (!state.activeProfileId && Array.isArray(state.profiles) && state.profiles.length > 0) {
     state.activeProfileId = state.profiles[0].identity?.id || "p_default";

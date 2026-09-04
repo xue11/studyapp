@@ -5,7 +5,7 @@
 
 const APP_META = {
   appName: "小学生向け算数学習アプリ",
-  appVersion: "V2.5.10",
+  appVersion: "V2.5.11",
   schemaVersion: "2.5.6",
   generationMode: "rule_based"
 };
@@ -59,7 +59,7 @@ const APP_CONFIG = {
   },
   features: {
     tests: true,
-    parentMode: false,
+    parentMode: true,
     wordProblems: true,
     figureProblems: false,
     claudeApi: false

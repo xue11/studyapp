@@ -67,7 +67,8 @@ function createNewProfile(id, name, grade, character = "cat", taste = "standard"
     settings: {
       sound: true,
       fontSize: "medium",
-      theme: "default"
+      theme: "default",
+      parentPin: "" // V2.5.11: 保護者モード用4桁PIN (未設定は空文字)
     }
   };
 }
@@ -79,7 +80,7 @@ function createInitialAppState() {
     profiles: [defaultProfile],
     activeProfileId: defaultProfile.identity.id,
     appMeta: {
-      appVersion: "V2.5.10",
+      appVersion: "V2.5.11",
       generationMode: "rule_based",
       features: {}
     }

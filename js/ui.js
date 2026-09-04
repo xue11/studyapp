@@ -10,6 +10,7 @@ class AppUI {
     this.currentScreen = "home";
     this.session = null; // 通常学習・テスト進行中のセッション状態
     this.currentInput = "";
+    this.parentState = null; // 保護者モードの状態 ({ step: "locked" | "setup1" | "setup2" | "dashboard" })
     this.characterAvatars = {
       cat: "🐱",
       dog: "🐶",
@@ -172,6 +173,9 @@ class AppUI {
         <button class="btn btn-secondary" onclick="app.startTestSession()">📝 テストを受ける（10問）</button>
         <button class="btn btn-purple" onclick="app.navigate('review_history')">📚 ふくしゅう・きろく (${profile.reviewQueue?.filter(r=>r.status==='active').length || 0})</button>
         <button class="btn btn-outline" onclick="app.navigate('settings')">⚙️ せってい・学年変更</button>
+        ${(typeof APP_CONFIG !== "undefined" && APP_CONFIG.features && APP_CONFIG.features.parentMode) ? `
+        <button class="btn btn-outline" style="min-height:36px; padding:6px 12px; font-size:0.85rem; margin-top:2px;" onclick="app.startParentMode()">🔒 保護者モード</button>
+        ` : ""}
       </div>
     `;
   }
@@ -321,7 +325,12 @@ class AppUI {
     }
     const display = document.getElementById("answer-display");
     if (display) {
-      display.innerHTML = this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>';
+      const isPinEntry = this.currentScreen === "parent_mode" && this.parentState && this.parentState.step !== "dashboard";
+      if (isPinEntry) {
+        display.innerHTML = this.currentInput ? this.currentInput.replace(/./g, "●") : '<span class="pin-empty">●</span><span class="pin-empty">●</span><span class="pin-empty">●</span><span class="pin-empty">●</span>';
+      } else {
+        display.innerHTML = this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>';
+      }
     }
   }
 
@@ -707,6 +716,13 @@ class AppUI {
         <button class="btn btn-outline" onclick="app.navigate('profile_select')">👤 別のプロフィールを選ぶ・新規作成</button>
       </div>
 
+      ${(typeof APP_CONFIG !== "undefined" && APP_CONFIG.features && APP_CONFIG.features.parentMode) ? `
+      <div class="card">
+        <div class="card-title">🔒 保護者モード</div>
+        <button class="btn btn-outline" onclick="app.startParentMode()">🔑 保護者ダッシュボードを開く</button>
+      </div>
+      ` : ""}
+
       <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
     `;
   }
@@ -794,22 +810,270 @@ class AppUI {
   }
 
   // ==========================================
-  // 10. 保護者画面 (Screen 10: プレースホルダー)
+  // 10. 保護者画面 (Screen 10: PINロック + 保護者ダッシュボード)
   // ==========================================
+  startParentMode() {
+    const profile = this.getActiveProfile();
+    const hasPin = !!(profile.settings && profile.settings.parentPin);
+    this.parentState = { step: hasPin ? "locked" : "setup1", setupPin: "" };
+    this.currentInput = "";
+    this.navigate("parent_mode");
+  }
+
   _renderParentScreen(profile) {
+    if (!this.parentState || !this.parentState.step) {
+      this.parentState = { step: "locked", setupPin: "" };
+    }
+    if (this.parentState.step === "dashboard") {
+      return this._renderParentDashboard(profile);
+    }
+    return this._renderParentPinScreen(profile);
+  }
+
+  // 保護者PIN入力画面 (初回設定 / 確認 / ロック解除 を共通で描画)
+  _renderParentPinScreen(profile) {
+    const step = this.parentState.step;
+    const isSetup = step === "setup1" || step === "setup2";
+    const title = step === "setup1" ? "🔒 保護者PINの設定" : (step === "setup2" ? "🔒 もう一度入力" : "🔒 保護者モード");
+    const subtitle = step === "setup1"
+      ? "4桁のPINを決めてください"
+      : (step === "setup2" ? "確認のため、もう一度4桁のPINを入力してください" : "4桁のPINを入力してください");
+    const actionLabel = isSetup ? "設定する" : "開く";
+
+    const pinDots = [0, 1, 2, 3].map(() => `<span class="pin-empty">●</span>`).join("");
+
+    return `
+      <div class="card" style="text-align:center;">
+        <div style="font-size:2.5rem; margin-bottom:8px;">${isSetup ? "🔑" : "🔒"}</div>
+        <div class="card-title" style="justify-content:center;">${title}</div>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:14px;">${subtitle}</p>
+
+        <div class="pin-slot" id="answer-display">${pinDots}</div>
+
+        <div class="numpad-grid" style="margin-top:14px;">
+          <button class="numpad-btn" onclick="app.pressKey('7')">7</button>
+          <button class="numpad-btn" onclick="app.pressKey('8')">8</button>
+          <button class="numpad-btn" onclick="app.pressKey('9')">9</button>
+          <button class="numpad-btn" onclick="app.pressKey('4')">4</button>
+          <button class="numpad-btn" onclick="app.pressKey('5')">5</button>
+          <button class="numpad-btn" onclick="app.pressKey('6')">6</button>
+          <button class="numpad-btn" onclick="app.pressKey('1')">1</button>
+          <button class="numpad-btn" onclick="app.pressKey('2')">2</button>
+          <button class="numpad-btn" onclick="app.pressKey('3')">3</button>
+          <button class="numpad-btn action-btn" onclick="app.pressKey('backspace')">⌫ けす</button>
+          <button class="numpad-btn" onclick="app.pressKey('0')">0</button>
+          <button class="numpad-btn ok-btn" onclick="app.submitParentPin()">${actionLabel} ➔</button>
+        </div>
+
+        ${!isSetup ? `<button class="btn btn-outline" style="margin-top:12px; font-size:0.85rem;" onclick="app.resetParentPin()">🔓 PINが分からない</button>` : ""}
+        <button class="btn btn-outline" onclick="app.navigate('home')">🏠 ホームへもどる</button>
+      </div>
+      <div id="modal-container"></div>
+    `;
+  }
+
+  // PIN送信: ロック解除 / 初回設定(2段階) を状態遷移で処理
+  submitParentPin() {
+    const profile = this.getActiveProfile();
+    const pin = this.currentInput;
+    const step = this.parentState.step;
+
+    if (step === "locked") {
+      if (profile.settings && pin === profile.settings.parentPin) {
+        Sound.playCorrect();
+        this.parentState.step = "dashboard";
+        this.currentInput = "";
+        this.render();
+      } else {
+        Sound.playIncorrect();
+        this.currentInput = "";
+        this.render();
+        this._showModal("PINがちがいます", "もう一度入力してください。", [{ text: "OK", action: "app.closeModal()" }]);
+      }
+      return;
+    }
+
+    if (step === "setup1") {
+      if (!ParentDashboard.validatePin(pin)) {
+        this.currentInput = "";
+        this.render();
+        this._showModal("入力エラー", "4桁の数字で入力してください。", [{ text: "OK", action: "app.closeModal()" }]);
+        return;
+      }
+      this.parentState.setupPin = pin;
+      this.parentState.step = "setup2";
+      this.currentInput = "";
+      this.render();
+      return;
+    }
+
+    if (step === "setup2") {
+      if (pin === this.parentState.setupPin && ParentDashboard.validatePin(pin)) {
+        if (!profile.settings) profile.settings = {};
+        profile.settings.parentPin = pin;
+        this.storage.saveState(this.state);
+        Sound.playFanfare();
+        this.parentState.step = "dashboard";
+        this.currentInput = "";
+        this.render();
+      } else {
+        Sound.playIncorrect();
+        this.parentState.step = "setup1";
+        this.parentState.setupPin = "";
+        this.currentInput = "";
+        this.render();
+        this._showModal("PINが一致しません", "最初から設定し直してください。", [{ text: "OK", action: "app.closeModal()" }]);
+      }
+      return;
+    }
+  }
+
+  // PINを変更 (ダッシュボードから)
+  changeParentPin() {
+    this.parentState = { step: "setup1", setupPin: "" };
+    this.currentInput = "";
+    this.render();
+  }
+
+  // PINリセット (設定画面 or PIN入力画面から)
+  resetParentPin() {
+    this._showModal("PINをリセット", "保護者PINを削除してロックを解除しますか？", [
+      { text: "削除する", action: "app.confirmResetParentPin()" },
+      { text: "やめる", action: "app.closeModal()" }
+    ]);
+  }
+
+  confirmResetParentPin() {
+    const profile = this.getActiveProfile();
+    if (profile.settings) profile.settings.parentPin = "";
+    this.storage.saveState(this.state);
+    this.closeModal();
+    this.parentState = { step: "setup1", setupPin: "" };
+    this.currentInput = "";
+    this.render();
+  }
+
+// 保護者ダッシュボード本体 (ParentDashboard が集計)
+  _renderParentDashboard(profile) {
+    if (typeof ParentDashboard === "undefined") {
+      return `<div class="card">ダッシュボードを読み込めませんでした。</div>`;
+    }
+    const s = ParentDashboard.buildSummary(profile, APP_CONFIG);
+    const statusLabel = { achieved: "達成", weak: "弱点", learning: "学習中", not_started: "未学習" };
+    const fmtPct = (v) => (v === null || typeof v === "undefined") ? "—" : Math.round(v * 100) + "%";
+
+    const unitRows = s.currentUnitRows.map(r => `
+      <div class="unit-progress-row">
+        <div class="unit-name">${r.name}</div>
+        <div class="unit-meter">
+          <div class="progress-bar mastery-bar"><div style="width:${Math.min(100, Math.round(r.mastery * 100))}%"></div></div>
+          <div style="font-size:0.7rem; color:var(--text-muted);">${r.attempts}問 / 正答率 ${fmtPct(r.accuracy)}</div>
+        </div>
+        <span class="status-badge status-${r.status}">${statusLabel[r.status] || r.status}</span>
+      </div>`).join("");
+
+    const weakRows = s.weakUnits.length
+      ? s.weakUnits.map(w => `
+          <div class="unit-progress-row">
+            <div class="unit-name">${w.name} <span style="color:var(--text-muted); font-weight:normal;">（小学${w.grade}年）</span></div>
+            <div style="font-size:0.8rem; color:#991b1b; font-weight:bold;">正答率 ${fmtPct(w.accuracy)}</div>
+          </div>`).join("")
+      : `<div style="color:var(--text-muted); font-size:0.85rem; padding:8px 0;">弱点単元はありません 🎉</div>`;
+
+    const testRows = s.recentTests.length
+      ? s.recentTests.map(t => `
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:6px 0; border-bottom:1px solid var(--border);">
+            <span>${t.passed ? "🎉 合格" : "📖 不合格"}（小学${t.grade}年）</span>
+            <span>${t.correctCount}/${t.questionCount} 問 / 正答率 ${fmtPct(t.accuracy)}</span>
+          </div>`).join("")
+      : `<div style="color:var(--text-muted); font-size:0.85rem; padding:8px 0;">テストはまだ未受験です。</div>`;
+
+    const historyRows = s.recentHistory.length
+      ? s.recentHistory.slice(0, 5).map(h => `
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:5px 0; border-bottom:1px solid var(--border);">
+            <span>${h.correct ? "⭕ せいかい" : "❌ まちがい"}（小学${h.grade}年）</span>
+            <span style="color:var(--text-muted); font-size:0.75rem;">${(h.completedAt || "").slice(0, 10)}</span>
+          </div>`).join("")
+      : `<div style="color:var(--text-muted); font-size:0.85rem; padding:8px 0;">学習履歴はまだありません。</div>`;
+
+    const gradeRows = s.gradeSummaries.map(g => `
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:5px 0; border-bottom:1px solid var(--border);">
+        <span>小学${g.grade}年（Lv${g.level}）</span>
+        <span>${g.attempts}問 / 正答率 ${fmtPct(g.accuracy)}</span>
+      </div>`).join("");
+
+    const badgeHtml = s.badges.map(b => `
+      <div class="badge-item ${b.unlocked ? 'unlocked' : ''}">
+        <span style="font-size:1.2rem;">${b.unlocked ? "🏅" : "🔒"}</span>
+        <div>
+          <div style="font-weight:bold; font-size:0.8rem;">${b.label}</div>
+          <div style="font-size:0.7rem; color:var(--text-muted);">${b.description}</div>
+        </div>
+      </div>`).join("");
+
+    return this._assembleParentDashboardHtml(s, { unitRows, weakRows, testRows, historyRows, gradeRows, badgeHtml, fmtPct });
+  }
+
+  _assembleParentDashboardHtml(s, parts) {
+    const { unitRows, weakRows, testRows, historyRows, gradeRows, badgeHtml, fmtPct } = parts;
     return `
       <div class="card">
-        <div class="card-title">🔒 保護者向けダッシュボード（雛形）</div>
-        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:12px;">
-          お子様の単元別習熟度や学習履歴のサマリーを確認できます。（将来バージョンでPINロック機能拡張予定）
-        </p>
-        <div style="background:var(--bg); padding:12px; border-radius:var(--radius-sm); font-size:0.85rem;">
-          <div>累計学習問数: ${profile.history.length} 問</div>
-          <div>累計ポイント: ${profile.points.total} pt</div>
-          <div>テスト受験回数: ${(profile.tests || []).length} 回</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div class="card-title" style="margin:0;">🔒 保護者ダッシュボード</div>
+          <span class="badge success">小学${s.currentGrade}年・Lv${s.currentLevel}</span>
         </div>
-        <button class="btn btn-primary" style="margin-top:16px;" onclick="app.navigate('home')">🏠 ホームへもどる</button>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">${s.profileName}さんの学習状況です。</p>
+
+        <div class="dash-stats">
+          <div class="dash-stat-card"><div class="stat-label">達成レベル</div><div class="stat-value">Lv${s.achievementLevel}</div></div>
+          <div class="dash-stat-card"><div class="stat-label">累計ポイント</div><div class="stat-value">${s.totalPoints} pt</div></div>
+          <div class="dash-stat-card"><div class="stat-label">累計学習問数</div><div class="stat-value">${s.totalAttempts} 問</div></div>
+          <div class="dash-stat-card"><div class="stat-label">総合正答率</div><div class="stat-value">${fmtPct(s.totalAccuracy)}</div></div>
+          <div class="dash-stat-card"><div class="stat-label">最高連続正解</div><div class="stat-value">${s.bestStreak} 問</div></div>
+          <div class="dash-stat-card"><div class="stat-label">現在の連続正解</div><div class="stat-value">${s.currentStreak} 問</div></div>
+        </div>
       </div>
+
+      <div class="card">
+        <div class="dash-section-title">📚 現在の単元別習熟度（小学${s.currentGrade}年・Lv${s.currentLevel}）</div>
+        ${unitRows || '<div style="color:var(--text-muted); font-size:0.85rem;">単元がありません。</div>'}
+      </div>
+
+      <div class="card">
+        <div class="dash-section-title">⚠️ 弱点単元（要フォロー）</div>
+        ${weakRows}
+      </div>
+
+      <div class="card">
+        <div class="dash-section-title">🗓復習状況</div>
+        <div style="display:flex; gap:10px;">
+          <div class="dash-stat-card" style="flex:1;"><div class="stat-label">復習待ち</div><div class="stat-value">${s.reviewInfo.active}件</div></div>
+          <div class="dash-stat-card" style="flex:1;"><div class="stat-label">復習クリア</div><div class="stat-value">${s.reviewInfo.graduated}件</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="dash-section-title">📝 直近のテスト成績</div>
+        ${testRows}
+      </div>
+
+      <div class="card">
+        <div class="dash-section-title">🕐 直近の学習履歴</div>
+        ${historyRows}
+      </div>
+
+      <div class="card">
+        <div class="dash-section-title">🎖バッジ一覧</div>
+        <div class="badge-grid">${badgeHtml}</div>
+      </div>
+
+      <div class="card">
+        <div class="dash-section-title">📈 学年別サマリー</div>
+        ${gradeRows}
+      </div>
+
+      <button class="btn btn-outline" onclick="app.changeParentPin()">🔑 PINを変更する</button>
+      <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
     `;
   }
 

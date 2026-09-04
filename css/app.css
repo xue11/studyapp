@@ -380,6 +380,105 @@ body {
   font-weight: bold;
 }
 
+/* ================================================================
+   保護者ダッシュボード (V2.5.11)
+   ================================================================ */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.dash-stat-card {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.dash-stat-card .stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.dash-stat-card .stat-value {
+  font-size: 1.35rem;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.unit-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.unit-progress-row:last-child {
+  border-bottom: none;
+}
+
+.unit-name {
+  flex: 1;
+  font-weight: bold;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.unit-meter {
+  flex: 1;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.status-achieved { background: #dcfce7; color: #166534; }
+.status-weak     { background: #fee2e2; color: #991b1b; }
+.status-learning { background: #fef9c3; color: #854d0e; }
+.status-not_started { background: #f1f5f9; color: #64748b; }
+
+.pin-slot {
+  font-size: 1.8rem;
+  letter-spacing: 12px;
+  text-align: center;
+  min-height: 40px;
+  color: var(--primary);
+  font-weight: bold;
+}
+
+.pin-slot .pin-empty {
+  color: #cbd5e1;
+}
+
+.dash-section-title {
+  font-size: 0.95rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--text-main);
+}
+
+.progress-bar.mastery-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar.mastery-bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #10b981);
+  transition: width 0.3s ease;
+}
+
 /* アニメーション */
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
