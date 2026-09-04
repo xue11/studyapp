@@ -112,6 +112,15 @@ class AppUI {
   // ==========================================
   // 1. ヘッダー
   // ==========================================
+  /**
+   * 表示用の名前を取得する (V2.5.14)
+   * ニックネームが設定されていればそれを、無ければデフォルト名 (identity.name) を返す
+   */
+  getDisplayName(profile) {
+    if (!profile || !profile.identity) return "チャレンジャー";
+    return profile.identity.nickname || profile.identity.name || "チャレンジャー";
+  }
+
   _renderHeader(profile) {
     if (!profile) return "";
     const currentGrade = profile.skill.subject.currentGrade;
@@ -150,7 +159,7 @@ class AppUI {
       <div class="character-section">
         <div class="character-avatar">${this.characterAvatars[profile.identity.character] || "🐱"}</div>
         <div class="speech-bubble">
-          こんにちは、${profile.identity.name}さん！<br>
+          こんにちは、${this.getDisplayName(profile)}さん！<br>
           ${activeDueReviews.length > 0 ? "📝 復習できる単元があるよ！" : "きょうも楽しく算数をがんばろう！"}
         </div>
       </div>
@@ -218,7 +227,11 @@ class AppUI {
       return `
         <div class="card" style="text-align:center; margin-top:20px;">
           <div style="font-size:2.5rem; margin-bottom:10px;">✨</div>
-          <h2>パートナーキャラクターをえらぼう</h2>
+          <h2>ニックネームをえらぼう</h2>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:8px;">なまえを入れてね（12もじまで・あとで かえられるよ）</p>
+          <input type="text" id="onboarding-nickname" maxlength="12" placeholder="例: はなちゃん"
+            style="width:80%; max-width:280px; padding:10px 12px; font-size:1rem; border:2px solid var(--primary, #6366f1); border-radius:var(--radius-md, 12px); text-align:center; margin-bottom:16px;">
+          <h2 style="margin-top:8px;">パートナーキャラクターをえらぼう</h2>
           <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-top:14px;">
             ${Object.entries(this.characterAvatars).map(([key, emoji]) => `
               <button class="btn btn-outline" style="flex-direction:column; padding:16px;" onclick="app.completeOnboarding(${params.grade}, '${key}')">
@@ -227,13 +240,18 @@ class AppUI {
               </button>
             `).join("")}
           </div>
+          <p style="color:var(--text-muted); font-size:0.8rem; margin-top:10px;">※ ニックネームを入れない場合は「チャレンジャー」になります</p>
         </div>
       `;
     }
   }
 
   completeOnboarding(grade, character) {
-    const newProf = createNewProfile(null, "チャレンジャー", grade, character);
+    // V2.5.14: オンボーディングで入力したニックネームを取得 (空ならデフォルト名にフォールバック)
+    let nickname = "";
+    const nickEl = document.getElementById("onboarding-nickname");
+    if (nickEl && nickEl.value) nickname = nickEl.value.trim().slice(0, 12);
+    const newProf = createNewProfile(null, "チャレンジャー", grade, character, "standard", "", nickname);
     if (!this.state.profiles) this.state.profiles = [];
     this.state.profiles.push(newProf);
     this.state.activeProfileId = newProf.identity.id;
@@ -755,8 +773,20 @@ class AppUI {
   // ==========================================
   _renderSettingsScreen(profile) {
     const currentGrade = profile.skill.subject.currentGrade;
+    const displayName = this.getDisplayName(profile);
 
     return `
+      <div class="card">
+        <div class="card-title">✏️ ニックネーム</div>
+        <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:6px;">いまのなまえ: <span style="color:var(--primary);">${displayName}</span> さん</label>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <input type="text" id="settings-nickname" maxlength="12" placeholder="あたらしいニックネーム (12もじまで)"
+            style="flex:1; padding:10px 12px; font-size:0.95rem; border:2px solid var(--border-color, #e5e7eb); border-radius:var(--radius-md, 12px);">
+          <button class="btn btn-primary" style="min-width:80px;" onclick="app.saveNickname()">保存</button>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-muted);">※ 空のまま保存すると、デフォルトのなまえに戻ります。</p>
+      </div>
+
       <div class="card">
         <div class="card-title">⚙️ 学年・レベル設定</div>
         <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:6px;">学年を変更する:</label>
@@ -791,6 +821,22 @@ class AppUI {
 
       <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
     `;
+  }
+
+  /**
+   * ニックネームを保存する (V2.5.14)
+   * 設定画面の入力欄から取得し、12文字に制限。空ならデフォルト名へフォールバック。
+   */
+  saveNickname() {
+    const profile = this.getActiveProfile();
+    const el = document.getElementById("settings-nickname");
+    if (!profile || !el) return;
+    const nick = (el.value || "").trim().slice(0, 12);
+    profile.identity.nickname = nick;
+    this.storage.saveState(this.state);
+    Sound.playClick();
+    alert(nick ? `ニックネームを「${nick}」に変更しました！` : "ニックネームをやめたよ。デフォルトのなまえに戻ります。");
+    this.navigate("settings");
   }
 
   changeGrade(newGrade) {
@@ -854,7 +900,7 @@ class AppUI {
               <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-size:2rem;">${this.characterAvatars[p.identity.character] || "🐱"}</span>
                 <div style="text-align:left;">
-                  <div style="font-weight:bold;">${p.identity.name}</div>
+                  <div style="font-weight:bold;">${p.identity.nickname || p.identity.name}${p.identity.nickname ? '<span style="font-size:0.75rem; font-weight:normal; color:var(--text-muted);"> (' + p.identity.name + ')</span>' : ''}</div>
                   <div style="font-size:0.8rem; color:var(--text-muted);">小学${p.skill.subject.currentGrade}年 (⭐ ${p.points.total}pt)</div>
                 </div>
               </div>

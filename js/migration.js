@@ -29,7 +29,15 @@ function migrateAppState(data) {
 
   state.schemaVersion = "2.5.6";
   if (!state.appMeta) state.appMeta = {};
-  state.appMeta.appVersion = "V2.5.13";
+  state.appMeta.appVersion = "V2.5.14";
+
+  // V2.5.14: 既存プロファイルに nickname が無い場合は空文字で補完 (表示時は name にフォールバック)
+  if (Array.isArray(state.profiles)) {
+    for (const p of state.profiles) {
+      if (!p.identity) p.identity = {};
+      if (typeof p.identity.nickname !== "string") p.identity.nickname = "";
+    }
+  }
 
   if (!state.activeProfileId && Array.isArray(state.profiles) && state.profiles.length > 0) {
     state.activeProfileId = state.profiles[0].identity?.id || "p_default";

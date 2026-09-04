@@ -15,7 +15,7 @@ console.log("=== Running Phase 1 Verification Tests ===\n");
 function testConfig() {
   console.log("1. Testing Config & App Meta...");
   assert.strictEqual(APP_META.schemaVersion, "2.5.6", "schemaVersion must be 2.5.6");
-  assert.strictEqual(APP_META.appVersion, "V2.5.13", "appVersion must be V2.5.13");
+  assert.strictEqual(APP_META.appVersion, "V2.5.14", "appVersion must be V2.5.14");
   assert.strictEqual(APP_CONFIG.math.levelEngine.levelUpMastery, 0.75);
   assert.strictEqual(APP_CONFIG.math.levelEngine.levelDownMastery, 0.35);
   assert.strictEqual(APP_CONFIG.math.unitSelection.coveragePeriodDays, 14);
@@ -59,6 +59,10 @@ function testSchemaAndValidation() {
   assert.strictEqual(profile.skill.subject.currentGrade, 2);
   assert.strictEqual(profile.skill.subject.gradeProgress.grade2.learningStartDate, null, "learningStartDate starts as null");
   assert.strictEqual(typeof profile.streaks.incorrectStreak, "undefined", "incorrectStreak must not exist");
+  // V2.5.14: ニックネーム
+  assert.strictEqual(profile.identity.nickname, "", "nickname defaults to empty string (V2.5.14)");
+  const nickProfile = createNewProfile("p_nick", "テスト花子", 1, "cat", "standard", "", "はなちゃん");
+  assert.strictEqual(nickProfile.identity.nickname, "はなちゃん", "nickname can be set at creation (V2.5.14)");
 
   const state = createInitialAppState();
   const valResult = validateAppState(state);
@@ -105,7 +109,7 @@ function testMigration() {
 
   const migrated = migrateAppState(oldLegacyData);
   assert.strictEqual(migrated.schemaVersion, "2.5.6");
-  assert.strictEqual(migrated.appMeta.appVersion, "V2.5.13");
+  assert.strictEqual(migrated.appMeta.appVersion, "V2.5.14");
 
   const p = migrated.profiles[0];
   assert.strictEqual(p.skill.subject.gradeProgress.grade3.difficultyLevel, 2);
@@ -113,6 +117,7 @@ function testMigration() {
   assert.ok(p.skill.subject.gradeProgress.grade3.unitStats.div_no_remainder);
   assert.strictEqual(typeof p.skill.subject.difficultyLevel, "undefined", "Old flat fields removed");
   assert.strictEqual(typeof p.streaks.incorrectStreak, "undefined", "incorrectStreak removed during migration");
+  assert.strictEqual(p.identity.nickname, "", "missing nickname auto-filled during migration (V2.5.14)");
   assert.strictEqual(p.reviewQueue[0].grade, 3, "Missing grade attached to reviewQueue");
   assert.strictEqual(p.history[0].attemptCount, 2, "history.attempts converted to attemptCount");
   assert.strictEqual(typeof p.history[0].attempts, "undefined");

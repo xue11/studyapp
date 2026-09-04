@@ -28,10 +28,10 @@ function createGradeProgress(grade) {
   };
 }
 
-function createNewProfile(id, name, grade, character = "cat", taste = "standard", gender = "") {
+function createNewProfile(id, name, grade, character = "cat", taste = "standard", gender = "", nickname = "") {
   const gradeNum = parseInt(grade, 10) || 1;
   const gradeProgress = {};
-  
+
   // 1〜6年生の進捗スロットを用意
   for (let g = 1; g <= 6; g++) {
     gradeProgress[`grade${g}`] = createGradeProgress(g);
@@ -41,6 +41,7 @@ function createNewProfile(id, name, grade, character = "cat", taste = "standard"
     identity: {
       id: id || `p_${Date.now()}`,
       name: name || "チャレンジャー",
+      nickname: nickname || "", // V2.5.14: ニックネーム (未設定は空文字・表示時はnameにフォールバック)
       character: character,
       gender: gender,
       taste: taste,
@@ -80,7 +81,7 @@ function createInitialAppState() {
     profiles: [defaultProfile],
     activeProfileId: defaultProfile.identity.id,
     appMeta: {
-      appVersion: "V2.5.13",
+      appVersion: "V2.5.14",
       generationMode: "rule_based",
       features: {}
     }
