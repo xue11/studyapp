@@ -117,8 +117,12 @@ class RuleBasedQuestionSource {
   static _assembleInstance(template, vars, previousInstances, options) {
     const qId = `q_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-    // 問題文の選定と置換
+    // 問題文の選定と置換 (V2.5.12: formats 配列による複数パターン対応)
     let questionTemplateStr = template.format || "";
+    if (Array.isArray(template.formats) && template.formats.length > 0) {
+      const fidx = Math.floor(Math.random() * template.formats.length);
+      questionTemplateStr = template.formats[fidx];
+    }
     if (Array.isArray(template.sentencePatterns) && template.sentencePatterns.length > 0) {
       const idx = Math.floor(Math.random() * template.sentencePatterns.length);
       questionTemplateStr = template.sentencePatterns[idx];
@@ -196,7 +200,8 @@ class RuleBasedQuestionSource {
       explanation: explanation,
       understandingCheck: understandingCheck,
       isReview: !!options.isReview,
-      isFallback: !!options.isFallback
+      isFallback: !!options.isFallback,
+      commutativePairs: Array.isArray(template.commutativePairs) ? template.commutativePairs : null
     };
   }
 
@@ -240,11 +245,29 @@ class RuleBasedQuestionSource {
   static _evalFormula(expr, scope) {
     try {
       const fn = new Function(...Object.keys(scope), `return (${expr});`);
-      return fn(...Object.values(scope));
+      const result = fn(...Object.values(scope));
+      // V2.5.13: 浮動小数点誤差の除去 (例: 1.1 + 0.6 = 1.7000000000000002 → 1.7)
+      return this._cleanNumber(result);
     } catch (e) {
       console.warn(`Formula eval failed for '${expr}':`, e.message);
       return undefined;
     }
+  }
+
+  /**
+   * 浮動小数点の丸め誤差を除去する (V2.5.13)
+   * 2進浮動小数点の累積誤差 (例: 0.30000000000000004, 1.7000000000000002) を
+   * 10桁精度で丸めて除去する。意図した有効小数 (小数第10位より上) は保持される。
+   * 例: 1.7000000000000002 → 1.7 / 0.30000000000000004 → 0.3 / 2.675 → 2.675
+   * @param {*} value 任意の評価結果 (数値以外はそのまま返す)
+   * @returns {*}
+   */
+  static _cleanNumber(value) {
+    // 極大値 (|v| >= 1e9) は 1e10 倍で精度劣化するため整数としてそのまま返す
+    if (typeof value === "number" && Number.isFinite(value) && Math.abs(value) < 1e9) {
+      return Math.round(value * 1e10) / 1e10;
+    }
+    return value;
   }
 
   static _shuffleArray(array) {

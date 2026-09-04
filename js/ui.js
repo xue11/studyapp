@@ -1,7 +1,20 @@
 /**
  * UI & Screen Controller Layer
  * V2.5.10 詳細設計書 第3章・第4章 準拠 (全10画面・タッチテンキー・アニメーション)
+ * V2.5.13: セッション経過時間表示・テンプレートデッキシャッフル
  */
+
+/**
+ * 秒数を "m:ss" 形式の文字列へ変換する (経過時間表示用)
+ * @param {number} totalSeconds
+ * @returns {string} 例: 0 → "0:00", 75 → "1:15", 725 → "12:05"
+ */
+function formatElapsed(totalSeconds) {
+  const sec = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m + ":" + (s < 10 ? "0" + s : s);
+}
 
 class AppUI {
   constructor() {
@@ -247,23 +260,70 @@ class AppUI {
       questions: [],
       currentAttemptCount: 0,
       currentHintUsed: false,
-      historySummary: []
+      historySummary: [],
+      startedAt: Date.now() // V2.5.13: セッション経過時間の計測開始
     };
+
+    // V2.5.13: 単元ごとのテンプレートデッキを事前シャッフル (同一単元でも毎回別テンプレートを出題)
+    const tReg = TemplateRegistry;
+    const currentUnits = (typeof UnitRegistry !== "undefined")
+      ? UnitRegistry.getUnitsForLevel("math", currentGrade, gp.difficultyLevel)
+      : [];
+    const decks = {};
+    for (const u of currentUnits) {
+      const tmpls = tReg.getByUnit("math", currentGrade, gp.difficultyLevel, u.id);
+      decks[u.id] = this._shuffleArray([...tmpls]);
+    }
 
     // 10問生成
     for (let i = 0; i < 10; i++) {
       const sel = UnitSelector.selectNextUnit(profile, APP_CONFIG);
-      const tReg = TemplateRegistry;
       const templates = tReg.getByUnit("math", currentGrade, gp.difficultyLevel, sel.unitId);
-      const t = templates[Math.floor(Math.random() * templates.length)];
+      // デッキから順番に引く (尽きたら再シャッフル)
+      let t = null;
+      if (!decks[sel.unitId] || decks[sel.unitId].length === 0) {
+        decks[sel.unitId] = this._shuffleArray([...templates]);
+      }
+      t = decks[sel.unitId].pop();
+      if (!t) t = templates[Math.floor(Math.random() * templates.length)];
       const qInstance = RuleBasedQuestionSource.generateQuestion(t.templateId, this.session.questions, {
         isReview: sel.type === "review"
       });
       this.session.questions.push(qInstance);
     }
 
+    this._startSessionTimer();
     Sound.playClick();
     this.navigate("learning");
+  }
+
+  _shuffleArray(array) {
+    const a = [...array];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  _startSessionTimer() {
+    if (this._sessionTimerInterval) {
+      clearInterval(this._sessionTimerInterval);
+      this._sessionTimerInterval = null;
+    }
+    this._sessionTimerInterval = setInterval(() => {
+      const el = document.getElementById("session-timer");
+      if (!el || !this.session || !this.session.startedAt) return;
+      const sec = Math.floor((Date.now() - this.session.startedAt) / 1000);
+      el.textContent = "⏱ " + formatElapsed(sec);
+    }, 1000);
+  }
+
+  _stopSessionTimer() {
+    if (this._sessionTimerInterval) {
+      clearInterval(this._sessionTimerInterval);
+      this._sessionTimerInterval = null;
+    }
   }
 
   _renderLearningScreen() {
@@ -277,7 +337,7 @@ class AppUI {
 
     return `
       <div class="question-meta">
-        <span><b>第 ${progress} 問</b></span>
+        <span><b>第 ${progress} 問</b> <span id="session-timer" style="color:var(--text-muted); font-weight:normal;">⏱ ${formatElapsed(0)}</span></span>
         <span><span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
       </div>
 
@@ -463,11 +523,16 @@ class AppUI {
 
     if (this.session.currentIndex >= this.session.totalCount) {
       // 10問完了 -> 結果画面へ
+      this._stopSessionTimer();
+      const elapsedSeconds = (this.session.startedAt)
+        ? Math.floor((Date.now() - this.session.startedAt) / 1000)
+        : 0;
       Sound.playFanfare();
       this.navigate("session_result", {
         correctCount: this.session.correctCount,
         totalCount: this.session.totalCount,
-        earnedPoints: this.session.earnedPointsTotal
+        earnedPoints: this.session.earnedPointsTotal,
+        elapsedSeconds: elapsedSeconds
       });
     } else {
       this.render();
@@ -499,7 +564,8 @@ class AppUI {
         <div class="progress-container" style="height:12px;">
           <div class="progress-bar" style="width: ${accuracyPct}%;"></div>
         </div>
-        <div style="font-size:0.9rem; font-weight:bold; margin-top:4px; margin-bottom:20px;">正答率: ${accuracyPct}%</div>
+        <div style="font-size:0.9rem; font-weight:bold; margin-top:4px; margin-bottom:8px;">正答率: ${accuracyPct}%</div>
+        <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:20px;">⏱ かかった時間: ${formatElapsed(params.elapsedSeconds || 0)}</div>
 
         <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
       </div>
@@ -1118,9 +1184,10 @@ class AppUI {
 const app = new AppUI();
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { AppUI, app };
+  module.exports = { AppUI, app, formatElapsed };
 } else {
   window.AppUI = AppUI;
   window.app = app;
+  window.formatElapsed = formatElapsed;
 }
 

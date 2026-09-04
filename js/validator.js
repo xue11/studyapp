@@ -151,20 +151,24 @@ class QuestionValidator {
       }
     }
 
-    // 7. 直近問題との完全一致重複チェック (第7.7.2章 & 第38.20章)
+    // 7. 直近問題との重複チェック (第7.7.2章 & 第38.20章)
+    // V2.5.12 強化:
+    //  - 判定範囲を直近10問(10問セッション全体)へ拡大
+    //  - commutativePairs 宣言がある加算・乗算では可換正規化により
+    //    「1+2」と「2+1」を同一と判定して重複を防止 (生成の多様性は維持)
     // ※ options.isFallback === true の場合は候補尽き時の重複を許容
     if (!questionInstance.isFallback && Array.isArray(previousInstances) && previousInstances.length > 0) {
-      const varsJson = JSON.stringify(vars);
-      // 直近N問（最大3問）を比較
-      const recent = previousInstances.slice(-3);
-      const isDuplicate = recent.some(prev => 
+      const varsJson = this._canonicalVarsJson(vars, questionInstance.commutativePairs);
+      // 直近N問（最大10問 = セッション全体）を比較
+      const recent = previousInstances.slice(-10);
+      const isDuplicate = recent.some(prev =>
         prev.templateId === questionInstance.templateId &&
-        JSON.stringify(prev.variables) === varsJson
+        this._canonicalVarsJson(prev.variables, questionInstance.commutativePairs) === varsJson
       );
       if (isDuplicate) {
         errors.push({
           code: VALIDATION_ERROR_CODES.DUPLICATE_ERROR,
-          message: "Identical variables with recent questionInstance under same template.",
+          message: "Identical variables (or commutative-equivalent) with recent questionInstance under same template.",
           variables: vars
         });
       }
@@ -174,6 +178,31 @@ class QuestionValidator {
       valid: errors.length === 0,
       errors: errors
     };
+  }
+
+  /**
+   * 可換ペア（commutativePairs）を考慮した変数の正規化 JSON を返す
+   * 例: "a + b" のテンプレートで {a:1, b:2} と {a:2, b:1} を同一扱いにする
+   * @param {Object} vars
+   * @param {Array<Array<string>>|null} commutativePairs
+   * @returns {string}
+   */
+  static _canonicalVarsJson(vars, commutativePairs) {
+    if (!vars || typeof vars !== "object") return "{}";
+    const copy = { ...vars };
+    if (Array.isArray(commutativePairs)) {
+      for (const pair of commutativePairs) {
+        if (!Array.isArray(pair) || pair.length !== 2) continue;
+        const [k1, k2] = pair;
+        const v1 = copy[k1];
+        const v2 = copy[k2];
+        if (typeof v1 === "number" && typeof v2 === "number" && v1 > v2) {
+          copy[k1] = v2;
+          copy[k2] = v1;
+        }
+      }
+    }
+    return JSON.stringify(copy);
   }
 }
 

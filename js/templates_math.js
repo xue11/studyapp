@@ -22,6 +22,8 @@ const MATH_TEMPLATES = [
     unitId: "add_1digit_no_carry", conceptId: "add_basic",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} = ?",
+    formats: ["{a} + {b} = ?", "{a} たす {b} は？", "{a} と {b} を たすと？"],
+    commutativePairs: [["a", "b"]],
     generate: {
       a: { type: "integer", range: [1, 8] },
       b: { type: "integer", range: [1, 8], constraints: ["a + b <= 9"] },
@@ -48,6 +50,7 @@ const MATH_TEMPLATES = [
     unitId: "sub_1digit_no_borrow", conceptId: "sub_basic",
     problemType: "calculation", answerType: "number_input",
     format: "{a} - {b} = ?",
+    formats: ["{a} - {b} = ?", "{a} ひく {b} は？", "{a} から {b} を ひくと？"],
     generate: {
       a: { type: "integer", range: [2, 9] },
       b: { type: "integer", range: [1, 8], constraints: ["a > b"] },
@@ -99,6 +102,8 @@ const MATH_TEMPLATES = [
     unitId: "add_1digit_carry", conceptId: "add_carry_10",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} = ?",
+    formats: ["{a} + {b} = ?", "{a} たす {b} は？"],
+    commutativePairs: [["a", "b"]],
     generate: {
       a: { type: "integer", range: [6, 9] },
       b: { type: "integer", range: [2, 9], constraints: ["a + b >= 11", "a + b <= 18"] },
@@ -211,6 +216,7 @@ const MATH_TEMPLATES = [
     unitId: "add_2digit_no_carry", conceptId: "add_2digit_basic",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} = ?",
+    commutativePairs: [["a", "b"]],
     generate: {
       a: { type: "integer", range: [11, 45] },
       b: { type: "integer", range: [11, 44], constraints: ["(a % 10) + (b % 10) <= 9"] },
@@ -263,6 +269,7 @@ const MATH_TEMPLATES = [
     unitId: "kuku_intro", conceptId: "kuku_basic_groups",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} = ?",
+    formats: ["{a} × {b} = ?", "{a} の {b} ばい は いくつ？", "{a} × {b} は？"],
     generate: {
       a: { type: "integer", range: [2, 5] },
       b: { type: "integer", range: [1, 9] },
@@ -289,6 +296,7 @@ const MATH_TEMPLATES = [
     unitId: "add_2digit_carry", conceptId: "add_2digit_carry",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} = ?",
+    commutativePairs: [["a", "b"]],
     generate: {
       a: { type: "integer", range: [18, 59] },
       b: { type: "integer", range: [15, 38], constraints: ["(a % 10) + (b % 10) >= 10"] },
@@ -425,6 +433,8 @@ const MATH_TEMPLATES = [
     unitId: "kuku_all", conceptId: "kuku_mastery",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} = ?",
+    formats: ["{a} × {b} = ?", "{a} のだん の {b} ばい？", "{a} × {b} は いくつ？"],
+    commutativePairs: [["a", "b"]],
     generate: {
       a: { type: "integer", range: [2, 9] },
       b: { type: "integer", range: [2, 9] },
@@ -590,6 +600,7 @@ const MATH_TEMPLATES = [
     unitId: "mul_2digit_2digit", conceptId: "mul_2digit_2digit_basic",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} = ?",
+    commutativePairs: [["a", "b"]],
     generate: {
       a: { type: "integer", range: [12, 35] },
       b: { type: "integer", range: [12, 25] },
@@ -669,6 +680,7 @@ const MATH_TEMPLATES = [
     unitId: "decimal_add_sub", conceptId: "decimal_add_sub_basic",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} = ?",
+    commutativePairs: [["a", "b"]],
     generate: {
       a10: { type: "integer", range: [12, 58] },
       b10: { type: "integer", range: [11, 45] },
@@ -836,6 +848,7 @@ const MATH_TEMPLATES = [
     unitId: "decimal_mul", conceptId: "decimal_mul_algorithm",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} = ?",
+    commutativePairs: [["a", "b"]],
     generate: {
       a10: { type: "integer", range: [12, 35] },
       b10: { type: "integer", range: [12, 25] },
@@ -1058,6 +1071,69 @@ const MATH_TEMPLATES = [
     similarityGroupId: "sg_addition"
   },
   {
+    templateId: "g1_word_add_02",
+    grade: 1, difficultyLevel: 1,
+    unitId: "add_1digit_no_carry", conceptId: "add_basic",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "バスに ねこが {a}ひき のっています。{b}ひき のってきました。ぜんぶで なんびき？",
+      "ふくろに おかしが {a}こ あります。{b}こ たしました。ぜんぶで なんこ？"
+    ],
+    generate: {
+      a: { type: "integer", range: [1, 6] },
+      b: { type: "integer", range: [1, 3], constraints: ["a + b <= 9"] },
+      answer: { formula: "a + b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["のっている かずと のってきた かずを あわせよう。", "{a} + {b} を けいさんしよう。"],
+    explanationTemplate: "{a} と {b} を あわせると {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "ぜんぶで なんびき（なんこ）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 2 ? answer - 1 : answer + 2" }
+      }
+    },
+    story: { structureId: "addition", contextId: "c_g1_word_add_02", entityId: "e_g1_word_add_02", actionId: "add" },
+    variationGroupId: "vg_g1_word_add_02",
+    similarityGroupId: "sg_addition"
+  },
+  {
+    templateId: "g1_word_add_03",
+    grade: 1, difficultyLevel: 1,
+    unitId: "add_1digit_no_carry", conceptId: "add_basic",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "{person}さんは {a}えん もっています。おこづかいを {b}えん もらいました。ぜんぶで なんえん？",
+      "おさらが {a}まい あります。{b}まい あらいました。ぜんぶで なんまい？"
+    ],
+    generate: {
+      person: { type: "choice", values: ["たろう", "はなこ", "けんた"] },
+      a: { type: "integer", range: [1, 6] },
+      b: { type: "integer", range: [1, 3], constraints: ["a + b <= 9"] },
+      answer: { formula: "a + b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["もっている おかねと もらった おかねを あわせよう。", "{a} + {b} を けいさんしよう。"],
+    explanationTemplate: "{a} + {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "ぜんぶで なんえん（なんまい）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 2 ? answer - 1 : answer + 2" }
+      }
+    },
+    story: { structureId: "addition", contextId: "c_g1_word_add_03", entityId: "e_g1_word_add_03", actionId: "add" },
+    variationGroupId: "vg_g1_word_add_03",
+    similarityGroupId: "sg_addition"
+  },
+  {
     templateId: "g1_word_sub_01",
     grade: 1, difficultyLevel: 1,
     unitId: "sub_1digit_no_borrow", conceptId: "sub_basic",
@@ -1087,6 +1163,38 @@ const MATH_TEMPLATES = [
     },
     story: { structureId: "subtraction", contextId: "c_g1_word_sub_01", entityId: "e_g1_word_sub_01", actionId: "remove" },
     variationGroupId: "vg_g1_word_sub_01",
+    similarityGroupId: "sg_subtraction"
+  },
+  {
+    templateId: "g1_word_sub_02",
+    grade: 1, difficultyLevel: 1,
+    unitId: "sub_1digit_no_borrow", conceptId: "sub_basic",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "{person}さんは えんぴつを {a}ほん もっています。{b}ほん ともだちに あげました。のこりは なんぼん？",
+      "とりが {a}わ います。{b}わ とんでいきました。のこりは なんわ？"
+    ],
+    generate: {
+      person: { type: "choice", values: ["たろう", "はなこ", "ゆき"] },
+      a: { type: "integer", range: [3, 9] },
+      b: { type: "integer", range: [1, 4], constraints: ["a > b"] },
+      answer: { formula: "a - b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["はじめの かずから へった かずを ひこう。", "{a} - {b} を けいさんしよう。"],
+    explanationTemplate: "{a}ほん（わ）から {b} を とると {answer} のこるね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "のこりは なんぼん（なんわ）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    },
+    story: { structureId: "subtraction", contextId: "c_g1_word_sub_02", entityId: "e_g1_word_sub_02", actionId: "remove" },
+    variationGroupId: "vg_g1_word_sub_02",
     similarityGroupId: "sg_subtraction"
   },
   {
@@ -1122,6 +1230,37 @@ const MATH_TEMPLATES = [
     similarityGroupId: "sg_addition"
   },
   {
+    templateId: "g1_word_add_carry_02",
+    grade: 1, difficultyLevel: 2,
+    unitId: "add_1digit_carry", conceptId: "add_carry_10",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "えんぴつが {a}ほん あります。{b}ほん かいました。ぜんぶで なんぼん？",
+      "ねこが {a}ひき います。{b}ひき あつまりました。ぜんぶで なんびき？"
+    ],
+    generate: {
+      a: { type: "integer", range: [4, 9] },
+      b: { type: "integer", range: [2, 9], constraints: ["a + b >= 10", "a + b <= 18"] },
+      answer: { formula: "a + b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["10より おおきくなるね。10のまとまりを つくろう。", "{a} + {b} を けいさんしよう。"],
+    explanationTemplate: "{a} + {b} ＝ {answer} だね。くり上がりに ちゅういしよう。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "ぜんぶで なんぼん（なんびき）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer - 1" }
+      }
+    },
+    story: { structureId: "addition", contextId: "c_g1_word_add_carry_02", entityId: "e_g1_word_add_carry_02", actionId: "add" },
+    variationGroupId: "vg_g1_word_add_carry_02",
+    similarityGroupId: "sg_addition"
+  },
+  {
     templateId: "g1_word_sub_borrow_01",
     grade: 1, difficultyLevel: 2,
     unitId: "sub_teen_borrow", conceptId: "sub_borrow_10",
@@ -1150,6 +1289,37 @@ const MATH_TEMPLATES = [
     },
     story: { structureId: "subtraction", contextId: "c_g1_word_sub_borrow_01", entityId: "e_g1_word_sub_borrow_01", actionId: "remove" },
     variationGroupId: "vg_g1_word_sub_borrow_01",
+    similarityGroupId: "sg_subtraction"
+  },
+  {
+    templateId: "g1_word_sub_borrow_02",
+    grade: 1, difficultyLevel: 2,
+    unitId: "sub_teen_borrow", conceptId: "sub_borrow_10",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "テープが {a}cm あります。{b}cm つかいました。のこりは なんcm？",
+      "シールが {a}まい あります。{b}まい はりました。のこりは なんまい？"
+    ],
+    generate: {
+      a: { type: "integer", range: [11, 18] },
+      b: { type: "integer", range: [2, 9], constraints: ["a - b >= 1", "a - b <= 9"] },
+      answer: { formula: "a - b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["10のまとまりから ひいてみよう。", "{a} - {b} を けいさんしよう。"],
+    explanationTemplate: "{a} - {b} ＝ {answer} だね。くり下がりに ちゅういしよう。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "のこりは いくつ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    },
+    story: { structureId: "subtraction", contextId: "c_g1_word_sub_borrow_02", entityId: "e_g1_word_sub_borrow_02", actionId: "remove" },
+    variationGroupId: "vg_g1_word_sub_borrow_02",
     similarityGroupId: "sg_subtraction"
   },
   {
@@ -1220,6 +1390,37 @@ const MATH_TEMPLATES = [
     similarityGroupId: "sg_addition"
   },
   {
+    templateId: "g2_word_add_2digit_02",
+    grade: 2, difficultyLevel: 1,
+    unitId: "add_2digit_no_carry", conceptId: "add_2digit_basic",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "りんごが {a}こ、なしが {b}こ あります。ぜんぶで なんこ？",
+      "本が {a}さつ あります。{b}さつ かいました。ぜんぶで なんさつ？"
+    ],
+    generate: {
+      a: { type: "integer", range: [11, 60] },
+      b: { type: "integer", range: [11, 30], constraints: ["(a % 10) + (b % 10) <= 9", "a + b <= 99"] },
+      answer: { formula: "a + b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["一の位と 十の位に わけて たそう。", "{a} + {b} を けいさんしよう。"],
+    explanationTemplate: "{a} + {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "ぜんぶで なんこ（なんさつ）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 10" },
+        wrong2: { formula: "answer - 10" }
+      }
+    },
+    story: { structureId: "addition", contextId: "c_g2_word_add_2digit_02", entityId: "e_g2_word_add_2digit_02", actionId: "add" },
+    variationGroupId: "vg_g2_word_add_2digit_02",
+    similarityGroupId: "sg_addition"
+  },
+  {
     templateId: "g2_word_kuku_01",
     grade: 2, difficultyLevel: 2,
     unitId: "kuku_intro", conceptId: "kuku_basic_groups",
@@ -1248,6 +1449,69 @@ const MATH_TEMPLATES = [
     },
     story: { structureId: "multiplication", contextId: "c_g2_word_kuku_01", entityId: "e_g2_word_kuku_01", actionId: "multiply" },
     variationGroupId: "vg_g2_word_kuku_01",
+    similarityGroupId: "sg_multiplication"
+  },
+  {
+    templateId: "g2_word_kuku_02",
+    grade: 2, difficultyLevel: 2,
+    unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "ねこが {a}ひき います。1ぴきに 足は 4本。足は ぜんぶで なんぼん？",
+      "{person}さんは {a}日 まい日 {b}こ おかしを たべます。ぜんぶで なんこ？"
+    ],
+    generate: {
+      person: { type: "choice", values: ["たろう", "はなこ", "そうた"] },
+      a: { type: "integer", range: [2, 5] },
+      b: { type: "integer", range: [2, 5] },
+      answer: { formula: "a * 4" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["1ぴきに 4本 だから {a} × 4 だね。", "{a} × 4 ＝ ?"],
+    explanationTemplate: "{a} × 4 ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "ぜんぶで なんぼん（なんこ）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 4" },
+        wrong2: { formula: "answer - 4 > 0 ? answer - 4 : answer + 4" }
+      }
+    },
+    story: { structureId: "multiplication", contextId: "c_g2_word_kuku_02", entityId: "e_g2_word_kuku_02", actionId: "multiply" },
+    variationGroupId: "vg_g2_word_kuku_02",
+    similarityGroupId: "sg_multiplication"
+  },
+  {
+    templateId: "g2_word_kuku_03",
+    grade: 2, difficultyLevel: 2,
+    unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "1こ {b}えんの あめを {a}こ かいました。だい金は なんえん？",
+      "1まい {b}えんの カードを {a}まい かいました。だい金は なんえん？"
+    ],
+    generate: {
+      a: { type: "integer", range: [2, 5] },
+      b: { type: "integer", range: [2, 5] },
+      answer: { formula: "a * b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["1この ねだん かける かず だよ。", "{a} × {b} ＝ ?"],
+    explanationTemplate: "{a} × {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "だい金は なんえん？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + b" },
+        wrong2: { formula: "answer - b > 0 ? answer - b : answer + a" }
+      }
+    },
+    story: { structureId: "multiplication", contextId: "c_g2_word_kuku_03", entityId: "e_g2_word_kuku_03", actionId: "multiply" },
+    variationGroupId: "vg_g2_word_kuku_03",
     similarityGroupId: "sg_multiplication"
   },
   {
@@ -1315,6 +1579,37 @@ const MATH_TEMPLATES = [
     similarityGroupId: "sg_addition"
   },
   {
+    templateId: "g3_word_add3digit_02",
+    grade: 3, difficultyLevel: 1,
+    unitId: "add_sub_3digit", conceptId: "add_sub_3digit_basic",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "花が {a}本 あります。{b}本 さきました。ぜんぶで なん本？",
+      "シールが {a}まい あります。{b}まい もらいました。ぜんぶで なんまい？"
+    ],
+    generate: {
+      a: { type: "integer", range: [200, 700] },
+      b: { type: "integer", range: [100, 299], constraints: ["a + b <= 999"] },
+      answer: { formula: "a + b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["百の位・十の位・一の位に わけて 考えよう。", "{a} + {b} を 計算しよう。"],
+    explanationTemplate: "{a} + {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "ぜんぶで なん本（なんまい）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 100" },
+        wrong2: { formula: "answer - 100" }
+      }
+    },
+    story: { structureId: "addition", contextId: "c_g3_word_add3digit_02", entityId: "e_g3_word_add3digit_02", actionId: "add" },
+    variationGroupId: "vg_g3_word_add3digit_02",
+    similarityGroupId: "sg_addition"
+  },
+  {
     templateId: "g3_word_div_01",
     grade: 3, difficultyLevel: 2,
     unitId: "div_no_remainder", conceptId: "division_equal_share",
@@ -1343,6 +1638,68 @@ const MATH_TEMPLATES = [
     },
     story: { structureId: "division", contextId: "c_g3_word_div_01", entityId: "e_g3_word_div_01", actionId: "divide" },
     variationGroupId: "vg_g3_word_div_01",
+    similarityGroupId: "sg_division"
+  },
+  {
+    templateId: "g3_word_div_02",
+    grade: 3, difficultyLevel: 2,
+    unitId: "div_no_remainder", conceptId: "division_equal_share",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "{total}本の 花を 同じ数ずつ {b}本 ずつ たばに します。なんたば できますか？",
+      "{total}こ のおかしを {b}こ ずつ ふくろに 入れます。なんふくろ できますか？"
+    ],
+    generate: {
+      b: { type: "integer", range: [2, 9] },
+      answer: { type: "integer", range: [2, 9] },
+      total: { formula: "b * answer" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{total} ÷ {b} の わり算だよ。", "{b} × □ ＝ {total} になる □ を 求めよう。"],
+    explanationTemplate: "{total} ÷ {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "なんたば（なんふくろ）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    },
+    story: { structureId: "division", contextId: "c_g3_word_div_02", entityId: "e_g3_word_div_02", actionId: "divide" },
+    variationGroupId: "vg_g3_word_div_02",
+    similarityGroupId: "sg_division"
+  },
+  {
+    templateId: "g3_word_div_03",
+    grade: 3, difficultyLevel: 2,
+    unitId: "div_no_remainder", conceptId: "division_equal_share",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "1はこに {b}こ はいります。{total}こ の おかしは なんはこ できますか？",
+      "1ふくろ {b}こ ずつ 入れます。{total}こ の あめは なんふくろ？"
+    ],
+    generate: {
+      b: { type: "integer", range: [2, 9] },
+      answer: { type: "integer", range: [2, 9] },
+      total: { formula: "b * answer" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{total} を {b} で わろう。", "{total} ÷ {b} ＝ ?"],
+    explanationTemplate: "{total} ÷ {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "なんはこ（なんふくろ）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    },
+    story: { structureId: "division", contextId: "c_g3_word_div_03", entityId: "e_g3_word_div_03", actionId: "divide" },
+    variationGroupId: "vg_g3_word_div_03",
     similarityGroupId: "sg_division"
   },
   {
@@ -1412,6 +1769,37 @@ const MATH_TEMPLATES = [
     similarityGroupId: "sg_multiplication"
   },
   {
+    templateId: "g4_word_mul_2x2_02",
+    grade: 4, difficultyLevel: 1,
+    unitId: "mul_2digit_2digit", conceptId: "mul_2digit_2digit_basic",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "1箱に チョコが {a}こ 入っています。{b}箱 あると ぜんぶで なんこ？",
+      "ノートが 1ふくろ {a}さつ 入りです。{b}ふくろ あると ぜんぶで なんさつ？"
+    ],
+    generate: {
+      a: { type: "integer", range: [11, 39] },
+      b: { type: "integer", range: [11, 29] },
+      answer: { formula: "a * b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a} × {b} を 計算しよう。", "十の位と 一の位に わけて 計算してみよう。"],
+    explanationTemplate: "{a} × {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "ぜんぶで なんこ（なんさつ）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + a" },
+        wrong2: { formula: "answer - b > 0 ? answer - b : answer + b" }
+      }
+    },
+    story: { structureId: "multiplication", contextId: "c_g4_word_mul_2x2_02", entityId: "e_g4_word_mul_2x2_02", actionId: "multiply" },
+    variationGroupId: "vg_g4_word_mul_2x2_02",
+    similarityGroupId: "sg_multiplication"
+  },
+  {
     templateId: "g4_word_decimal_add_01",
     grade: 4, difficultyLevel: 2,
     unitId: "decimal_add_sub", conceptId: "decimal_add_sub_basic",
@@ -1445,6 +1833,41 @@ const MATH_TEMPLATES = [
     story: { structureId: "subtraction_decimal", contextId: "c_g4_word_decimal_add_01", entityId: "e_g4_word_decimal_add_01", actionId: "remove" },
     variationGroupId: "vg_g4_word_decimal_add_01",
     similarityGroupId: "sg_subtraction_decimal"
+  },
+  {
+    templateId: "g4_word_decimal_add_02",
+    grade: 4, difficultyLevel: 2,
+    unitId: "decimal_add_sub", conceptId: "decimal_add_sub_basic",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "ジュースが {a}L と お茶が {b}L あります。あわせて なんL？",
+      "赤い リボンが {a}m、青い リボンが {b}m あります。ぜんぶで なんm？"
+    ],
+    generate: {
+      a_int: { type: "integer", range: [2, 9] },
+      a_dec: { type: "integer", range: [1, 9] },
+      b_int: { type: "integer", range: [1, 4] },
+      b_dec: { type: "integer", range: [1, 9] },
+      answer: { formula: "Math.round((a_int + a_dec * 0.1 + b_int + b_dec * 0.1) * 10) / 10" },
+      a: { formula: "a_int + a_dec * 0.1" },
+      b: { formula: "b_int + b_dec * 0.1" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a} + {b} を 計算しよう。", "小数点の 位置に 気をつけよう。"],
+    explanationTemplate: "{a} + {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "あわせて なんL（なんm）？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "Math.round((answer + 0.5) * 10) / 10" },
+        wrong2: { formula: "Math.round((answer - 0.5 > 0 ? answer - 0.5 : answer + 1.0) * 10) / 10" }
+      }
+    },
+    story: { structureId: "addition_decimal", contextId: "c_g4_word_decimal_add_02", entityId: "e_g4_word_decimal_add_02", actionId: "add" },
+    variationGroupId: "vg_g4_word_decimal_add_02",
+    similarityGroupId: "sg_addition_decimal"
   },
   {
     templateId: "g4_word_decimal_mul_01",
@@ -1516,6 +1939,40 @@ const MATH_TEMPLATES = [
     similarityGroupId: "sg_fraction_addition"
   },
   {
+    templateId: "g5_word_frac_same_02",
+    grade: 5, difficultyLevel: 1,
+    unitId: "fraction_add_sub_same_denom", conceptId: "fraction_same_denom",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "ケーキが 1こ あります。{person1}さんが {a}/{d} 食べ、{person2}さんが {b}/{d} 食べました。あわせて いくつ分？（分子を 答えてください）",
+      "ジュースが あります。{a}/{d}L 飲み、さらに {b}/{d}L 飲みました。合計で いくつ分？（分子を 答えてください）"
+    ],
+    generate: {
+      person1: { type: "choice", values: ["ゆうた", "みお", "しょう"] },
+      person2: { type: "choice", values: ["ことね", "そうた", "ほなみ"] },
+      d: { type: "integer", range: [5, 9] },
+      a: { type: "integer", range: [1, 3] },
+      b: { type: "integer", range: [1, 3], constraints: ["a + b < d"] },
+      answer: { formula: "a + b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["分母が 同じ 分数は 分子だけ 足せばいいよ。", "{a} + {b} ＝ ?"],
+    explanationTemplate: "{a}/{d} + {b}/{d} ＝ {answer}/{d} だね。分子は {answer} だよ。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "分子は いくつ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    },
+    story: { structureId: "fraction_addition", contextId: "c_g5_word_frac_same_02", entityId: "e_g5_word_frac_same_02", actionId: "add" },
+    variationGroupId: "vg_g5_word_frac_same_02",
+    similarityGroupId: "sg_fraction_addition"
+  },
+  {
     templateId: "g5_word_decimal_mul_01",
     grade: 5, difficultyLevel: 2,
     unitId: "decimal_mul", conceptId: "decimal_mul_algorithm",
@@ -1579,6 +2036,37 @@ const MATH_TEMPLATES = [
     variationGroupId: "vg_g5_word_percent_01",
     similarityGroupId: "sg_percentage"
   },
+  {
+    templateId: "g5_word_percent_02",
+    grade: 5, difficultyLevel: 3,
+    unitId: "percentage_basic", conceptId: "percentage_ratio_concept",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "本が {total}さつ あります。そのうち {pct}% が にほんごの本です。にほんごの本は なんさつ？",
+      "クラスの {total}人 のうち、{pct}% が サッカーを します。サッカーをする人は なん人？"
+    ],
+    generate: {
+      total: { type: "choice", values: [200, 400, 500, 1000] },
+      pct: { type: "choice", values: [10, 20, 25, 50] },
+      answer: { formula: "total * pct / 100" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["割合 ＝ 全体 × パーセント ÷ 100 で 求めよう。", "{total} × {pct} ÷ 100 ＝ ?"],
+    explanationTemplate: "{total} × {pct} ÷ 100 ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "答えは いくつ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + total * 0.05" },
+        wrong2: { formula: "answer - total * 0.05 > 0 ? answer - total * 0.05 : answer * 2" }
+      }
+    },
+    story: { structureId: "percentage", contextId: "c_g5_word_percent_02", entityId: "e_g5_word_percent_02", actionId: "calculate" },
+    variationGroupId: "vg_g5_word_percent_02",
+    similarityGroupId: "sg_percentage"
+  },
 
   // --- Grade 6 ---
   {
@@ -1614,6 +2102,38 @@ const MATH_TEMPLATES = [
     similarityGroupId: "sg_fraction_division"
   },
   {
+    templateId: "g6_word_frac_div_02",
+    grade: 6, difficultyLevel: 1,
+    unitId: "fraction_div_basic", conceptId: "fraction_div_inverse",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "{a}/{b}枚の ピザを {c}人で 等しく 分けると、1人 なん枚？ 分子を 答えてください。",
+      "{a}/{b}kgの 小麦粉を {c}ふくろに 等しく 分けると、1ふくろ なんkg？ 分子を 答えてください。"
+    ],
+    generate: {
+      a: { type: "integer", range: [2, 6] },
+      b: { type: "integer", range: [3, 8], constraints: ["a < b"] },
+      c: { type: "integer", range: [2, 4] },
+      answer: { formula: "a" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a}/{b} ÷ {c} は 逆数を かけると いいよ。", "{a}/{b} × 1/{c} ＝ {a}/({b}×{c}) だね。分子は？"],
+    explanationTemplate: "{a}/{b} ÷ {c} ＝ {a}/{b*c} だよ。分子は {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "分子は いくつ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    },
+    story: { structureId: "fraction_division", contextId: "c_g6_word_frac_div_02", entityId: "e_g6_word_frac_div_02", actionId: "divide" },
+    variationGroupId: "vg_g6_word_frac_div_02",
+    similarityGroupId: "sg_fraction_division"
+  },
+  {
     templateId: "g6_word_ratio_01",
     grade: 6, difficultyLevel: 2,
     unitId: "ratio_basic", conceptId: "ratio_proportion_concept",
@@ -1643,6 +2163,38 @@ const MATH_TEMPLATES = [
     },
     story: { structureId: "ratio", contextId: "c_g6_word_ratio_01", entityId: "e_g6_word_ratio_01", actionId: "calculate" },
     variationGroupId: "vg_g6_word_ratio_01",
+    similarityGroupId: "sg_ratio"
+  },
+  {
+    templateId: "g6_word_ratio_02",
+    grade: 6, difficultyLevel: 2,
+    unitId: "ratio_basic", conceptId: "ratio_proportion_concept",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "赤と 青の ブロックの 数の比が {a}:{b} で、赤が {total}こ のとき、青は なんこ？",
+      "みかんと りんごの 数の比が {a}:{b} で、みかんが {total}こ のとき、りんごは なんこ？"
+    ],
+    generate: {
+      a: { type: "integer", range: [2, 5] },
+      b: { type: "integer", range: [2, 5], constraints: ["a != b"] },
+      total: { type: "choice", values: [60, 80, 100, 120, 150, 200] },
+      answer: { formula: "Math.round(total / a * b)" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["比 {a}:{b} で、{a} にあたる 量が {total} のとき、1 にあたる 量を 求めよう。", "{total} ÷ {a} × {b} を 計算しよう。"],
+    explanationTemplate: "{total} ÷ {a} × {b} ＝ {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "青（または りんご）は いくつ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + total / a" },
+        wrong2: { formula: "answer - total / a > 0 ? answer - total / a : answer + 10" }
+      }
+    },
+    story: { structureId: "ratio", contextId: "c_g6_word_ratio_02", entityId: "e_g6_word_ratio_02", actionId: "calculate" },
+    variationGroupId: "vg_g6_word_ratio_02",
     similarityGroupId: "sg_ratio"
   },
   {
@@ -1706,6 +2258,38 @@ const MATH_TEMPLATES = [
     },
     story: { structureId: "speed_distance", contextId: "c_g6_adv_speed_01", entityId: "e_g6_adv_speed_01", actionId: "calculate" },
     variationGroupId: "vg_g6_adv_speed_01",
+    similarityGroupId: "sg_speed_distance"
+  },
+  {
+    templateId: "g6_adv_speed_02",
+    grade: 6, difficultyLevel: 3,
+    unitId: "ratio_speed_basic", conceptId: "speed_time_distance",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "分速 {speed}m で 歩くと、{time}分間で 何m 進む？",
+      "分速 {speed}m で {time}分 歩いたときの 道のりは 何m？",
+      "ある人は 分速 {speed}m で 歩きます。{time}分 歩くと 何m 進む？"
+    ],
+    generate: {
+      speed: { type: "choice", values: [60, 70, 80] },
+      time: { type: "integer", range: [3, 9] },
+      answer: { formula: "speed * time" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["「道のり ＝ 速さ × 時間」の公式を使おう。", "{speed} × {time} を計算しよう。"],
+    explanationTemplate: "道のり ＝ {speed} × {time} ＝ {answer}m だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "進む道のりはどれ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + speed" },
+        wrong2: { formula: "answer - speed" }
+      }
+    },
+    story: { structureId: "speed_distance", contextId: "c_g6_adv_speed_02", entityId: "e_g6_adv_speed_02", actionId: "calculate" },
+    variationGroupId: "vg_g6_adv_speed_02",
     similarityGroupId: "sg_speed_distance"
   }
 ];

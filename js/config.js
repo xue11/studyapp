@@ -5,7 +5,7 @@
 
 const APP_META = {
   appName: "小学生向け算数学習アプリ",
-  appVersion: "V2.5.11",
+  appVersion: "V2.5.13",
   schemaVersion: "2.5.6",
   generationMode: "rule_based"
 };
