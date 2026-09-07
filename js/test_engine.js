@@ -232,6 +232,14 @@ class TestEngine {
     if (!profile.tests) profile.tests = [];
     profile.tests.push(testRecord);
 
+    // V2.5.15: テスト完了時も連続学習日数 (dailyStreak) を更新 (テストは日数カウントに含める)
+    const learningEngine = (typeof window !== "undefined" && window.LearningEngine)
+      ? window.LearningEngine
+      : (typeof require !== "undefined" ? require("./learning_engine.js").LearningEngine : null);
+    if (learningEngine && typeof learningEngine.updateDailyStreak === "function") {
+      learningEngine.updateDailyStreak(profile, today);
+    }
+
     // バッジ・達成レベル再評価
     if (typeof window !== "undefined" && window.BadgeEngine) {
       window.BadgeEngine.evaluateBadges(profile);

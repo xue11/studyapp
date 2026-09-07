@@ -58,6 +58,55 @@ class LearningEngine {
       gradeProgress.learningStartDate = today;
     }
   }
+
+  /**
+   * 連続学習日数 (dailyStreak) を更新する (V2.5.15)
+   * - 通常学習の1問完了時とテスト完了時の両方から呼ばれる
+   * - 当日の再呼び出しは無視（重複加算しない）
+   * - 昨日の学習があれば +1、それ以外（初回・2日以上の空白）は 1 にリセット
+   * @param {Object} profile
+   * @param {string} localDateString (YYYY-MM-DD)
+   * @returns {Object|null} 更新後の streaks
+   */
+  static updateDailyStreak(profile, localDateString = null) {
+    if (!profile || !profile.streaks) return null;
+    const today = localDateString || new Date().toISOString().split("T")[0];
+    const streaks = profile.streaks;
+    const last = streaks.lastStudyDate || "";
+
+    if (last !== today) {
+      const yesterday = this._dateOffset(today, -1);
+      streaks.dailyStreak = (last === yesterday) ? (streaks.dailyStreak || 0) + 1 : 1;
+      streaks.lastStudyDate = today;
+      if (streaks.dailyStreak > (streaks.bestDailyStreak || 0)) {
+        streaks.bestDailyStreak = streaks.dailyStreak;
+      }
+    }
+    return streaks;
+  }
+
+  /**
+   * 今日の通常学習の完了問数を数える (V2.5.15 / デイリー目標用・テストは含めない)
+   * @param {Array<Object>} history profile.history (completedAt付き)
+   * @param {string} localDateString (YYYY-MM-DD)
+   * @returns {number}
+   */
+  static countTodayQuestions(history, localDateString = null) {
+    if (!Array.isArray(history)) return 0;
+    const today = localDateString || new Date().toISOString().split("T")[0];
+    return history.filter(h => (h.completedAt || "").slice(0, 10) === today).length;
+  }
+
+  /**
+   * YYYY-MM-DD の日付キーを日数分ずらす (UTC ベース)
+   * @param {string} dateKey (YYYY-MM-DD)
+   * @param {number} offsetDays
+   * @returns {string} (YYYY-MM-DD)
+   */
+  static _dateOffset(dateKey, offsetDays) {
+    const t = new Date(dateKey + "T00:00:00Z").getTime() + offsetDays * 86400000;
+    return new Date(t).toISOString().slice(0, 10);
+  }
 }
 
 if (typeof module !== "undefined" && module.exports) {

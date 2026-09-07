@@ -188,6 +188,23 @@ class AppUI {
         <div class="progress-container">
           <div class="progress-bar" style="width: ${Math.min(100, ((profile.points.total % 100) / 100) * 100)}%;"></div>
         </div>
+        <!-- V2.5.15: 連続学習日数 & デイリー目標 -->
+        <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-top:6px;">
+          <span>🔥 連続学習: <b>${profile.streaks?.dailyStreak || 0}日</b> (最高 ${profile.streaks?.bestDailyStreak || 0})</span>
+        </div>
+        ${(() => {
+          const goal = (typeof APP_CONFIG !== "undefined" && APP_CONFIG.common && APP_CONFIG.common.dailyGoal) || 5;
+          const done = Math.min(goal, profile.history?.filter(h => (h.completedAt || "").slice(0, 10) === new Date().toISOString().split("T")[0]).length || 0);
+          const pct = goal > 0 ? Math.round((done / goal) * 100) : 0;
+          return `
+          <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-top:6px;">
+            <span>🎯 今日の目標: <b>${done} / ${goal}問</b></span>
+            ${done >= goal ? '<span style="color:var(--success); font-weight:bold;">達成！🎉</span>' : `<span style="color:var(--text-muted);">あと ${goal - done}問</span>`}
+          </div>
+          <div class="progress-container" style="height:8px;">
+            <div class="progress-bar" style="width: ${Math.min(100, pct)}%; background:${done >= goal ? 'var(--success)' : 'linear-gradient(90deg, #3b82f6, #10b981)'};"></div>
+          </div>`;
+        })()}
       </div>
 
       <div style="margin-top:auto;">
@@ -1123,11 +1140,150 @@ class AppUI {
         </div>
       </div>`).join("");
 
-    return this._assembleParentDashboardHtml(s, { unitRows, weakRows, testRows, historyRows, gradeRows, badgeHtml, fmtPct });
+    // V2.5.15: 学習推移グラフ (SVG) を3モード分生成
+    const graphHtml = this._renderDailyGraph(s);
+
+    return this._assembleParentDashboardHtml(s, { unitRows, weakRows, testRows, historyRows, gradeRows, badgeHtml, fmtPct, graphHtml });
+  }
+
+  /**
+   * 学習推移グラフ (SVG バー + 正答率折線) を生成する (V2.5.15)
+   * フィルター (all / learning / test) はセグメントボタンで切替 → ブラウザ側の JS で SVG を差し替える
+   */
+  _renderDailyGraph(s) {
+    const seriesMap = {
+      all: s.dailyStats.all,
+      learning: s.dailyStats.learning,
+      test: s.dailyStats.test
+    };
+    const seriesNames = { all: "すべて", learning: "通常学習", test: "テスト" };
+
+    // 各モードのSVGを生成
+    const svgHtml = {};
+    for (const mode of ["all", "learning", "test"]) {
+      const rows = seriesMap[mode] || [];
+      svgHtml[mode] = this._buildGraphSvg(rows);
+    }
+
+    const buttons = ["all", "learning", "test"].map(mode =>
+      `<button class="btn btn-outline" style="flex:1; min-height:34px; padding:6px; font-size:0.8rem; margin:0;" onclick="app.switchGraphMode('${mode}')" data-graph-mode="${mode}">${seriesNames[mode]}</button>`
+    ).join("");
+
+    // サマリー: 全モード合算の合計・平均
+    const totalAttempts = seriesMap.all.reduce((s2, d) => s2 + d.attempts, 0);
+    const totalCorrect = seriesMap.all.reduce((s2, d) => s2 + d.correct, 0);
+    const avgAcc = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 1000) / 1000 : null;
+
+    return `
+      <div class="card">
+        <div class="dash-section-title">📈 学習推移（直近${s.dailyStats.all.length}日）</div>
+        <div style="display:flex; gap:6px; margin-bottom:10px;">
+          ${buttons}
+        </div>
+        <!-- 全モードのSVGソース (非表示・切替え時も消えないようコンテナの外に保持) -->
+        <div id="daily-graph-holder" style="display:none;">
+          <div data-graph-svg="all">${svgHtml.all}</div>
+          <div data-graph-svg="learning">${svgHtml.learning}</div>
+          <div data-graph-svg="test">${svgHtml.test}</div>
+        </div>
+        <div id="daily-graph-container">
+          ${svgHtml.all}
+        </div>
+        <div id="daily-graph-summary" style="font-size:0.8rem; color:var(--text-muted); margin-top:8px; text-align:center;">
+          合計 ${totalAttempts}問 / 平均正答率 ${totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0}%
+          <span style="margin-left:10px;">🔥 連続学習 ${s.dailyStreak}日（最高 ${s.bestDailyStreak}日）</span>
+          <span style="margin-left:10px;">🎯 今日 ${s.todayCount}/${s.dailyGoal}問</span>
+        </div>
+      </div>`;
+  }
+
+  /**
+   * 日別データから SVG グラフ（バー = 問題数 / 折線 = 正答率）を生成する (V2.5.15)
+   * バーの色は正答率で変化: 🟢80%以上 / 🟡50%以上 / 🔴50%未満 / ⚪学習なし
+   */
+  _buildGraphSvg(rows) {
+    const width = 500;
+    const height = 160;
+    const padL = 24;
+    const padR = 8;
+    const padT = 14;
+    const padB = 22;
+    const chartW = width - padL - padR;
+    const chartH = height - padT - padB;
+
+    const maxAttempts = Math.max(1, ...rows.map(r => r.attempts));
+    const n = rows.length;
+    const slot = n > 0 ? chartW / n : chartW;
+    const barW = Math.max(3, slot * 0.55);
+
+    const bars = rows.map((r, i) => {
+      const x = padL + slot * i + (slot - barW) / 2;
+      const h = r.attempts > 0 ? Math.max(2, (r.attempts / maxAttempts) * chartH) : 1;
+      const y = padT + chartH - h;
+      const color = r.attempts === 0 ? "#e2e8f0"
+        : (r.accuracy !== null && r.accuracy >= 0.8 ? "#10b981"
+          : (r.accuracy !== null && r.accuracy >= 0.5 ? "#f59e0b" : "#ef4444"));
+      const label = n <= 14 ? r.date.slice(5) : ""; // MM-DD を表示 (多い時は省略)
+      return `
+        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${color}" opacity="0.85">
+          <title>${r.date}: ${r.attempts}問 / 正答率 ${r.accuracy !== null ? Math.round(r.accuracy * 100) : "-"}%</title>
+        </rect>
+        ${label ? `<text x="${(x + barW / 2).toFixed(1)}" y="${height - 6}" font-size="8" fill="#64748b" text-anchor="middle">${label}</text>` : ""}`;
+    }).join("");
+
+    // 正答率の折線 (学習ありの日のみプロット)
+    let linePoints = [];
+    rows.forEach((r, i) => {
+      if (r.attempts > 0 && r.accuracy !== null) {
+        const x = padL + slot * i + slot / 2;
+        const y = padT + chartH - r.accuracy * chartH;
+        linePoints.push({ x, y });
+      }
+    });
+    const linePath = linePoints.length >= 2
+      ? linePoints.map((p, i) => (i === 0 ? `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}` : `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)).join(" ")
+      : "";
+
+    return `
+      <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto;" role="img" aria-label="学習推移グラフ">
+        <text x="${padL}" y="${padT - 4}" font-size="9" fill="#94a3b8">問題数</text>
+        ${bars}
+        ${linePath ? `<path d="${linePath}" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.8"/>` : ""}
+        ${linePath ? linePoints.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="#3b82f6"/>`).join("") : ""}
+      </svg>
+      <div style="display:flex; gap:10px; font-size:0.7rem; color:var(--text-muted); margin-top:4px;">
+        <span>■ <span style="color:#10b981;">正答率80%〜</span></span>
+        <span>■ <span style="color:#f59e0b;">50%〜</span></span>
+        <span>■ <span style="color:#ef4444;">50%未満</span></span>
+        <span>■ <span style="color:#e2e8f0;">学習なし</span></span>
+        <span style="margin-left:auto;">— 正答率(青)</span>
+      </div>`;
+  }
+
+  /**
+   * 学習推移グラフの表示モードを切り替える (V2.5.15)
+   * 非表示の holder (コンテナの外) から対象モードのSVGを取り出してコンテナを差し替える
+   * @param {string} mode "all" | "learning" | "test"
+   */
+  switchGraphMode(mode) {
+    const container = document.getElementById("daily-graph-container");
+    if (!container) return;
+    const holder = document.getElementById("daily-graph-holder");
+    const source = holder ? holder.querySelector(`[data-graph-svg="${mode}"]`) : null;
+    if (source) {
+      container.innerHTML = source.innerHTML;
+    }
+    // ボタンのアクティブ表示
+    const buttons = document.querySelectorAll("[data-graph-mode]");
+    buttons.forEach(btn => {
+      const isActive = btn.getAttribute("data-graph-mode") === mode;
+      btn.style.background = isActive ? "#3b82f6" : "";
+      btn.style.color = isActive ? "#fff" : "";
+    });
   }
 
   _assembleParentDashboardHtml(s, parts) {
-    const { unitRows, weakRows, testRows, historyRows, gradeRows, badgeHtml, fmtPct } = parts;
+    const { unitRows, weakRows, testRows, historyRows, gradeRows, badgeHtml, fmtPct, graphHtml } = parts;
     return `
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -1163,6 +1319,9 @@ class AppUI {
           <div class="dash-stat-card" style="flex:1;"><div class="stat-label">復習クリア</div><div class="stat-value">${s.reviewInfo.graduated}件</div></div>
         </div>
       </div>
+
+      <!-- V2.5.15: 学習推移グラフ -->
+      ${graphHtml || ""}
 
       <div class="card">
         <div class="dash-section-title">📝 直近のテスト成績</div>

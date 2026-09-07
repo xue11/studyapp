@@ -29,13 +29,19 @@ function migrateAppState(data) {
 
   state.schemaVersion = "2.5.6";
   if (!state.appMeta) state.appMeta = {};
-  state.appMeta.appVersion = "V2.5.14";
+  state.appMeta.appVersion = "V2.5.15";
 
   // V2.5.14: 既存プロファイルに nickname が無い場合は空文字で補完 (表示時は name にフォールバック)
   if (Array.isArray(state.profiles)) {
     for (const p of state.profiles) {
       if (!p.identity) p.identity = {};
       if (typeof p.identity.nickname !== "string") p.identity.nickname = "";
+
+      // V2.5.15: streaks に連続学習日数フィールドが無い場合は補完 (テストなしでは既存日数へ影響しない)
+      if (!p.streaks) p.streaks = {};
+      if (typeof p.streaks.dailyStreak !== "number") p.streaks.dailyStreak = 0;
+      if (typeof p.streaks.bestDailyStreak !== "number") p.streaks.bestDailyStreak = 0;
+      if (typeof p.streaks.lastStudyDate !== "string") p.streaks.lastStudyDate = "";
     }
   }
 

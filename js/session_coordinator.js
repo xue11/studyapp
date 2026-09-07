@@ -131,6 +131,11 @@ class SessionCoordinator {
         profile.streaks.correctStreak = 0;
       }
 
+      // 8b. 連続学習日数 (dailyStreak) 更新 (V2.5.15: 通常学習1問完了で更新・テスト完了も別途)
+      if (LearningEngineModule && LearningEngineModule.updateDailyStreak) {
+        LearningEngineModule.updateDailyStreak(profile, today);
+      }
+
       // 9. ポイント計算
       const pointsEarned = PointEngineModule.calculateRegularPoints({
         isCorrect: isCorrect,

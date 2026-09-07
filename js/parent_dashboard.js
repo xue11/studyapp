@@ -62,6 +62,20 @@ class ParentDashboard {
     const reviewQueue = Array.isArray(profile.reviewQueue) ? profile.reviewQueue : [];
     const badges = Array.isArray(profile.badges) ? profile.badges : [];
 
+    // V2.5.15: 学習推移グラフ用 日別統計 (all / learning / test の3モード)
+    const todayKey = new Date().toISOString().split("T")[0];
+    const graphDays = (config && config.common && config.common.graphDays) || 14;
+    const dailyStats = {
+      all: this.buildDailyStats(history, tests, todayKey, graphDays, "all"),
+      learning: this.buildDailyStats(history, tests, todayKey, graphDays, "learning"),
+      test: this.buildDailyStats(history, tests, todayKey, graphDays, "test")
+    };
+    // 今日の通常学習完了問数 (デイリー目標・通常学習のみカウント)
+    const todayCount = this.countTodayLearning(history, todayKey);
+    const dailyGoal = (config && config.common && config.common.dailyGoal) || 5;
+    const dailyStreak = (profile.streaks && profile.streaks.dailyStreak) || 0;
+    const bestDailyStreak = (profile.streaks && profile.streaks.bestDailyStreak) || 0;
+
     // 総合統計
     const correctTotal = history.filter(h => h.correct).length;
     const totalAccuracy = history.length > 0 ? Math.round((correctTotal / history.length) * 1000) / 1000 : null;
@@ -173,8 +187,75 @@ class ParentDashboard {
         graduated: reviewQueue.filter(r => r.status === "graduated").length
       },
       badges: allBadges,
-      createdAt: (profile.identity && profile.identity.createdAt) || ""
+      createdAt: (profile.identity && profile.identity.createdAt) || "",
+      dailyStats: dailyStats,       // V2.5.15
+      todayCount: todayCount,       // V2.5.15 (通常学習のみ)
+      dailyGoal: dailyGoal,         // V2.5.15
+      dailyStreak: dailyStreak,     // V2.5.15
+      bestDailyStreak: bestDailyStreak // V2.5.15
     };
+  }
+
+  /**
+   * 今日の通常学習完了問数を数える (V2.5.15 / デイリー目標用)
+   * @param {Array<Object>} history
+   * @param {string} today (YYYY-MM-DD)
+   * @returns {number}
+   */
+  static countTodayLearning(history, today) {
+    if (!Array.isArray(history)) return 0;
+    return history.filter(h => (h.completedAt || "").slice(0, 10) === today).length;
+  }
+
+  /**
+   * 直近 N 日の日別統計を集計する (V2.5.15)
+   * - mode: "learning" = 通常学習のみ / "test" = テストのみ / "all" = 両方合算
+   * - 学習ゼロの日も0件として含める（グラフが途切れない）
+   * @param {Array<Object>} history profile.history (completedAt, correct)
+   * @param {Array<Object>} tests profile.tests (completedAt, questionCount, correctCount)
+   * @param {string} today (YYYY-MM-DD)
+   * @param {number} days 表示日数
+   * @param {string} mode "all" | "learning" | "test"
+   * @returns {Array<{date:string, attempts:number, correct:number, accuracy:number|null}>}
+   */
+  static buildDailyStats(history, tests, today, days, mode = "all") {
+    const hist = Array.isArray(history) ? history : [];
+    const tst = Array.isArray(tests) ? tests : [];
+
+    const dateKeys = [];
+    for (let i = days - 1; i >= 0; i--) {
+      dateKeys.push(new Date(new Date(today + "T00:00:00Z").getTime() - i * 86400000).toISOString().slice(0, 10));
+    }
+
+    return dateKeys.map(date => {
+      let attempts = 0;
+      let correct = 0;
+
+      if (mode !== "test") {
+        for (const h of hist) {
+          if ((h.completedAt || "").slice(0, 10) === date) {
+            attempts += 1;
+            if (h.correct) correct += 1;
+          }
+        }
+      }
+
+      if (mode !== "learning") {
+        for (const t of tst) {
+          if ((t.completedAt || "").slice(0, 10) === date) {
+            attempts += t.questionCount || 0;
+            correct += t.correctCount || 0;
+          }
+        }
+      }
+
+      return {
+        date,
+        attempts,
+        correct,
+        accuracy: attempts > 0 ? Math.round((correct / attempts) * 1000) / 1000 : null
+      };
+    });
   }
 
   /**

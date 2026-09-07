@@ -59,7 +59,10 @@ function createNewProfile(id, name, grade, character = "cat", taste = "standard"
     },
     streaks: {
       correctStreak: 0,
-      bestStreak: 0
+      bestStreak: 0,
+      dailyStreak: 0,       // V2.5.15: 連続学習日数
+      bestDailyStreak: 0,   // V2.5.15: 最高連続学習日数
+      lastStudyDate: ""     // V2.5.15: 最終学習日 (YYYY-MM-DD)
     },
     history: [],      // 完了したquestionInstanceの履歴
     reviewQueue: [],  // unit単位の復習キュー (一意キー: subjectId + grade + unitId)
@@ -81,7 +84,7 @@ function createInitialAppState() {
     profiles: [defaultProfile],
     activeProfileId: defaultProfile.identity.id,
     appMeta: {
-      appVersion: "V2.5.14",
+      appVersion: "V2.5.15",
       generationMode: "rule_based",
       features: {}
     }
