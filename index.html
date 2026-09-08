@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>小学生向け算数学習アプリ (V2.5.15)</title>
-  <meta name="description" content="サーバー不要・ブラウザだけで手軽に遊べる小学生向け算数学習Webアプリ">
+    <meta name="description" content="サーバー不要・ブラウザだけで手軽に遊べる小学生向け算数学習Webアプリ">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4a90d9">
+  <link rel="icon" href="icon-192.png" sizes="192x192">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -42,9 +46,18 @@
   <script src="js/session_coordinator.js"></script>
   <script src="js/parent_dashboard.js"></script>
 
-  <!-- 5. 音響 & UIコントローラー -->
+    <!-- 5. 音響 & UIコントローラー -->
   <script src="js/audio.js"></script>
   <script src="js/ui.js"></script>
+  
+  <!-- PWA Service Worker登録 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('[PWA] SW登録成功:', reg.scope))
+        .catch(err => console.error('[PWA] SW登録失敗:', err));
+    }
+  </script>
 
   <script>
     // アプリ初期化
