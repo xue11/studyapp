@@ -2292,6 +2292,251 @@ const MATH_TEMPLATES = [
     variationGroupId: "vg_g6_adv_speed_02",
     similarityGroupId: "sg_speed_distance"
   }
+,
+  {
+    templateId: "g2_adv_kuku_fill_01",
+    grade: 2, difficultyLevel: 3,
+    unitId: "kuku_partial", conceptId: "kuku_advanced_groups",
+    problemType: "calculation", answerType: "choice",
+    format: "□ × {b} = {answer_val} の □ に入る数はどれ？",
+    generate: {
+      a: { type: "integer", range: [6, 9] },
+      b: { type: "integer", range: [6, 9] },
+      answer_val: { formula: "a * b" },
+      answer: { formula: "a" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "{b}の段の九九で、答えが {answer_val} になるものを探そう。",
+      "「？ × {b} ＝ {answer_val}」 だね。"
+    ],
+    explanationTemplate: "{answer} × {b} = {answer_val} だから、□に入るのは {answer} だね。",
+    understandingCheck: { enabled: false }
+  },
+  {
+    templateId: "g3_word_reverse_div_01",
+    grade: 3, difficultyLevel: 3,
+    unitId: "div_no_remainder", conceptId: "division_equal_share",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "クッキーを {b}人で 同じ数ずつ 分けたら、1人分が {a}枚に なりました。クッキーは ぜんぶで 何枚 あった？",
+      "カードを {b}人に 同じ数ずつ くばると、1人に {a}枚ずつ わたせました。カードは ぜんぶで 何枚？"
+    ],
+    generate: {
+      a: { type: "integer", range: [6, 9] },
+      b: { type: "integer", range: [4, 9] },
+      answer: { formula: "a * b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "「ぜんぶの数 ÷ {b}人 ＝ {a}枚」 ということだよ。",
+      "もとの数を求めるには、かけ算をつかおう。{a} × {b} は？"
+    ],
+    explanationTemplate: "1人分が {a}枚で、それが {b}人分あるから、ぜんぶで {a} × {b} = {answer} 枚だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "ぜんぶで何枚？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer - b" },
+        wrong2: { formula: "answer + a" }
+      }
+    },
+    story: { structureId: "reverse_division", contextId: "c_g3_rev_div_01", entityId: "e_g3_rev_div_01", actionId: "distribute" },
+    variationGroupId: "vg_g3_rev_div_01",
+    similarityGroupId: "sg_reverse_division"
+  },
+  {
+    templateId: "g4_adv_error_spotting_01",
+    grade: 4, difficultyLevel: 3,
+    unitId: "mixed_2step", conceptId: "order_of_operations",
+    problemType: "calculation", answerType: "choice",
+    format: "次の計算には まちがい があります。正しい答えは どれ？\n「 {a} + {b} × {c} = {wrong_calc} 」",
+    generate: {
+      a: { type: "integer", range: [10, 20] },
+      b: { type: "integer", range: [3, 8] },
+      c: { type: "integer", range: [2, 6] },
+      wrong_calc: { formula: "(a + b) * c" },
+      answer: { formula: "a + b * c" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "たし算と かけ算が まざっているときは、どちらを先に計算するかな？",
+      "かけ算（{b} × {c}）を先に計算しよう。"
+    ],
+    explanationTemplate: "かけ算を先に計算するので、正しくは {b} × {c} = {b*c}。それに {a} を足して {answer} が正しい答えだね。",
+    understandingCheck: { enabled: false }
+  },
+  {
+    templateId: "g5_std_compare_01",
+    grade: 5, difficultyLevel: 2,
+    unitId: "decimal_mul", conceptId: "fraction_decimal_compare",
+    problemType: "calculation", answerType: "number_input",
+    format: "{num1} と {num2} ではどちらが大きい？\n(小数が大きいなら 1、分数が大きいなら 2、同じなら 0 を入力)",
+    generate: {
+      type_idx: { type: "integer", range: [1, 3] },
+      dec_val: { type: "integer", range: [2, 8] },
+      frac_num: { formula: "type_idx === 1 ? 1 : (type_idx === 2 ? 1 : 3)" },
+      frac_den: { formula: "type_idx === 1 ? 4 : (type_idx === 2 ? 2 : 4)" },
+      frac_val: { formula: "frac_num / frac_den" },
+      dec: { formula: "dec_val / 10" },
+      num1: { formula: "frac_num + \"/\" + frac_den" },
+      num2: { formula: "dec" },
+      answer: { formula: "frac_val > dec ? 2 : (frac_val < dec ? 1 : 0)" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "分数を小数になおして くらべてみよう。",
+      "{num1} は 小数になおすと いくつになるかな？"
+    ],
+    explanationTemplate: "{num1} は小数で {frac_val} だね。{dec} とくらべると... だから答えは {answer} だね。",
+    understandingCheck: { enabled: false }
+  },
+  {
+    templateId: "g6_challenge_ratio_01",
+    grade: 6, difficultyLevel: 3,
+    unitId: "ratio_basic", conceptId: "ratio_proportion_concept",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "兄と弟で {total}円を 分けます。兄と弟の もらうお金の比が {a} : {b} になるようにすると、兄は いくらもらえる？",
+      "赤いテープと青いテープ、あわせて {total}cm あります。赤と青の長さの比が {a} : {b} のとき、赤いテープは 何cm？"
+    ],
+    generate: {
+      a: { type: "integer", range: [3, 5] },
+      b: { type: "integer", range: [1, 2] },
+      unit_val: { type: "choice", values: [100, 150, 200, 300] },
+      total: { formula: "(a + b) * unit_val" },
+      answer: { formula: "a * unit_val" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "全体の比は、兄の {a} と 弟の {b} を あわせた {a+b} になるね。",
+      "全体が {total} で、そのうちの {a+b}分の{a} が兄の分だよ。"
+    ],
+    explanationTemplate: "全体を {a+b} としたときの {a} 分なので、{total} × ({a}/{a+b}) = {answer} になるね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "弟の分は いくら（何cm）？",
+      choices: ["{wrong1}", "{wrong2}", "{wrong3}"],
+      answer: "{wrong1}",
+      generateWrong: {
+        wrong1: { formula: "b * unit_val" },
+        wrong2: { formula: "a * unit_val" },
+        wrong3: { formula: "total - a * unit_val + 100" }
+      }
+    },
+    story: { structureId: "ratio_distribution", contextId: "c_g6_chal_ratio_01", entityId: "e_g6_chal_ratio_01", actionId: "distribute" },
+    variationGroupId: "vg_g6_chal_ratio_01",
+    similarityGroupId: "sg_ratio_distribution"
+  },
+  {
+    templateId: "g4_puzzle_magicbox_01",
+    grade: 4, difficultyLevel: 3,
+    unitId: "mixed_2step", conceptId: "pattern_recognition",
+    problemType: "word_problem", answerType: "number_input",
+    format: "「魔法の箱」に {in1} を入れると {out1} になり、{in2} を入れると {out2} になります。では、{q_in} を入れるといくつになる？",
+    generate: {
+      a: { type: "integer", range: [2, 4] },
+      b: { type: "integer", range: [1, 5] },
+      in1: { formula: "2" },
+      out1: { formula: "a * 2 + b" },
+      in2: { formula: "3" },
+      out2: { formula: "a * 3 + b" },
+      q_in: { type: "integer", range: [5, 8] },
+      answer: { formula: "a * q_in + b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "箱の中で「かけ算」と「たし算」が両方行われているよ。",
+      "入れた数を {a}倍 して、{b} を足してみて！"
+    ],
+    explanationTemplate: "この魔法の箱は「入れた数を {a}倍 して {b} を足す」ルールでした。だから {q_in} × {a} + {b} = {answer} だね。",
+    understandingCheck: { enabled: false }
+  },
+  {
+    templateId: "g2_puzzle_reverse_story_01",
+    grade: 2, difficultyLevel: 3,
+    unitId: "add_sub_2digit_2step", conceptId: "working_backwards",
+    problemType: "word_problem", answerType: "number_input",
+    sentencePatterns: [
+      "バスに人が乗っています。バス停で {off}人 降りて、{on}人 乗りました。いまバスには {current}人 います。さいしょは 何人 乗っていた？"
+    ],
+    generate: {
+      start: { type: "integer", range: [15, 30] },
+      off: { type: "integer", range: [3, 9] },
+      on: { type: "integer", range: [2, 8] },
+      current: { formula: "start - off + on" },
+      answer: { formula: "start" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "今の人数から「時間を巻き戻して」考えてみよう。",
+      "「乗ってきた {on}人」を引いて、「降りた {off}人」を戻して（足して）あげよう。"
+    ],
+    explanationTemplate: "時間を戻すので、今の {current}人 から {on}人引いて、{off}人足すよ。 {current} - {on} + {off} = {answer}人だね。",
+    understandingCheck: { enabled: false }
+  },
+  {
+    templateId: "g4_puzzle_coins_01",
+    grade: 4, difficultyLevel: 3,
+    unitId: "mixed_2step", conceptId: "logical_deduction",
+    problemType: "word_problem", answerType: "number_input",
+    format: "50円玉と 10円玉が あわせて {coins}枚 あります。金額は ぜんぶで {total}円 です。50円玉は 何枚 ある？",
+    generate: {
+      c50: { type: "integer", range: [1, 5] },
+      c10: { type: "integer", range: [2, 6] },
+      coins: { formula: "c50 + c10" },
+      total: { formula: "c50 * 50 + c10 * 10" },
+      answer: { formula: "c50" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "あてずっぽうでもいいから、枚数を当てはめてみよう。",
+      "もし全部が 10円玉だったら、10円 × {coins}枚 ＝ {coins*10}円 になるね。そこから少しずつ 50円玉に変えていこう。"
+    ],
+    explanationTemplate: "50円玉が {answer}枚（{answer*50}円）、10円玉が {coins - answer}枚（{(coins - answer)*10}円）だと、ぴったり {total}円 になるね。",
+    understandingCheck: { enabled: false }
+  },
+  {
+    templateId: "g3_puzzle_symbol_01",
+    grade: 3, difficultyLevel: 3,
+    unitId: "kuku_all", conceptId: "cryptarithmetic",
+    problemType: "calculation", answerType: "number_input",
+    format: "同じマークには 同じ数が入ります。\n「 ★ × ★ = {sq} 」のとき、★ に入る数は？",
+    generate: {
+      a: { type: "integer", range: [4, 9] },
+      sq: { formula: "a * a" },
+      answer: { formula: "a" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "九九の中で、「同じ数」をかけて {sq} になるものを探そう。"
+    ],
+    explanationTemplate: "{answer} × {answer} = {sq} だから、★には {answer} が入るね。",
+    understandingCheck: { enabled: false }
+  },
+  {
+    templateId: "g4_puzzle_symbol_02",
+    grade: 4, difficultyLevel: 3,
+    unitId: "mixed_2step", conceptId: "cryptarithmetic",
+    problemType: "calculation", answerType: "number_input",
+    format: "違うマークには 違う数が入ります。\n「 ■ ＋ ■ ＝ {sum} 」\n「 ■ × ▲ ＝ {prod} 」\nのとき、▲ に入る数は？",
+    generate: {
+      box: { type: "integer", range: [3, 9] },
+      tri: { type: "integer", range: [2, 8], constraints: ["box !== tri"] },
+      sum: { formula: "box + box" },
+      prod: { formula: "box * tri" },
+      answer: { formula: "tri" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: [
+      "まずは上の式から考えよう。同じ数を足して {sum} になるのは何かな？",
+      "■ が {box} だとわかったら、下の式は「 {box} × ▲ ＝ {prod} 」になるね。"
+    ],
+    explanationTemplate: "■ は {box} だね。{box} × {answer} ＝ {prod} なので、▲ は {answer} になるよ。",
+    understandingCheck: { enabled: false }
+  }
 ];
 
 
