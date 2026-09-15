@@ -1,5 +1,5 @@
 // PWA Service Worker (V2.5.15)
-const CACHE_NAME = 'arith-study-v2.5.15';
+const CACHE_NAME = 'arith-study-v2.6.0-units';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -11,6 +11,8 @@ const urlsToCache = [
   '/js/storage.js',
   '/js/validator.js',
   '/js/templates_math.js',
+  '/js/templates_units_p1.js',
+  '/js/templates_units_p2.js',
   '/js/question_source.js',
   '/js/learning_engine.js',
   '/js/learning_score_engine.js',

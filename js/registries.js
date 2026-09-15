@@ -45,17 +45,19 @@ class UnitRegistry {
       2: {
         1: [
           { id: "add_2digit_no_carry", name: "2けたのたし算（くり上がりなし）", concepts: ["add_2digit_basic"] },
-          { id: "sub_2digit_no_borrow", name: "2けたのひき算（くり下がりなし）", concepts: ["sub_2digit_basic"] }
+          { id: "sub_2digit_no_borrow", name: "2けたのひき算（くり下がりなし）", concepts: ["sub_2digit_basic"] },
+          { id: "length_unit", name: "長さの単位（cm・mm）", concepts: ["length_convert_basic"] }
         ],
         2: [
           { id: "add_2digit_carry", name: "2けたのたし算（くり上がりあり）", concepts: ["add_2digit_carry"] },
           { id: "sub_2digit_borrow", name: "2けたのひき算（くり下がりあり）", concepts: ["sub_2digit_borrow"] },
-          { id: "kuku_intro", name: "かけ算のいみと九九（2〜5のだん）", concepts: ["kuku_basic_groups"] }
+          { id: "kuku_intro", name: "かけ算のいみと九九（2〜5のだん）", concepts: ["kuku_basic_groups"] },
+          { id: "volume_unit", name: "かさの単位（L・dL・mL）", concepts: ["volume_convert_basic"] }
         ],
         3: [
           { id: "kuku_partial", name: "九九（6〜9のだん）", concepts: ["kuku_advanced_groups"] },
           { id: "add_3terms_2digit", name: "3つの数のたし算・ひき算", concepts: ["three_terms_2digit"] },
-          { id: "add_sub_2digit_2step", name: "2けたの2段階計算", concepts: ["two_step_2digit"] }
+          { id: "add_sub_2digit_2step", name: "2けたの2段階計算", concepts: ["two_step_2digit", "working_backwards"] }
         ]
       },
       3: {
@@ -65,11 +67,16 @@ class UnitRegistry {
         ],
         2: [
           { id: "mul_2digit_1digit", name: "2けた×1けたのかけ算", concepts: ["mul_2digit_algorithm"] },
-          { id: "div_no_remainder", name: "わり算（あまりなし）", concepts: ["division_equal_share", "division_by_multiplication"] }
+          { id: "div_no_remainder", name: "わり算（あまりなし）", concepts: ["division_equal_share", "division_by_multiplication"] },
+          { id: "length_unit", name: "長さの単位（m・cm・km）", concepts: ["length_convert_m_km"] },
+          { id: "weight_unit", name: "重さの単位（kg・g）", concepts: ["weight_convert_basic"] },
+          { id: "time_unit", name: "時間の単位（時・分・秒）", concepts: ["time_convert_calc"] }
         ],
         3: [
           { id: "div_with_remainder", name: "わり算（あまりあり）", concepts: ["division_with_remainder"] },
-          { id: "mixed_mul_div_2step", name: "かけ算・わり算の2段階計算", concepts: ["mixed_mul_div"] }
+          { id: "mixed_mul_div_2step", name: "かけ算・わり算の2段階計算", concepts: ["mixed_mul_div"] },
+          { id: "div_no_remainder", name: "わり算の逆向き問題（総数を求める）", concepts: ["division_equal_share"] },
+          { id: "kuku_all", name: "九九の応用パズル", concepts: ["kuku_mastery", "cryptarithmetic"] }
         ]
       },
       4: {
@@ -79,10 +86,11 @@ class UnitRegistry {
         ],
         2: [
           { id: "div_3digit_1digit_remainder", name: "3けた÷1けたのわり算", concepts: ["div_3digit_algorithm"] },
-          { id: "decimal_add_sub", name: "小数のたし算・ひき算", concepts: ["decimal_add_sub_basic"] }
+          { id: "decimal_add_sub", name: "小数のたし算・ひき算", concepts: ["decimal_add_sub_basic"] },
+          { id: "area_basic", name: "面積（長方形・正方形）", concepts: ["area_rectangle_square"] }
         ],
         3: [
-          { id: "mixed_2step", name: "四則混合の計算（カッコあり）", concepts: ["order_of_operations"] },
+          { id: "mixed_2step", name: "四則混合の計算（カッコあり）", concepts: ["order_of_operations", "pattern_recognition", "logical_deduction", "cryptarithmetic"] },
           { id: "decimal_mul_basic", name: "小数×整数の計算", concepts: ["decimal_mul_integer"] }
         ]
       },
@@ -93,7 +101,8 @@ class UnitRegistry {
         ],
         2: [
           { id: "fraction_add_sub_diff_denom", name: "異分母分数のたし算・ひき算（通分）", concepts: ["fraction_diff_denom_common"] },
-          { id: "decimal_mul", name: "小数×小数の計算", concepts: ["decimal_mul_algorithm"] }
+          { id: "decimal_mul", name: "小数×小数の計算", concepts: ["decimal_mul_algorithm", "fraction_decimal_compare"] },
+          { id: "volume_basic", name: "体積（直方体・立方体）", concepts: ["volume_cuboid"] }
         ],
         3: [
           { id: "percentage_basic", name: "割合と百分率（パーセント）", concepts: ["percentage_ratio_concept"] },
@@ -107,11 +116,13 @@ class UnitRegistry {
         ],
         2: [
           { id: "fraction_mixed_diff_denom", name: "分数の四則混合計算", concepts: ["fraction_mixed_all"] },
-          { id: "ratio_basic", name: "比とその利用", concepts: ["ratio_proportion_concept"] }
+          { id: "ratio_basic", name: "比とその利用", concepts: ["ratio_proportion_concept"] },
+          { id: "circle_basic", name: "円の円周と面積（円周率3.14）", concepts: ["circle_circumference_area"] }
         ],
         3: [
           { id: "percentage_word", name: "割合の文章題・割引・割増", concepts: ["percentage_word_problems"] },
-          { id: "ratio_speed_basic", name: "速さ・時間・道のり", concepts: ["speed_time_distance"] }
+          { id: "ratio_speed_basic", name: "速さ・時間・道のり", concepts: ["speed_time_distance"] },
+          { id: "ratio_basic", name: "比の応用・挑戦問題", concepts: ["ratio_proportion_concept"] }
         ]
       }
     }

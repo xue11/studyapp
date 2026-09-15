@@ -2418,12 +2418,11 @@ const MATH_TEMPLATES = [
     understandingCheck: {
       enabled: true, type: "choice",
       questionTemplate: "弟の分は いくら（何cm）？",
-      choices: ["{wrong1}", "{wrong2}", "{wrong3}"],
-      answer: "{wrong1}",
+      choices: ["{b * unit_val}", "{a * unit_val}", "{total}"],
+      answer: "{b * unit_val}",
       generateWrong: {
         wrong1: { formula: "b * unit_val" },
-        wrong2: { formula: "a * unit_val" },
-        wrong3: { formula: "total - a * unit_val + 100" }
+        wrong2: { formula: "a * unit_val" }
       }
     },
     story: { structureId: "ratio_distribution", contextId: "c_g6_chal_ratio_01", entityId: "e_g6_chal_ratio_01", actionId: "distribute" },
@@ -2511,7 +2510,8 @@ const MATH_TEMPLATES = [
     },
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: [
-      "九九の中で、「同じ数」をかけて {sq} になるものを探そう。"
+      "九九の中で、「同じ数」をかけて {sq} になるものを探そう。",
+      "かけ算九九の表を 思い出してみよう。同じ数を かけた 列を なぞってみよう。"
     ],
     explanationTemplate: "{answer} × {answer} = {sq} だから、★には {answer} が入るね。",
     understandingCheck: { enabled: false }

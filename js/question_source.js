@@ -17,6 +17,8 @@ if (typeof require !== "undefined") {
   try { TemplateRegistryRef = require("./registries.js").TemplateRegistry; } catch (e) {}
   try { QuestionValidatorRef = require("./validator.js").QuestionValidator; } catch (e) {}
   try { require("./templates_math.js"); } catch (e) {}
+  try { require("./templates_units_p1.js"); } catch (e) {}
+  try { require("./templates_units_p2.js"); } catch (e) {}
 }
 
 const MAX_GENERATION_RETRY = 5;
