@@ -319,7 +319,15 @@ class AppUI {
       if (!decks[sel.unitId] || decks[sel.unitId].length === 0) {
         decks[sel.unitId] = this._shuffleArray([...templates]);
       }
-      t = decks[sel.unitId].pop();
+      // V2.6.1: 直近3問で使用したテンプレートを優先的に回避 (同一unit連続時の単調さを軽減)
+      const recentTemplateIds = this.session.questions.slice(-3).map(q => q.templateId);
+      const deck = decks[sel.unitId];
+      const freshIdx = deck.findIndex(x => !recentTemplateIds.includes(x.templateId));
+      if (freshIdx >= 0) {
+        t = deck.splice(freshIdx, 1)[0];
+      } else {
+        t = deck.pop();
+      }
       if (!t) t = templates[Math.floor(Math.random() * templates.length)];
       const qInstance = RuleBasedQuestionSource.generateQuestion(t.templateId, this.session.questions, {
         isReview: sel.type === "review"
@@ -369,11 +377,21 @@ class AppUI {
 
     const q = this.session.questions[this.session.currentIndex];
     const progress = `${this.session.currentIndex + 1} / ${this.session.totalCount}`;
+    // V2.6.1: 出題中のunit名を表示 (新単元の出題可視化)
+    let unitName = "";
+    try {
+      if (typeof UnitRegistry !== "undefined" && UnitRegistry.findUnit) {
+        const u = UnitRegistry.findUnit("math", q.grade, q.unitId);
+        unitName = (u && u.name) || q.unitId;
+      }
+    } catch (e) {
+      unitName = q.unitId || "";
+    }
 
     return `
       <div class="question-meta">
         <span><b>第 ${progress} 問</b> <span id="session-timer" style="color:var(--text-muted); font-weight:normal;">⏱ ${formatElapsed(0)}</span></span>
-        <span><span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
+        <span><span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
       </div>
 
       <div class="progress-container">

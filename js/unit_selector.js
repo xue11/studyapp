@@ -98,11 +98,32 @@ class UnitSelector {
   }
 
   static _drawFromRotationBag(gradeProgress, availableUnits) {
-    if (!Array.isArray(gradeProgress.unitRotationBag) || gradeProgress.unitRotationBag.length === 0) {
-      // バッグをシャッフルして再生成
-      const unitIds = availableUnits.map(u => u.id);
-      gradeProgress.unitRotationBag = this._shuffleArray([...unitIds]);
+    const availableIds = availableUnits.map(u => u.id);
+    let bag = Array.isArray(gradeProgress.unitRotationBag) ? [...gradeProgress.unitRotationBag] : [];
+
+    // V2.6.1: bag とレジストリの同期
+    //  - レジストリから削除された unit を bag から除去
+    //  - 「一度も bag に入ったことがない新規 unit」のみをランダム位置に注入
+    //    (既に引いた unit が即座に戻ることを防ぎ、1巡ローテーションを維持)
+    //  - 既知unitリスト (unitRotationKnownUnits) は永続化され、旧バージョン状態にも後方互換
+    bag = bag.filter(id => availableIds.includes(id));
+
+    let known = Array.isArray(gradeProgress.unitRotationKnownUnits)
+      ? gradeProgress.unitRotationKnownUnits.filter(id => availableIds.includes(id))
+      : [];
+    const brandNew = availableIds.filter(id => !known.includes(id) && !bag.includes(id));
+    for (const id of brandNew) {
+      bag.splice(Math.floor(Math.random() * (bag.length + 1)), 0, id);
+      known.push(id);
     }
+    gradeProgress.unitRotationKnownUnits = known;
+
+    if (bag.length === 0) {
+      bag = this._shuffleArray([...availableIds]);
+      gradeProgress.unitRotationKnownUnits = [...availableIds];
+    }
+
+    gradeProgress.unitRotationBag = bag;
     return gradeProgress.unitRotationBag.pop();
   }
 
