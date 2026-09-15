@@ -1,5 +1,5 @@
 // PWA Service Worker (V2.5.15)
-const CACHE_NAME = 'arith-study-v2.6.1-diversity';
+const CACHE_NAME = 'arith-study-v2.6.2-review-fix';
 const urlsToCache = [
   '/',
   '/index.html',

@@ -30,14 +30,19 @@ class UnitSelector {
       r.dueAt && r.dueAt <= today
     );
 
-    if (activeReviews.length > 0) {
+    // V2.6.2: レジストリのどのレベルにも存在しない unit の復習はスキップする
+    //  - 別レベル所属 unit (例: L2のunitがL1在学中に復習期日到来) は許可 (テンプレート取得時にレベル横断フォールバック)
+    //  - 完全に削除された unit / 不正データのみ除外 (空プールクラッシュ防止)
+    const validReviews = activeReviews.filter(r => this._unitExistsInAnyLevel(currentGrade, r.unitId));
+
+    if (validReviews.length > 0) {
       // dueAt が古い順 -> failCount が多い順 -> registeredAt が古い順
-      activeReviews.sort((a, b) => {
+      validReviews.sort((a, b) => {
         if (a.dueAt !== b.dueAt) return a.dueAt.localeCompare(b.dueAt);
         if (a.failCount !== b.failCount) return b.failCount - a.failCount;
         return (a.registeredAt || "").localeCompare(b.registeredAt || "");
       });
-      const topReview = activeReviews[0];
+      const topReview = validReviews[0];
       return {
         type: "review",
         unitId: topReview.unitId,
@@ -95,6 +100,21 @@ class UnitSelector {
         };
       }
     }
+  }
+
+  /**
+   * V2.6.2: unit が当該学年のいずれかのレベル (Lv1〜3) に存在するか判定する
+   * 復習キューに残る別レベル所属 unit を許可し、削除済み unit のみ除外するためのガード
+   * @param {number} grade
+   * @param {string} unitId
+   * @returns {boolean}
+   */
+  static _unitExistsInAnyLevel(grade, unitId) {
+    for (let lv = 1; lv <= 3; lv++) {
+      const units = this._getUnitsForLevel("math", grade, lv);
+      if (units && units.some(u => u.id === unitId)) return true;
+    }
+    return false;
   }
 
   static _drawFromRotationBag(gradeProgress, availableUnits) {

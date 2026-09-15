@@ -313,7 +313,8 @@ class AppUI {
     // 10問生成
     for (let i = 0; i < 10; i++) {
       const sel = UnitSelector.selectNextUnit(profile, APP_CONFIG);
-      const templates = tReg.getByUnit("math", currentGrade, gp.difficultyLevel, sel.unitId);
+      // V2.6.2: 多段フォールバック (別レベル所属unitの復習でも空プールでクラッシュしない)
+      const templates = this._getTemplatesForSelection(tReg, currentGrade, gp.difficultyLevel, sel);
       // デッキから順番に引く (尽きたら再シャッフル)
       let t = null;
       if (!decks[sel.unitId] || decks[sel.unitId].length === 0) {
@@ -347,6 +348,46 @@ class AppUI {
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
+  }
+
+  /**
+   * V2.6.2: 単元選択結果からテンプレートプールを多段フォールバックで取得する
+   * 復習unitが現在レベル外に所属する場合もクラッシュさせない
+   * @param {Object} tReg TemplateRegistry
+   * @param {number} currentGrade
+   * @param {number} currentLevel
+   * @param {Object} sel UnitSelector.selectNextUnit の結果
+   * @returns {Array<Object>} テンプレート配列 (必ず1件以上)
+   */
+  _getTemplatesForSelection(tReg, currentGrade, currentLevel, sel) {
+    // 1) 現在レベルのプール
+    let templates = tReg.getByUnit("math", currentGrade, currentLevel, sel.unitId);
+
+    // 2) 同unitを全レベル横断で検索 (別レベル所属unitの復習)
+    if (!templates || templates.length === 0) {
+      for (let lv = 1; lv <= 3; lv++) {
+        templates = tReg.getByUnit("math", currentGrade, lv, sel.unitId);
+        if (templates && templates.length > 0) break;
+      }
+    }
+
+    // 3) 復習アイテムが保持する templateId を直接使用
+    if ((!templates || templates.length === 0) && sel.reviewItem && sel.reviewItem.templateId) {
+      const direct = tReg.get(sel.reviewItem.templateId);
+      if (direct) templates = [direct];
+    }
+
+    // 4) 同学年の全テンプレート
+    if (!templates || templates.length === 0) {
+      templates = Object.values(tReg.templates || {}).filter(t => t.grade === currentGrade);
+    }
+
+    // 5) 最終フォールバック: 全テンプレート (理論上到達しない保険)
+    if (!templates || templates.length === 0) {
+      templates = Object.values(tReg.templates || {});
+    }
+
+    return templates || [];
   }
 
   _startSessionTimer() {
