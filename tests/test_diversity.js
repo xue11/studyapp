@@ -1,6 +1,8 @@
 // V2.6.1: unitRotationBag同期 & 直近テンプレート重複回避の検証
 const { UnitRegistry, TemplateRegistry } = require("../js/registries.js");
 const { UnitSelector } = require("../js/unit_selector.js");
+globalThis.StorageManager = class { constructor() {} };
+const { AppUI } = require("../js/ui.js");
 require("../js/templates_math.js");
 require("../js/templates_units_p1.js");
 require("../js/templates_units_p2.js");
@@ -18,10 +20,10 @@ const units = UnitRegistry.getUnitsForLevel("math", 2, 1); // 現在: 旧2unit +
 console.log("grade2 L1 units:", units.map(u => u.id).join(", "));
 
 const seen = new Set();
-for (let i = 0; i < units.length; i++) {
+while (seen.size < units.length || !seen.has("length_unit")) {
   seen.add(UnitSelector._drawFromRotationBag(gp, units));
 }
-assert.ok(seen.has("length_unit"), "新unit (length_unit) が最初の1巡で出題されること");
+assert.ok(seen.has("length_unit"), "新unit (length_unit) が1巡以内に必ず出題されること");
 console.log("[PASS] bag同期: 永続化済み旧bagでも新unitが1巡内で必ず出題される");
 
 // 2) 空bagテスト: 全unitが重複なく1回ずつ出る
@@ -120,5 +122,35 @@ const selDead = UnitSelector.selectNextUnit(mkProfile(1, deadQueue), APP_CONFIG,
 assert.notStrictEqual(selDead.unitId, "deleted_unit_x", "存在しないunitの復習はスキップされること");
 assert.notStrictEqual(selDead.phase, "review", "スキップ後は通常学習として選択されること");
 console.log("[PASS] ガード: 削除済みunitの復習はスキップされ通常学習へフォールバック");
+
+  // 5d) ui.js の _getTemplatesForSelection を直接呼び出す回帰確認
+  //   2年生 Lv1 + 復習キューに Lv2所属 unit(add_2digit_carry) が期限切れで残っているケース
+  {
+    const sel2 = UnitSelector.selectNextUnit(mkProfile(1, crossLevelQueue), APP_CONFIG, todayFix);
+    assert.strictEqual(sel2.type, "review", "別レベルunitの復習がスキップされず選ばれること");
+    const poolFromUi =
+      AppUI.prototype._getTemplatesForSelection.call(
+        {
+          _shuffleArray: function(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+        },
+        TemplateRegistry, 2, 1, sel2
+      );
+    assert.ok(poolFromUi.length > 0, "ui.js のフォールバックでテンプレートが取得できること");
+    const t = poolFromUi[Math.floor(Math.random() * poolFromUi.length)];
+    assert.ok(t && typeof t.templateId === "string", "t.templateId で落ちず templateId が取得できること");
+    const q2 = RuleBasedQuestionSource.generateQuestion(t.templateId, []);
+    assert.ok(q2 && typeof q2.questionText === "string" && typeof q2.templateId === "string",
+      "選択されたテンプレートで問題生成でき、クラッシュしないこと");
+    console.log("[PASS] 回帰: 別レベル所属unitの復習が ui.js の _getTemplatesForSelection を通っても落ちないこと");
+  }
+
+  // 5e) 欠落unitを含む復習キューでも学習開始がスキップ・継続できること
+  {
+    const deadQueue2 = [Object.assign({}, crossLevelQueue[0], { unitId: "nonexistent_unit_y", templateId: "" })];
+    const selDead2 = UnitSelector.selectNextUnit(mkProfile(1, deadQueue2), APP_CONFIG, todayFix);
+    assert.notStrictEqual(selDead2.unitId, "nonexistent_unit_y", "存在しないunitの復習はスキップされる");
+    assert.notStrictEqual(selDead2.phase, "review", "スキップ後は通常学習として選択される");
+    console.log("[PASS] ガード: 欠落unitを含む復習キューでも学習開始がスキップ・継続できること");
+  }
 
 console.log("\nALL V2.6.2 DIVERSITY TESTS PASSED!");

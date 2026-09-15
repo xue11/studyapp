@@ -362,9 +362,10 @@ class AppUI {
   _getTemplatesForSelection(tReg, currentGrade, currentLevel, sel) {
     // 1) 現在レベルのプール
     let templates = tReg.getByUnit("math", currentGrade, currentLevel, sel.unitId);
+    if (!templates || typeof templates.length !== "number") templates = [];
 
     // 2) 同unitを全レベル横断で検索 (別レベル所属unitの復習)
-    if (!templates || templates.length === 0) {
+    if (templates.length === 0) {
       for (let lv = 1; lv <= 3; lv++) {
         templates = tReg.getByUnit("math", currentGrade, lv, sel.unitId);
         if (templates && templates.length > 0) break;
@@ -372,7 +373,7 @@ class AppUI {
     }
 
     // 3) 復習アイテムが保持する templateId を直接使用
-    if ((!templates || templates.length === 0) && sel.reviewItem && sel.reviewItem.templateId) {
+    if (templates.length === 0 && sel.reviewItem?.templateId) {
       const direct = tReg.get(sel.reviewItem.templateId);
       if (direct) templates = [direct];
     }

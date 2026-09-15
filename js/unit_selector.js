@@ -30,9 +30,7 @@ class UnitSelector {
       r.dueAt && r.dueAt <= today
     );
 
-    // V2.6.2: レジストリのどのレベルにも存在しない unit の復習はスキップする
-    //  - 別レベル所属 unit (例: L2のunitがL1在学中に復習期日到来) は許可 (テンプレート取得時にレベル横断フォールバック)
-    //  - 完全に削除された unit / 不正データのみ除外 (空プールクラッシュ防止)
+    // V2.6.2 (minimal B): レジストリのどのレベルにも存在しない unit の復習はスキップする
     const validReviews = activeReviews.filter(r => this._unitExistsInAnyLevel(currentGrade, r.unitId));
 
     if (validReviews.length > 0) {
