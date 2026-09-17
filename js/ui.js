@@ -443,7 +443,9 @@ class AppUI {
       <div class="question-display">
         <div class="question-text">${q.questionText}</div>
         <div class="answer-input-display" id="answer-display">
-          ${this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>'}
+          ${q.figureChoices
+            ? this._figureSelectionDisplay(q)
+            : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>')}
         </div>
       </div>
 
@@ -550,7 +552,7 @@ class AppUI {
     if (isCorrect) {
       // 正解処理
       Sound.playCorrect();
-      this._handleLearningQuestionCompletion(true, this.session.currentAttemptCount, this.session.currentHintUsed);
+      this._handleLearningQuestionCompletion(true, this.session.currentAttemptCount, this.session.currentHintUsed, rawAns);
     } else {
       // 不正解処理
       Sound.playIncorrect();
@@ -583,8 +585,10 @@ class AppUI {
     }
   }
 
-  _handleLearningQuestionCompletion(isCorrect, attemptCount, hintUsed) {
+  _handleLearningQuestionCompletion(isCorrect, attemptCount, hintUsed, userAnswer) {
     const q = this.session.questions[this.session.currentIndex];
+    // V2.6.3: 結果画面表示用の回答文字列 (図形選択問題はカードIDのカンマ区切り)
+    const rawAnswerForHistory = (userAnswer === null || userAnswer === undefined) ? "" : String(userAnswer);
 
     // SessionCoordinator による原子的一括更新 (第34章)
     const coordRes = SessionCoordinator.completeQuestionAtomic({
@@ -610,7 +614,13 @@ class AppUI {
         qText: q.questionText,
         isCorrect: isCorrect,
         score: coordRes.summary.learningScore,
-        pts: coordRes.summary.pointsEarned
+        pts: coordRes.summary.pointsEarned,
+        // V2.6.3: 図形選択問題は結果画面でカード文ラベル表示できるよう回答とカード情報を保持
+        userAnswer: rawAnswerForHistory,
+        correctAnswer: q.answer,
+        figureChoices: Array.isArray(q.figureChoices)
+          ? q.figureChoices.map(c => ({ id: c.id, text: c.text || "" }))
+          : null
       });
 
       // 正解または3回目不正解時のモーダル表示
@@ -761,7 +771,9 @@ class AppUI {
       <div class="question-display">
         <div class="question-text">${q.questionText}</div>
         <div class="answer-input-display" id="answer-display">
-          ${this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>'}
+          ${q.figureChoices
+            ? this._figureSelectionDisplay(q)
+            : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>')}
         </div>
       </div>
 
@@ -838,7 +850,7 @@ class AppUI {
               <tr style="border-bottom:1px solid var(--border); background:${d.isCorrect ? '#f0fdf4' : '#fef2f2'};">
                 <td style="padding:6px 8px;">${d.isCorrect ? '⭕' : '❌'} 問${i+1}</td>
                 <td style="padding:6px 8px;">${d.questionText}</td>
-                <td style="padding:6px 8px; text-align:right;">${d.isCorrect ? d.userAnswer : `${d.userAnswer} (正: ${d.correctAnswer})`}</td>
+                <td style="padding:6px 8px; text-align:right;">${d.isCorrect ? this._formatAnswerLabel(d.userAnswer, d.figureChoices) : `${this._formatAnswerLabel(d.userAnswer, d.figureChoices)} (正: ${this._formatAnswerLabel(d.correctAnswer, d.figureChoices)})`}</td>
               </tr>
             `).join("")}
           </table>
@@ -847,6 +859,21 @@ class AppUI {
         <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
       </div>
     `;
+  }
+
+  // V2.6.3: 復習キュー表示用に unitId から単元名を解決する
+  _getUnitLabel(unitId, grade) {
+    if (!unitId) return "";
+    try {
+      if (typeof UnitRegistry !== "undefined" && UnitRegistry.findUnit) {
+        const g = grade || this.state?.profiles?.find(p => p.identity.id === this.state.activeProfileId)?.skill?.subject?.currentGrade;
+        const u = UnitRegistry.findUnit("math", g, unitId);
+        return (u && u.name) || unitId;
+      }
+    } catch (e) {
+      // フォールバック
+    }
+    return unitId;
   }
 
   // ==========================================
@@ -867,7 +894,7 @@ class AppUI {
             ${active.map(r => `
               <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                  <div style="font-weight:bold; font-size:0.9rem;">${r.unitId}</div>
+                  <div style="font-weight:bold; font-size:0.9rem;">${this._getUnitLabel(r.unitId, r.grade)}</div>
                   <div style="font-size:0.8rem; color:var(--text-muted);">次回復習: ${r.dueAt} (間隔: ${r.intervalDays}日) / 成功: ${r.successCount}回</div>
                 </div>
                 <span class="badge warn">復習中</span>
@@ -882,7 +909,7 @@ class AppUI {
           <div class="card-title">🎓 復習クリア済み単元 (${graduated.length} 件)</div>
           <div style="max-height:140px; overflow-y:auto; font-size:0.85rem;">
             ${graduated.map(g => `
-              <div style="padding:4px 0; color:var(--text-muted);">✔ ${g.unitId} (14日間隔クリア)</div>
+              <div style="padding:4px 0; color:var(--text-muted);">✔ ${this._getUnitLabel(g.unitId, g.grade)} (14日間隔クリア)</div>
             `).join("")}
           </div>
         </div>
@@ -1477,6 +1504,23 @@ class AppUI {
   closeModal() {
     const modalContainer = document.getElementById("modal-container");
     if (modalContainer) modalContainer.innerHTML = "";
+  }
+
+  /**
+   * V2.6.3: 図形選択問題の回答 (カンマ区切りカードID) をカード文ラベルへ変換する
+   * figureChoices が無い通常問題では、そのまま回答文字列を返す
+   * @param {string} answerStr 回答または正解の文字列 (例: "c1" / "p2,p4,p6")
+   * @param {Array<{id:string, text:string}>} figureChoices 出題時のカード情報
+   * @returns {string} 表示用ラベル
+   */
+  _formatAnswerLabel(answerStr, figureChoices) {
+    const raw = (answerStr === null || answerStr === undefined) ? "" : String(answerStr);
+    if (!Array.isArray(figureChoices) || figureChoices.length === 0) return raw;
+    const map = {};
+    figureChoices.forEach(c => { if (c && c.id) map[c.id] = c.text || c.id; });
+    const ids = raw.split(",").map(s => s.trim()).filter(s => s.length > 0);
+    if (ids.length === 0) return raw;
+    return ids.map(id => (map[id] !== undefined ? map[id] : id)).join("・");
   }
 
   _checkAnswer(userInput, correctAnswer) {

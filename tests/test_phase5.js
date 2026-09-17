@@ -64,8 +64,8 @@ function testBuildSummary() {
   assert.strictEqual(summary.totalAttempts, 3);
   assert.strictEqual(summary.totalAccuracy, Math.round((2 / 3) * 1000) / 1000);
 
-  // 現在学年 + Lv1 の単元 (add_2digit_no_carry, sub_2digit_no_borrow)
-  assert.strictEqual(summary.currentUnitRows.length, 2, "Grade2 Lv1 has 2 units");
+  // 現在学年 + Lv1 の単元 (add_2digit_no_carry, sub_2digit_no_borrow, length_unit)
+  assert.strictEqual(summary.currentUnitRows.length, 3, "Grade2 Lv1 has 3 units");
   const addRow = summary.currentUnitRows.find(r => r.unitId === "add_2digit_no_carry");
   const subRow = summary.currentUnitRows.find(r => r.unitId === "sub_2digit_no_borrow");
   assert.ok(addRow, "add unit row present");

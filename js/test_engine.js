@@ -170,7 +170,11 @@ class TestEngine {
         questionText: q.questionText,
         userAnswer: rawAns,
         correctAnswer: q.answer,
-        isCorrect: isCorrect
+        isCorrect: isCorrect,
+        // V2.6.3: 図形選択問題は結果表示でカード文ラベルへ変換するためにスナップショットを保持
+        figureChoices: Array.isArray(q.figureChoices)
+          ? q.figureChoices.map(c => ({ id: c.id, text: c.text || "" }))
+          : null
       });
     }
 

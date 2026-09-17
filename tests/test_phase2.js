@@ -228,16 +228,17 @@ function testLevelEngine() {
   const gp = profile.skill.subject.gradeProgress.grade1;
   gp.difficultyLevel = 1;
 
-  // Grade 1 Lv1 の units: add_1digit_no_carry, sub_1digit_no_borrow, number_bond_10 (計3単元)
-  // 必要学習済みunit数: Math.ceil(3 * 0.60) = 2単元 (attempts >= 5)
+  // Grade 1 Lv1 の units: add_1digit_no_carry, sub_1digit_no_borrow, number_bond_10, shape_basic (計4単元)
+  // 必要学習済みunit数: Math.ceil(4 * 0.60) = 3単元 (attempts >= 5) [V2.6.3: shape_basic追加で4単元]
 
   // まだ学習済みが0単元の場合 -> 判定スキップ
   const eval1 = LevelEngine.evaluateLevel(profile, APP_CONFIG);
   assert.strictEqual(eval1.evaluated, false);
 
-  // 2単元を学習済みに設定 (attempts=5, mastery=0.80)
+  // 3単元を学習済みに設定 (attempts=5, mastery=0.80)
   gp.unitStats["add_1digit_no_carry"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
   gp.unitStats["sub_1digit_no_borrow"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
+  gp.unitStats["shape_basic"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
 
   // 直近5問の履歴 (平均learningScore >= 0.70)
   for (let i = 0; i < 5; i++) {

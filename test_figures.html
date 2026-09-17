@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>図形問題 動作確認ビューア (V2.6.3)</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Meiryo", sans-serif;
+      margin: 20px;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    h1 { color: #2563eb; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; font-size: 1.3rem; }
+    h2 { color: #334155; margin-top: 20px; font-size: 1.05rem; }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+    }
+    .badge {
+      display: inline-block; padding: 4px 8px; border-radius: 4px;
+      font-size: 12px; font-weight: bold; background: #e0f2fe; color: #0369a1; margin-right: 6px;
+    }
+    .badge.success { background: #dcfce7; color: #15803d; }
+    .badge.danger { background: #fee2e2; color: #b91c1c; }
+    select, button {
+      padding: 8px 14px; border-radius: 6px; border: 1px solid #cbd5e1;
+      font-size: 14px; margin-right: 8px; margin-bottom: 8px;
+    }
+    button { background: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    .question-text { font-size: 1.1rem; font-weight: bold; margin: 10px 0; }
+    .result-ok { color: #15803d; font-weight: bold; }
+    .result-ng { color: #b91c1c; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1> 図形問題 動作確認ビューア (V2.6.3)</h1>
+  <p>1-A 基本図形の識別 / 1-B すべて選ぶ (完全一致判定) / 1-C 大小・向き比較 を確認できます。</p>
+
+  <div class="card">
+    <div>
+      <span class="badge" id="badge-answer-type">-</span>
+      <span class="badge" id="badge-presentation">-</span>
+    </div>
+    <div style="margin-top:10px;">
+      <select id="template-select"></select>
+      <button onclick="generateQuestion()">この問題を出す</button>
+      <button onclick="generateRandom()">どれか出す</button>
+      <button onclick="clearHistory()" style="background:#64748b;">記録を消す</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>出題</h2>
+    <div id="template-id" style="font-size:12px; color:#64748b;">templateId: -</div>
+    <div class="question-text" id="question-text">（まだ出題されていません）</div>
+    <div id="figure-choices"></div>
+    <button onclick="submitAnswer()" style="margin-top:10px;">こたえる ➔</button>
+  </div>
+
+  <div class="card">
+    <h2>判定結果</h2>
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <h2>保存された回答記録（履歴/復習・結果表示用）</h2>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- 依存スクリプト (index.html と同じ読込順) -->
+  <script src="js/config.js"></script>
+  <script src="js/registries.js"></script>
+  <script src="js/schema.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/templates_math.js"></script>
+  <script src="js/templates_units_p1.js"></script>
+  <script src="js/templates_units_p2.js"></script>
+  <script src="js/templates_figures_g1.js"></script>
+  <script src="js/question_source.js"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var current = null;   // 出題中の questionInstance
+      var selected = [];    // 選択中のカードID
+      var records = [];     // 回答記録 (結果表示のもと)
+
+      function el(id) { return document.getElementById(id); }
+      function esc(s) {
+        return String(s === null || s === undefined ? "" : s)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+
+      function getFigureTemplates() {
+        var reg = (typeof TemplateRegistry !== "undefined") ? TemplateRegistry : window.TemplateRegistry;
+        var byUnit = (reg && reg.getByUnit) ? reg.getByUnit("math", 1, 1, "shape_basic") : [];
+        var all = byUnit || [];
+        return all.filter(function (t) { return t.problemType === "figure"; });
+      }
+
+      function initSelect() {
+        var list = getFigureTemplates();
+        el("template-select").innerHTML = list.map(function (t) {
+          return '<option value="' + esc(t.templateId) + '">' + esc(t.templateId) + ' (' + esc(t.answerType) + ')</option>';
+        }).join("");
+      }
+
+      function generateQuestion(templateId) {
+        var id = templateId || el("template-select").value;
+        var q = RuleBasedQuestionSource.generateQuestion(id, []);
+        current = q;
+        selected = [];
+        el("template-id").textContent = "templateId: " + q.templateId + " / unitId: " + (q.unitId || "-");
+        el("question-text").textContent = q.questionText;
+        el("badge-answer-type").textContent = "answerType: " + q.answerType;
+        el("badge-presentation").textContent = q.answerType === "multi_choice" ? "grid (複数選択)" : "list (単一選択)";
+        el("result").innerHTML = "";
+        renderChoices();
+      }
+
+      function generateRandom() {
+        var list = getFigureTemplates();
+        var t = list[Math.floor(Math.random() * list.length)];
+        if (t) generateQuestion(t.templateId);
+      }
+
+      function renderChoices() {
+        var container = el("figure-choices");
+        if (!current || !Array.isArray(current.figureChoices)) {
+          container.innerHTML = '<span style="color:#b91c1c;">figureChoices がありません</span>';
+          return;
+        }
+        container.className = current.answerType === "multi_choice" ? "shape-grid" : "shape-list";
+        container.innerHTML = current.figureChoices.map(function (c) {
+          return FigureShapeUI.shapeCardHTML(c, selected.indexOf(c.id) >= 0)
+            .replace('onclick="app.toggleFigureChoice(', 'onclick="window.__toggle(');
+        }).join("");
+      }
+
+      window.__toggle = function (id) {
+        if (!current) return;
+        var idx = selected.indexOf(id);
+        if (current.answerType === "multi_choice") {
+          if (idx >= 0) selected.splice(idx, 1); else selected.push(id);
+        } else {
+          selected = [id];
+        }
+        renderChoices();
+      };
+
+      function judge() {
+        if (!current) return false;
+        var correct = current.correctChoiceIds || [];
+        if (current.answerType === "multi_choice") {
+          return FigureShapeUI.isMultiCorrect(selected, correct);
+        }
+        return FigureShapeUI.isSingleCorrect(selected[0], correct);
+      }
+
+      function textOf(ids) {
+        return ids.map(function (id) {
+          var c = (current.figureChoices || []).filter(function (x) { return x.id === id; })[0];
+          return c ? c.text : id;
+        }).join("・");
+      }
+
+      function submitAnswer() {
+        if (!current) { alert("先に出題してください"); return; }
+        if (selected.length === 0) { alert("カードを選んでください"); return; }
+
+        var isCorrect = judge();
+        el("result").innerHTML =
+          (isCorrect ? '<span class="result-ok">せいかい！</span>' : '<span class="result-ng">ざんねん…</span>') +
+          '<div style="margin-top:6px;">えらんだ: ' + esc(textOf(selected)) + '</div>' +
+          '<div>せいかい: ' + esc(textOf(current.correctChoiceIds || [])) + '</div>';
+
+        // ui.js の session.historySummary と同等の形で記録
+        records.push({
+          templateId: current.templateId,
+          unitId: current.unitId,
+          questionText: current.questionText,
+          userAnswer: selected.join(","),
+          correctAnswer: (current.correctChoiceIds || []).join(","),
+          isCorrect: isCorrect,
+          figureChoices: FigureShapeUI.choicesSnapshot(current.figureChoices)
+        });
+        renderHistory();
+      }
+
+      function renderHistory() {
+        if (records.length === 0) {
+          el("history-list").innerHTML = '<span style="color:#64748b;">まだ記録がありません</span>';
+          return;
+        }
+        el("history-list").innerHTML = records.map(function (r, i) {
+          var map = {};
+          (r.figureChoices || []).forEach(function (c) { map[c.id] = c.text || c.id; });
+          var label = function (answerStr) {
+            return String(answerStr).split(",").map(function (id) {
+              return map[id] !== undefined ? map[id] : id;
+            }).join("・");
+          };
+          return '<div style="padding:6px 0; border-bottom:1px dashed #e2e8f0;">' +
+            '<span class="badge ' + (r.isCorrect ? "success" : "danger") + '">' + (r.isCorrect ? "○" : "×") + ' 問' + (i + 1) + '</span>' +
+            esc(r.questionText) +
+            '<div style="font-size:0.85rem; color:#475569;">こたえ: ' + esc(label(r.userAnswer)) +
+            (r.isCorrect ? "" : ' <span style="color:#b91c1c;">(正: ' + esc(label(r.correctAnswer)) + ')</span>') + '</div>' +
+            '</div>';
+        }).join("");
+      }
+
+      function clearHistory() {
+        records = [];
+        renderHistory();
+        el("result").innerHTML = "";
+      }
+
+      window.generateQuestion = generateQuestion;
+      window.generateRandom = generateRandom;
+      window.submitAnswer = submitAnswer;
+      window.clearHistory = clearHistory;
+
+      initSelect();
+      renderHistory();
+      generateRandom();
+    })();
+  </script>
+</body>
+</html>

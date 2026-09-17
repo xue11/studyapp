@@ -8,6 +8,7 @@ const { TemplateRegistry, UnitRegistry } = require("../js/registries.js");
 const { MATH_TEMPLATES } = require("../js/templates_math.js");
 const { QuestionValidator } = require("../js/validator.js");
 const { RuleBasedQuestionSource } = require("../js/question_source.js");
+require("../js/templates_figures_g1.js"); // V2.6.3: shape_basic (図形) テンプレート登録
 
 console.log("=== Running Phase 3 Verification Tests ===\n");
 
