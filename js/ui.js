@@ -447,6 +447,16 @@ class AppUI {
         </div>
       </div>
 
+      ${q.figureChoices
+        ? this._renderFigureChoices(q, "app.submitLearningAnswer()", "こたえる ➔")
+        : this._renderNumpad("app.submitLearningAnswer()", "こたえる ➔")}
+
+      <div id="modal-container"></div>
+    `;
+  }
+
+  _renderNumpad(submitAction, submitLabel) {
+    return `
       <!-- タッチテンキー (0..9, ., /, Del, 決定) -->
       <div class="numpad-grid">
         <button class="numpad-btn" onclick="app.pressKey('7')">7</button>
@@ -462,11 +472,44 @@ class AppUI {
         <button class="numpad-btn" onclick="app.pressKey('0')">0</button>
         <button class="numpad-btn action-btn" onclick="app.pressKey('backspace')">⌫ けす</button>
         <button class="numpad-btn action-btn" style="grid-column: span 1;" onclick="app.pressKey('/')">/</button>
-        <button class="numpad-btn ok-btn" style="grid-column: span 2;" onclick="app.submitLearningAnswer()">こたえる ➔</button>
+        <button class="numpad-btn ok-btn" style="grid-column: span 2;" onclick="${submitAction}">${submitLabel}</button>
       </div>
-
-      <div id="modal-container"></div>
     `;
+  }
+
+  // V2.6.3: 図形選択問題のカード描画 (list: 単一選択 / grid: 複数選択)
+  _renderFigureChoices(q, submitAction, submitLabel) {
+    const FigUI = (typeof FigureShapeUI !== "undefined") ? FigureShapeUI : (typeof window !== "undefined" ? window.FigureShapeUI : null);
+    if (!FigUI || !Array.isArray(q.figureChoices)) return this._renderNumpad(submitAction, submitLabel);
+    const selected = this.session.selectedFigureChoices || [];
+    const isGrid = q.answerType === "multi_choice";
+    const items = q.figureChoices
+      .map(c => FigUI.shapeCardHTML(c, selected.includes(c.id)))
+      .join("");
+    return `
+      <div id="figure-choices" class="${isGrid ? "shape-grid" : "shape-list"}">${items}</div>
+      <button class="numpad-btn ok-btn" style="width:100%; margin-top:10px;" onclick="${submitAction}">${submitLabel}</button>
+    `;
+  }
+
+  toggleFigureChoice(id) {
+    Sound.playClick();
+    const q = this.session && this.session.questions ? this.session.questions[this.session.currentIndex] : null;
+    if (!q || !Array.isArray(q.figureChoices)) return;
+    if (!this.session.selectedFigureChoices) this.session.selectedFigureChoices = [];
+    const sel = this.session.selectedFigureChoices;
+    const idx = sel.indexOf(id);
+    if (q.answerType === "multi_choice") {
+      if (idx >= 0) sel.splice(idx, 1); else sel.push(id);
+    } else {
+      sel.length = 0;
+      sel.push(id);
+    }
+    const FigUI = (typeof FigureShapeUI !== "undefined") ? FigureShapeUI : (typeof window !== "undefined" ? window.FigureShapeUI : null);
+    const container = document.getElementById("figure-choices");
+    if (container && FigUI) {
+      container.innerHTML = q.figureChoices.map(c => FigUI.shapeCardHTML(c, sel.includes(c.id))).join("");
+    }
   }
 
   pressKey(key) {
@@ -491,11 +534,18 @@ class AppUI {
 
   // 通常学習の回答処理フロー (第4.4章)
   submitLearningAnswer() {
-    if (!this.currentInput.trim()) return;
-
     const q = this.session.questions[this.session.currentIndex];
+    // V2.6.3: 図形選択問題 (figureChoices) は選択済みカードIDを回答として扱う
+    let rawAns = this.currentInput.trim();
+    if (q && q.figureChoices) {
+      const sel = this.session.selectedFigureChoices || [];
+      if (sel.length === 0) return;
+      rawAns = sel.join(",");
+    }
+    if (!rawAns) return;
+
     this.session.currentAttemptCount++;
-    const isCorrect = this._checkAnswer(this.currentInput.trim(), q.answer);
+    const isCorrect = this._checkAnswer(rawAns, q.answer);
 
     if (isCorrect) {
       // 正解処理
@@ -615,6 +665,7 @@ class AppUI {
     this.session.currentAttemptCount = 0;
     this.session.currentHintUsed = false;
     this.currentInput = "";
+    this.session.selectedFigureChoices = [];
 
     if (this.session.currentIndex >= this.session.totalCount) {
       // 10問完了 -> 結果画面へ
@@ -714,29 +765,25 @@ class AppUI {
         </div>
       </div>
 
-      <div class="numpad-grid">
-        <button class="numpad-btn" onclick="app.pressKey('7')">7</button>
-        <button class="numpad-btn" onclick="app.pressKey('8')">8</button>
-        <button class="numpad-btn" onclick="app.pressKey('9')">9</button>
-        <button class="numpad-btn" onclick="app.pressKey('4')">4</button>
-        <button class="numpad-btn" onclick="app.pressKey('5')">5</button>
-        <button class="numpad-btn" onclick="app.pressKey('6')">6</button>
-        <button class="numpad-btn" onclick="app.pressKey('1')">1</button>
-        <button class="numpad-btn" onclick="app.pressKey('2')">2</button>
-        <button class="numpad-btn" onclick="app.pressKey('3')">3</button>
-        <button class="numpad-btn action-btn" onclick="app.pressKey('.')">.</button>
-        <button class="numpad-btn" onclick="app.pressKey('0')">0</button>
-        <button class="numpad-btn action-btn" onclick="app.pressKey('backspace')">⌫ けす</button>
-        <button class="numpad-btn action-btn" style="grid-column: span 1;" onclick="app.pressKey('/')">/</button>
-        <button class="numpad-btn ok-btn" style="grid-column: span 2;" onclick="app.submitTestAnswer()">回答を確定 ➔</button>
-      </div>
+      ${q.figureChoices
+        ? this._renderFigureChoices(q, "app.submitTestAnswer()", "回答を確定 ➔")
+        : this._renderNumpad("app.submitTestAnswer()", "回答を確定 ➔")}
     `;
   }
 
   submitTestAnswer() {
-    if (!this.currentInput.trim()) return;
-    this.session.userAnswers.push(this.currentInput.trim());
+    const q = this.session.questions[this.session.currentIndex];
+    // V2.6.3: 図形選択問題 (figureChoices) は選択済みカードIDを回答として扱う
+    let rawAns = this.currentInput.trim();
+    if (q && q.figureChoices) {
+      const sel = this.session.selectedFigureChoices || [];
+      if (sel.length === 0) return;
+      rawAns = sel.join(",");
+    }
+    if (!rawAns) return;
+    this.session.userAnswers.push(rawAns);
     this.currentInput = "";
+    this.session.selectedFigureChoices = [];
     this.session.currentIndex++;
 
     if (this.session.currentIndex >= this.session.totalCount) {
@@ -1436,6 +1483,14 @@ class AppUI {
     const cleanU = userInput.replace(/\s+/g, "");
     const cleanA = correctAnswer.replace(/\s+/g, "");
     if (cleanU === cleanA) return true;
+    // V2.6.3: 複数選択問題 (multi_choice) はカンマ区切りID集合の完全一致で判定 (順序不問)
+    const uSet = cleanU.split(",");
+    const aSet = cleanA.split(",");
+    if (uSet.length > 1 || aSet.length > 1) {
+      if (uSet.length !== aSet.length) return false;
+      const aSorted = aSet.slice().sort();
+      return uSet.slice().sort().every((v, i) => v === aSorted[i]);
+    }
     const numU = parseFloat(cleanU);
     const numA = parseFloat(cleanA);
     return !isNaN(numU) && !isNaN(numA) && numU === numA;

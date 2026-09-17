@@ -186,7 +186,7 @@ class RuleBasedQuestionSource {
       };
     }
 
-    return {
+    const instance = {
       questionInstanceId: qId,
       templateId: template.templateId,
       grade: template.grade,
@@ -205,6 +205,23 @@ class RuleBasedQuestionSource {
       isFallback: !!options.isFallback,
       commutativePairs: Array.isArray(template.commutativePairs) ? template.commutativePairs : null
     };
+
+    // V2.6.3: 図形テンプレート (figure) → 図+文カード選択肢を生成して付与
+    if (template.problemType === "figure") {
+      const figUI = (typeof globalThis !== "undefined" && globalThis.FigureShapeUI) || null;
+      if (figUI && typeof figUI.buildProblem === "function") {
+        const fig = figUI.buildProblem(template, vars);
+        if (fig && Array.isArray(fig.figureChoices) && fig.figureChoices.length > 0) {
+          instance.questionText = fig.questionText || instance.questionText;
+          instance.figureChoices = fig.figureChoices;
+          instance.correctChoiceIds = fig.correctChoiceIds;
+          instance.answer = String(fig.answer);
+          if (fig.vars) Object.assign(instance.variables, fig.vars);
+        }
+      }
+    }
+
+    return instance;
   }
 
   /**

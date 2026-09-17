@@ -6,6 +6,7 @@ const { AppUI } = require("../js/ui.js");
 require("../js/templates_math.js");
 require("../js/templates_units_p1.js");
 require("../js/templates_units_p2.js");
+require("../js/templates_figures_g1.js");
 const { RuleBasedQuestionSource } = require("../js/question_source.js");
 
 const assert = require("assert");

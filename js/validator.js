@@ -44,6 +44,10 @@ class QuestionValidator {
       "questionText", "answer", "hintSteps", "explanation"
     ];
 
+    // V2.6.3 図形テンプレート: figureChoices + correctChoiceIds を持つ選択肢問題
+    const isFigureChoice = questionInstance.answerType === "single_choice" ||
+      questionInstance.answerType === "multi_choice";
+
     for (const field of requiredFields) {
       if (typeof questionInstance[field] === "undefined" || questionInstance[field] === null) {
         errors.push({
@@ -120,6 +124,52 @@ class QuestionValidator {
         message: "hintSteps must contain at least 2 steps.",
         variables: vars
       });
+    }
+
+    // V2.6.3 図形選択肢の構造チェック (figureChoices + correctChoiceIds の整合性)
+    if (isFigureChoice) {
+      const fc = questionInstance.figureChoices;
+      const cc = questionInstance.correctChoiceIds;
+      if (!Array.isArray(fc) || fc.length < 2) {
+        errors.push({
+          code: VALIDATION_ERROR_CODES.STRUCTURE_ERROR,
+          message: "figureChoices must be an array with at least 2 choices.",
+          variables: vars
+        });
+      } else {
+        for (const c of fc) {
+          if (!c || typeof c.id !== "string" || !c.figure || typeof c.figure.type !== "string" || typeof c.text !== "string") {
+            errors.push({
+              code: VALIDATION_ERROR_CODES.STRUCTURE_ERROR,
+              message: "Each figureChoice must have { id, figure: { type }, text }.",
+              variables: vars
+            });
+            break;
+          }
+        }
+        const ids = fc.map(c => c.id);
+        if (new Set(ids).size !== ids.length) {
+          errors.push({
+            code: VALIDATION_ERROR_CODES.ANSWER_ERROR,
+            message: "figureChoices contain duplicate ids.",
+            variables: vars
+          });
+        }
+        if (!Array.isArray(cc) || cc.length === 0 || !cc.every(id => ids.includes(id))) {
+          errors.push({
+            code: VALIDATION_ERROR_CODES.ANSWER_ERROR,
+            message: "correctChoiceIds must be a non-empty subset of figureChoices ids.",
+            variables: vars
+          });
+        }
+        if (questionInstance.answerType === "single_choice" && Array.isArray(cc) && cc.length !== 1) {
+          errors.push({
+            code: VALIDATION_ERROR_CODES.ANSWER_ERROR,
+            message: "single_choice must have exactly one correctChoiceId.",
+            variables: vars
+          });
+        }
+      }
     }
 
     // 6. understandingCheck チェック (有効な場合)

@@ -31,7 +31,8 @@ class UnitRegistry {
         1: [
           { id: "add_1digit_no_carry", name: "1けたのたし算（くり上がりなし）", concepts: ["add_basic", "combine_numbers"] },
           { id: "sub_1digit_no_borrow", name: "1けたのひき算（くり下がりなし）", concepts: ["sub_basic", "take_away"] },
-          { id: "number_bond_10", name: "10の合成・分解", concepts: ["number_bond_10"] }
+          { id: "number_bond_10", name: "10の合成・分解", concepts: ["number_bond_10"] },
+          { id: "shape_basic", name: "図形（かたちをみつけよう）", concepts: ["shape_identify_basic", "shape_select_all", "shape_compare_size"] }
         ],
         2: [
           { id: "add_1digit_carry", name: "1けたのたし算（くり上がりあり）", concepts: ["add_carry_10"] },

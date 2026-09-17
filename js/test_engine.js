@@ -263,7 +263,14 @@ class TestEngine {
     const cleanUser = userInput.replace(/\s+/g, "");
     const cleanAns = correctAnswer.replace(/\s+/g, "");
     if (cleanUser === cleanAns) return true;
-
+    // V2.6.3: 複数選択問題 (multi_choice) はカンマ区切りID集合の完全一致で判定 (順序不問)
+    const uSet = cleanUser.split(",");
+    const aSet = cleanAns.split(",");
+    if (uSet.length > 1 || aSet.length > 1) {
+      if (uSet.length !== aSet.length) return false;
+      const aSorted = aSet.slice().sort();
+      return uSet.slice().sort().every((v, i) => v === aSorted[i]);
+    }
     // 小数・数値の許容判定
     const numUser = parseFloat(cleanUser);
     const numAns = parseFloat(cleanAns);
