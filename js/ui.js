@@ -488,7 +488,7 @@ class AppUI {
       ? { shapeCardHTML: g.FigureShapeUI_G2.shapeCardHTML2.bind(g.FigureShapeUI_G2) }
       : ((typeof FigureShapeUI !== "undefined") ? FigureShapeUI : (g ? g.FigureShapeUI : null));
     if (!FigUI || !Array.isArray(q.figureChoices)) return this._renderNumpad(submitAction, submitLabel);
-    const selected = this.session.selectedFigureChoices || [];
+    const selected = (this.session && this.session.selectedFigureChoices) || [];
     const isGrid = q.answerType === "multi_choice";
     const items = q.figureChoices
       .map(c => FigUI.shapeCardHTML(c, selected.includes(c.id)))
