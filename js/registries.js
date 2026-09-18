@@ -47,17 +47,23 @@ class UnitRegistry {
         1: [
           { id: "add_2digit_no_carry", name: "2けたのたし算（くり上がりなし）", concepts: ["add_2digit_basic"] },
           { id: "sub_2digit_no_borrow", name: "2けたのひき算（くり下がりなし）", concepts: ["sub_2digit_basic"] },
-          { id: "length_unit", name: "長さの単位（cm・mm）", concepts: ["length_convert_basic"] },
+          { id: "length_unit", name: "長さの単位（cm・mm）", concepts: ["length_convert_basic", "length_convert_m_cm"] },
+          { id: "big_number_10000", name: "大きな数（3けた・10000まで）", concepts: ["place_value_1000", "big_number_read_write", "big_number_compare"] },
+          { id: "time_clock_basic", name: "時こくと時間", concepts: ["time_minute_convert_g2", "time_duration_forward", "time_duration_between"] },
+          { id: "fraction_intro", name: "分数（2年）", concepts: ["fraction_denominator", "fraction_compare_basic"] },
+          { id: "box_shape", name: "はこの形（面・辺・ちょう点）", concepts: ["box_faces_edges_vertices", "box_face_shape", "box_net_basic"] },
           { id: "shape_tri_quad", name: "図形（三角形と四角形）", concepts: ["tri_quad_identify", "rect_square_identify"] }
         ],
         2: [
           { id: "add_2digit_carry", name: "2けたのたし算（くり上がりあり）", concepts: ["add_2digit_carry"] },
           { id: "sub_2digit_borrow", name: "2けたのひき算（くり下がりあり）", concepts: ["sub_2digit_borrow"] },
           { id: "kuku_intro", name: "かけ算のいみと九九（2〜5のだん）", concepts: ["kuku_basic_groups"] },
-          { id: "volume_unit", name: "かさの単位（L・dL・mL）", concepts: ["volume_convert_basic"] }
+          { id: "volume_unit", name: "かさの単位（L・dL・mL）", concepts: ["volume_convert_basic", "volume_compare_basic"] },
+          { id: "calc_idea_basic", name: "計算のくふう（まとめて計算）", concepts: ["calc_idea_make_100", "calc_idea_sub_together"] },
+          { id: "estimation_basic", name: "計算の見積もり（およその数）", concepts: ["estimation_round10_add", "estimation_round100_mul"] }
         ],
         3: [
-          { id: "kuku_partial", name: "九九（6〜9のだん）", concepts: ["kuku_advanced_groups"] },
+          { id: "kuku_partial", name: "九九（6〜9のだん）", concepts: ["kuku_advanced_groups", "kuku_mastery"] },
           { id: "add_3terms_2digit", name: "3つの数のたし算・ひき算", concepts: ["three_terms_2digit"] },
           { id: "add_sub_2digit_2step", name: "2けたの2段階計算", concepts: ["two_step_2digit", "working_backwards"] }
         ]

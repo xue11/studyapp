@@ -1,5 +1,5 @@
 // PWA Service Worker (V2.5.15)
-const CACHE_NAME = 'arith-study-v2.6.5-figdisplay-fix';
+const CACHE_NAME = 'arith-study-v2.6.6-g2-units';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -13,6 +13,7 @@ const urlsToCache = [
   '/js/templates_math.js',
   '/js/templates_units_p1.js',
   '/js/templates_units_p2.js',
+  '/js/templates_g2_extra.js',
   '/js/templates_figures_g1.js',
   '/js/templates_figures_g2.js',
   '/js/question_source.js',

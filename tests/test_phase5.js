@@ -7,6 +7,7 @@ const assert = require("assert");
 const { APP_CONFIG } = require("../js/config.js");
 const { createNewProfile, createInitialAppState } = require("../js/schema.js");
 const { ParentDashboard } = require("../js/parent_dashboard.js");
+const { UnitRegistry } = require("../js/registries.js");
 
 console.log("=== Running Phase 5 Verification Tests (Parent Dashboard & PIN) ===\n");
 
@@ -64,8 +65,10 @@ function testBuildSummary() {
   assert.strictEqual(summary.totalAttempts, 3);
   assert.strictEqual(summary.totalAccuracy, Math.round((2 / 3) * 1000) / 1000);
 
-  // 現在学年 + Lv1 の単元 (add_2digit_no_carry, sub_2digit_no_borrow, length_unit)
-  assert.strictEqual(summary.currentUnitRows.length, 3, "Grade2 Lv1 has 3 units");
+  // 現在学年 + Lv1 の単元 (registry 登録数と一致すること)
+  const lv1Units = UnitRegistry.getUnitsForLevel("math", 2, 1);
+  assert.strictEqual(summary.currentUnitRows.length, lv1Units.length,
+    `Grade2 Lv1 unit rows must match registry (${lv1Units.length})`);
   const addRow = summary.currentUnitRows.find(r => r.unitId === "add_2digit_no_carry");
   const subRow = summary.currentUnitRows.find(r => r.unitId === "sub_2digit_no_borrow");
   assert.ok(addRow, "add unit row present");

@@ -154,6 +154,12 @@ class UnitSelector {
     let known = Array.isArray(gradeProgress.unitRotationKnownUnits)
       ? gradeProgress.unitRotationKnownUnits.filter(id => availableIds.includes(id))
       : [];
+    // V2.6.6: すでに bag に残っている unit も「既知」として扱う。
+    // (旧版で永続化された bag の中身が新規扱いされ、巡の途中で再注入されて
+    //  同じ unit が1巡内に2回出題される不具合を防ぐ)
+    for (const id of bag) {
+      if (!known.includes(id)) known.push(id);
+    }
     const brandNew = availableIds.filter(id => !known.includes(id) && !bag.includes(id));
     for (const id of brandNew) {
       bag.splice(Math.floor(Math.random() * (bag.length + 1)), 0, id);

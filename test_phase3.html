@@ -158,19 +158,36 @@
   <script src="js/schema.js"></script>
   <script src="js/validator.js"></script>
   <script src="js/templates_math.js"></script>
+  <script src="js/templates_units_p1.js"></script>
+  <script src="js/templates_units_p2.js"></script>
+  <script src="js/templates_g2_extra.js"></script>
+  <script src="js/templates_figures_g1.js"></script>
+  <script src="js/templates_figures_g2.js"></script>
   <script src="js/question_source.js"></script>
 
   <script>
+    // V2.6.6: MATH_TEMPLATES だけでなく Registry 登録済みの全テンプレート
+    // (templates_units_p1/p2, templates_g2_extra, 図形) を対象にする
+    function getAllTemplates() {
+      const byId = new Map();
+      (typeof MATH_TEMPLATES !== "undefined" ? MATH_TEMPLATES : []).forEach(t => byId.set(t.templateId, t));
+      const reg = (typeof TemplateRegistry !== "undefined") ? TemplateRegistry : null;
+      if (reg && reg.templates) {
+        Object.values(reg.templates).forEach(t => byId.set(t.templateId, t));
+      }
+      return Array.from(byId.values());
+    }
+
     function runBrowserTests() {
       const resultsDiv = document.getElementById("test-results");
       const logs = [];
 
       try {
-        logs.push(`✅ TemplateRegistry: 計 ${MATH_TEMPLATES.length} 個の全学年・全単元テンプレート登録 PASS`);
+        logs.push(`✅ TemplateRegistry: 計 ${getAllTemplates().length} 個の全学年・全単元テンプレート登録 PASS`);
 
         // 単元ごとの生成検証
         let passCount = 0;
-        for (const t of MATH_TEMPLATES) {
+        for (const t of getAllTemplates()) {
           const q = RuleBasedQuestionSource.generateQuestion(t.templateId);
           const v = QuestionValidator.validate(q);
           if (!v.valid) throw new Error(`Validator failed on ${t.templateId}`);
@@ -271,13 +288,13 @@
       const sumDiv = document.getElementById("templates-summary");
       let html = `<table style="width:100%; border-collapse:collapse; font-size:13px;">
         <tr style="background:#f1f5f9;"><th>学年</th><th>レベル</th><th>単元ID</th><th>種別</th><th>形式 / 文章</th></tr>`;
-      for (const t of MATH_TEMPLATES) {
+      for (const t of getAllTemplates()) {
         html += `<tr>
           <td>小${t.grade}</td>
           <td>Lv${t.difficultyLevel}</td>
           <td><code>${t.unitId}</code></td>
           <td>${t.problemType}</td>
-          <td><code>${t.format || t.sentencePatterns[0]}</code></td>
+          <td><code>${t.format || (t.sentencePatterns && t.sentencePatterns[0]) || ""}</code></td>
         </tr>`;
       }
       html += `</table>`;

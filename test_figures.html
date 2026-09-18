@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>図形問題 動作確認ビューア (V2.6.3)</title>
+  <title>図形問題 動作確認ビューア (V2.6.5)</title>
   <link rel="stylesheet" href="css/app.css">
   <style>
     body {
@@ -40,8 +40,8 @@
   </style>
 </head>
 <body>
-  <h1> 図形問題 動作確認ビューア (V2.6.3)</h1>
-  <p>1-A 基本図形の識別 / 1-B すべて選ぶ (完全一致判定) / 1-C 大小・向き比較 を確認できます。</p>
+  <h1> 図形問題 動作確認ビューア (V2.6.5)</h1>
+  <p>【1年】基本図形の識別 / すべて選ぶ (完全一致判定) / 大小・向き比較、【2年】三角形・四角形の識別 / 長方形・正方形の識別 (直角マーク付き) を確認できます。</p>
 
   <div class="card">
     <div>
@@ -83,7 +83,9 @@
   <script src="js/templates_math.js"></script>
   <script src="js/templates_units_p1.js"></script>
   <script src="js/templates_units_p2.js"></script>
+  <script src="js/templates_g2_extra.js"></script>
   <script src="js/templates_figures_g1.js"></script>
+  <script src="js/templates_figures_g2.js"></script>
   <script src="js/question_source.js"></script>
 
   <script>
@@ -102,9 +104,10 @@
 
       function getFigureTemplates() {
         var reg = (typeof TemplateRegistry !== "undefined") ? TemplateRegistry : window.TemplateRegistry;
-        var byUnit = (reg && reg.getByUnit) ? reg.getByUnit("math", 1, 1, "shape_basic") : [];
-        var all = byUnit || [];
-        return all.filter(function (t) { return t.problemType === "figure"; });
+        // V2.6.5: 1年生 (shape_basic) + 2年生 (shape_tri_quad) の両方を対象に
+        var g1 = (reg && reg.getByUnit) ? (reg.getByUnit("math", 1, 1, "shape_basic") || []) : [];
+        var g2 = (reg && reg.getByUnit) ? (reg.getByUnit("math", 2, 1, "shape_tri_quad") || []) : [];
+        return g1.concat(g2).filter(function (t) { return t.problemType === "figure"; });
       }
 
       function initSelect() {
@@ -133,15 +136,26 @@
         if (t) generateQuestion(t.templateId);
       }
 
+      // V2.6.5: templateId が g2_ で始まる場合は FigureShapeUI_G2（直角マーク対応）を使用
+      function cardRenderer() {
+        var isG2 = current && typeof current.templateId === "string" && current.templateId.indexOf("g2_") === 0;
+        var g2 = (typeof window !== "undefined") ? window.FigureShapeUI_G2 : null;
+        if (isG2 && g2 && typeof g2.shapeCardHTML2 === "function") {
+          return { shapeCardHTML: g2.shapeCardHTML2, isMulti: g2.isMultiCorrect, isSingle: g2.isSingleCorrect, snapshot: g2.choicesSnapshot };
+        }
+        return { shapeCardHTML: FigureShapeUI.shapeCardHTML, isMulti: FigureShapeUI.isMultiCorrect, isSingle: FigureShapeUI.isSingleCorrect, snapshot: FigureShapeUI.choicesSnapshot };
+      }
+
       function renderChoices() {
         var container = el("figure-choices");
         if (!current || !Array.isArray(current.figureChoices)) {
           container.innerHTML = '<span style="color:#b91c1c;">figureChoices がありません</span>';
           return;
         }
+        var R = cardRenderer();
         container.className = current.answerType === "multi_choice" ? "shape-grid" : "shape-list";
         container.innerHTML = current.figureChoices.map(function (c) {
-          return FigureShapeUI.shapeCardHTML(c, selected.indexOf(c.id) >= 0)
+          return R.shapeCardHTML(c, selected.indexOf(c.id) >= 0)
             .replace('onclick="app.toggleFigureChoice(', 'onclick="window.__toggle(');
         }).join("");
       }
@@ -159,11 +173,12 @@
 
       function judge() {
         if (!current) return false;
+        var R = cardRenderer();
         var correct = current.correctChoiceIds || [];
         if (current.answerType === "multi_choice") {
-          return FigureShapeUI.isMultiCorrect(selected, correct);
+          return R.isMulti(selected, correct);
         }
-        return FigureShapeUI.isSingleCorrect(selected[0], correct);
+        return R.isSingle(selected[0], correct);
       }
 
       function textOf(ids) {
@@ -191,7 +206,7 @@
           userAnswer: selected.join(","),
           correctAnswer: (current.correctChoiceIds || []).join(","),
           isCorrect: isCorrect,
-          figureChoices: FigureShapeUI.choicesSnapshot(current.figureChoices)
+          figureChoices: cardRenderer().snapshot(current.figureChoices)
         });
         renderHistory();
       }

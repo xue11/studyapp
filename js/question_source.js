@@ -19,6 +19,7 @@ if (typeof require !== "undefined") {
   try { require("./templates_math.js"); } catch (e) {}
   try { require("./templates_units_p1.js"); } catch (e) {}
   try { require("./templates_units_p2.js"); } catch (e) {}
+  try { require("./templates_g2_extra.js"); } catch (e) {}
   try { require("./templates_figures_g1.js"); } catch (e) {}
   try { require("./templates_figures_g2.js"); } catch (e) {}
 }
@@ -238,12 +239,18 @@ class RuleBasedQuestionSource {
     const reg = TemplateRegistryRef || (typeof window !== "undefined" ? window.TemplateRegistry : null);
     if (!reg) throw new Error("TemplateRegistry unavailable for fallback.");
 
-    // 同一unitの別テンプレートを検索
-    const siblingTemplates = reg.getByUnit("math", template.grade, template.difficultyLevel, template.unitId)
-      .filter(t => t.templateId !== template.templateId);
+    // V2.6.6: 兄弟テンプレートへのフォールバックは1段のみ許可する。
+    // (変数空間が小さい単元では兄弟同士が互いを呼び続けて無限再帰になるため)
+    if (!options || !options._isFallbackSibling) {
+      // 同一unitの別テンプレートを検索
+      const siblingTemplates = reg.getByUnit("math", template.grade, template.difficultyLevel, template.unitId)
+        .filter(t => t.templateId !== template.templateId);
 
-    if (siblingTemplates.length > 0) {
-      return this.generateQuestion(siblingTemplates[0].templateId, previousInstances, { ...options, maxRetries: 2 });
+      if (siblingTemplates.length > 0) {
+        return this.generateQuestion(siblingTemplates[0].templateId, previousInstances, {
+          ...options, maxRetries: 2, _isFallbackSibling: true
+        });
+      }
     }
 
     // 最後の手段: 最小限の静的置換
