@@ -1,5 +1,5 @@
 // PWA Service Worker (V2.5.15)
-const CACHE_NAME = 'arith-study-v2.6.4-figure-toggle-g2';
+const CACHE_NAME = 'arith-study-v2.6.5-figdisplay-fix';
 const urlsToCache = [
   '/',
   '/index.html',

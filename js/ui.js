@@ -484,7 +484,8 @@ class AppUI {
   _renderFigureChoices(q, submitAction, submitLabel) {
     const g = (typeof window !== "undefined") ? window : null;
     const isG2 = q && typeof q.templateId === "string" && q.templateId.indexOf("g2_") === 0;
-    const FigUI = (isG2 && g && g.FigureShapeUI_G2) ? g.FigureShapeUI_G2
+    const FigUI = (isG2 && g && g.FigureShapeUI_G2 && typeof g.FigureShapeUI_G2.shapeCardHTML2 === "function")
+      ? { shapeCardHTML: g.FigureShapeUI_G2.shapeCardHTML2.bind(g.FigureShapeUI_G2) }
       : ((typeof FigureShapeUI !== "undefined") ? FigureShapeUI : (g ? g.FigureShapeUI : null));
     if (!FigUI || !Array.isArray(q.figureChoices)) return this._renderNumpad(submitAction, submitLabel);
     const selected = this.session.selectedFigureChoices || [];
@@ -494,8 +495,19 @@ class AppUI {
       .join("");
     return `
       <div id="figure-choices" class="${isGrid ? "shape-grid" : "shape-list"}">${items}</div>
-      <button class="numpad-btn ok-btn" style="width:100%; margin-top:10px;" onclick="${submitAction}">${submitLabel}</button>
+            <button class="numpad-btn ok-btn" style="width:100%; margin-top:10px;" onclick="${submitAction}">${submitLabel}</button>
     `;
+  }
+
+  // V2.6.3: 図形選択問題の回答表示 (選択中カードの状態を表示)
+  _figureSelectionDisplay(q) {
+    const sel = (this.session && this.session.selectedFigureChoices) || [];
+    if (!sel.length) return '<span class="answer-placeholder">？</span>';
+    if (q.answerType === "multi_choice") {
+      return `${sel.length}こ えらんだ`;
+    }
+    const c = (Array.isArray(q.figureChoices) ? q.figureChoices : []).find(x => x.id === sel[0]);
+    return (c && c.text) ? c.text : sel[0];
   }
 
   toggleFigureChoice(id) {
