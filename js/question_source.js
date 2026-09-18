@@ -19,6 +19,8 @@ if (typeof require !== "undefined") {
   try { require("./templates_math.js"); } catch (e) {}
   try { require("./templates_units_p1.js"); } catch (e) {}
   try { require("./templates_units_p2.js"); } catch (e) {}
+  try { require("./templates_figures_g1.js"); } catch (e) {}
+  try { require("./templates_figures_g2.js"); } catch (e) {}
 }
 
 const MAX_GENERATION_RETRY = 5;
@@ -207,8 +209,13 @@ class RuleBasedQuestionSource {
     };
 
     // V2.6.3: 図形テンプレート (figure) → 図+文カード選択肢を生成して付与
+    // V2.6.4: g2_shape_* は FigureShapeUI_G2、それ以外は FigureShapeUI (G1)
     if (template.problemType === "figure") {
-      const figUI = (typeof globalThis !== "undefined" && globalThis.FigureShapeUI) || null;
+      const g = (typeof globalThis !== "undefined") ? globalThis : null;
+      const isG2 = typeof template.templateId === "string" && template.templateId.indexOf("g2_") === 0;
+      const figUI = (g && isG2 && g.FigureShapeUI_G2 && typeof g.FigureShapeUI_G2.buildProblem === "function")
+        ? g.FigureShapeUI_G2
+        : ((g && g.FigureShapeUI) || null);
       if (figUI && typeof figUI.buildProblem === "function") {
         const fig = figUI.buildProblem(template, vars);
         if (fig && Array.isArray(fig.figureChoices) && fig.figureChoices.length > 0) {

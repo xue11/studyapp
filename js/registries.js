@@ -47,7 +47,8 @@ class UnitRegistry {
         1: [
           { id: "add_2digit_no_carry", name: "2けたのたし算（くり上がりなし）", concepts: ["add_2digit_basic"] },
           { id: "sub_2digit_no_borrow", name: "2けたのひき算（くり下がりなし）", concepts: ["sub_2digit_basic"] },
-          { id: "length_unit", name: "長さの単位（cm・mm）", concepts: ["length_convert_basic"] }
+          { id: "length_unit", name: "長さの単位（cm・mm）", concepts: ["length_convert_basic"] },
+          { id: "shape_tri_quad", name: "図形（三角形と四角形）", concepts: ["tri_quad_identify", "rect_square_identify"] }
         ],
         2: [
           { id: "add_2digit_carry", name: "2けたのたし算（くり上がりあり）", concepts: ["add_2digit_carry"] },

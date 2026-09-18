@@ -63,7 +63,7 @@ const APP_CONFIG = {
     tests: true,
     parentMode: true,
     wordProblems: true,
-    figureProblems: false,
+    figureProblems: true,
     claudeApi: false
   }
 };

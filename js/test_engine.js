@@ -41,7 +41,13 @@ class TestEngine {
     const level = gradeProgress.difficultyLevel;
     const count = config?.math?.testEngine?.questionCount || 10;
 
-    const availableUnits = this._getUnitsForLevel("math", currentGrade, level);
+    const rawUnits = this._getUnitsForLevel("math", currentGrade, level);
+    // V2.6.4: figureEnabled===false profiles exclude shape_* units (same rule as UnitSelector)
+    let availableUnits = Array.isArray(rawUnits) ? rawUnits : [];
+    if (profile && profile.settings && profile.settings.figureEnabled === false) {
+      availableUnits = availableUnits.filter(u => !(u && typeof u.id === "string" && u.id.indexOf("shape_") === 0));
+      if (availableUnits.length === 0) availableUnits = rawUnits;
+    }
     if (!availableUnits || availableUnits.length === 0) {
       throw new Error("TestEngine: No units available for current grade & level.");
     }

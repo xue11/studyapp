@@ -42,6 +42,10 @@ function migrateAppState(data) {
       if (typeof p.streaks.dailyStreak !== "number") p.streaks.dailyStreak = 0;
       if (typeof p.streaks.bestDailyStreak !== "number") p.streaks.bestDailyStreak = 0;
       if (typeof p.streaks.lastStudyDate !== "string") p.streaks.lastStudyDate = "";
+
+      // V2.6.4: 図形問題ON/OFFが無い既存プロファイルは既定ONで補完
+      if (!p.settings) p.settings = {};
+      if (typeof p.settings.figureEnabled !== "boolean") p.settings.figureEnabled = true;
     }
   }
 

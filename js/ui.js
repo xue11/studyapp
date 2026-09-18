@@ -480,8 +480,12 @@ class AppUI {
   }
 
   // V2.6.3: 図形選択問題のカード描画 (list: 単一選択 / grid: 複数選択)
+  // V2.6.4: g2_shape_* は FigureShapeUI_G2 で描画 (直角マーク付き)
   _renderFigureChoices(q, submitAction, submitLabel) {
-    const FigUI = (typeof FigureShapeUI !== "undefined") ? FigureShapeUI : (typeof window !== "undefined" ? window.FigureShapeUI : null);
+    const g = (typeof window !== "undefined") ? window : null;
+    const isG2 = q && typeof q.templateId === "string" && q.templateId.indexOf("g2_") === 0;
+    const FigUI = (isG2 && g && g.FigureShapeUI_G2) ? g.FigureShapeUI_G2
+      : ((typeof FigureShapeUI !== "undefined") ? FigureShapeUI : (g ? g.FigureShapeUI : null));
     if (!FigUI || !Array.isArray(q.figureChoices)) return this._renderNumpad(submitAction, submitLabel);
     const selected = this.session.selectedFigureChoices || [];
     const isGrid = q.answerType === "multi_choice";
@@ -507,7 +511,12 @@ class AppUI {
       sel.length = 0;
       sel.push(id);
     }
-    const FigUI = (typeof FigureShapeUI !== "undefined") ? FigureShapeUI : (typeof window !== "undefined" ? window.FigureShapeUI : null);
+    // V2.6.4: G2カード再描画も対応
+    const g2 = (typeof window !== "undefined") ? window : null;
+    const isG2q = q && typeof q.templateId === "string" && q.templateId.indexOf("g2_") === 0;
+    const FigUI = (isG2q && g2 && g2.FigureShapeUI_G2 && typeof g2.FigureShapeUI_G2.shapeCardHTML2 === "function")
+      ? { shapeCardHTML: g2.FigureShapeUI_G2.shapeCardHTML2 }
+      : ((typeof FigureShapeUI !== "undefined") ? FigureShapeUI : (g2 ? g2.FigureShapeUI : null));
     const container = document.getElementById("figure-choices");
     if (container && FigUI) {
       container.innerHTML = q.figureChoices.map(c => FigUI.shapeCardHTML(c, sel.includes(c.id))).join("");
@@ -959,6 +968,16 @@ class AppUI {
       </div>
 
       <div class="card">
+        <div class="card-title">🔷 図形問題</div>
+        <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:6px;">図形（かたち）の問題を出す:</label>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <button class="btn ${(profile.settings && profile.settings.figureEnabled === false) ? 'btn-outline' : 'btn-primary'}" style="flex:1; min-height:40px;" onclick="app.toggleFigureEnabled(true)">出す ✔</button>
+          <button class="btn ${(profile.settings && profile.settings.figureEnabled === false) ? 'btn-primary' : 'btn-outline'}" style="flex:1; min-height:40px;" onclick="app.toggleFigureEnabled(false)">出さない</button>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-muted);">※ OFFにすると学習・テストに図形問題が出なくなります。いつでも戻せます。</p>
+      </div>
+
+      <div class="card">
         <div class="card-title">👥 プロフィール切り替え・管理</div>
         <button class="btn btn-outline" onclick="app.navigate('profile_select')">👤 別のプロフィールを選ぶ・新規作成</button>
       </div>
@@ -1005,6 +1024,17 @@ class AppUI {
     Sound.playClick();
     alert(`学年を「小学${newGrade}年生」に変更しました！`);
     this.navigate("home");
+  }
+
+  // V2.6.4: 図形問題の出題ON/OFF切替 (Phase 0, plan A/A-1)
+  toggleFigureEnabled(enabled) {
+    const profile = this.getActiveProfile();
+    if (!profile) return;
+    if (!profile.settings) profile.settings = {};
+    profile.settings.figureEnabled = !!enabled;
+    this.storage.saveState(this.state);
+    Sound.playClick();
+    this.navigate("settings");
   }
 
   exportData() {

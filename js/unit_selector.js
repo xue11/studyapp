@@ -30,8 +30,9 @@ class UnitSelector {
       r.dueAt && r.dueAt <= today
     );
 
-    // V2.6.2 (minimal B): レジストリのどのレベルにも存在しない unit の復習はスキップする
-    const validReviews = activeReviews.filter(r => this._unitExistsInAnyLevel(currentGrade, r.unitId));
+    // V2.6.2 (minimal B): skip review items whose unit no longer exists in any level
+    // V2.6.4: if figureEnabled===false, also skip figure (shape_*) review items
+    const validReviews = activeReviews.filter(r => this._unitExistsInAnyLevel(currentGrade, r.unitId) && (this._isFigureEnabled(profile) || !this._isFigureUnit(r.unitId)));
 
     if (validReviews.length > 0) {
       // dueAt が古い順 -> failCount が多い順 -> registeredAt が古い順
@@ -49,8 +50,14 @@ class UnitSelector {
       };
     }
 
-    // 2. 通常学習の単元選択 (Coverage vs Weakness Phase)
-    const availableUnits = this._getUnitsForLevel("math", currentGrade, level);
+    // 2. Normal unit selection (Coverage vs Weakness Phase)
+    // V2.6.4: if figureEnabled===false, exclude shape_* units
+    let availableUnits = this._getUnitsForLevel("math", currentGrade, level);
+    availableUnits = this._filterFigureUnits(availableUnits, profile);
+    if (!availableUnits || availableUnits.length === 0) {
+      // Safety fallback: restore unfiltered list (grade1 Lv1 keeps 3 calc units, so normally not empty)
+      availableUnits = this._getUnitsForLevel("math", currentGrade, level);
+    }
     if (!availableUnits || availableUnits.length === 0) {
       throw new Error(`UnitSelector: No units registered for grade ${currentGrade} level ${level}`);
     }
@@ -113,6 +120,24 @@ class UnitSelector {
       if (units && units.some(u => u.id === unitId)) return true;
     }
     return false;
+  }
+
+  // V2.6.4: figureEnabled helpers (Phase 0, plan A/A-1)
+  // A profile with settings.figureEnabled===false excludes figure units (unitId starts with "shape_").
+  static _isFigureEnabled(profile) {
+    if (!profile || !profile.settings) return true;
+    if (typeof profile.settings.figureEnabled !== "boolean") return true;
+    return profile.settings.figureEnabled;
+  }
+
+  static _isFigureUnit(unitId) {
+    return typeof unitId === "string" && unitId.indexOf("shape_") === 0;
+  }
+
+  static _filterFigureUnits(units, profile) {
+    if (!Array.isArray(units)) return units;
+    if (this._isFigureEnabled(profile)) return units;
+    return units.filter(u => !this._isFigureUnit(u && u.id));
   }
 
   static _drawFromRotationBag(gradeProgress, availableUnits) {
