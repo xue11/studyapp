@@ -7,6 +7,29 @@
  * - 旧形式 -> 2.5.4 -> 2.5.6 への安全なデータ構造移行
  */
 
+/**
+ * 現行アプリバージョンを config.js (APP_META) から取得する。
+ * ハードコードするとリリース毎にズレるため、単一情報源として APP_META を参照し、
+ * 取得できない環境ではフォールバック値を返す。
+ */
+function currentAppVersion() {
+  // ブラウザ: config.js の top-level const / window.APP_META
+  try {
+    if (typeof APP_META !== "undefined" && APP_META && APP_META.appVersion) return APP_META.appVersion;
+  } catch (e) { /* not defined */ }
+  try {
+    if (typeof window !== "undefined" && window.APP_META && window.APP_META.appVersion) return window.APP_META.appVersion;
+  } catch (e) { /* not defined */ }
+  // Node.js
+  try {
+    if (typeof require !== "undefined") {
+      const cfg = require("./config.js");
+      if (cfg && cfg.APP_META && cfg.APP_META.appVersion) return cfg.APP_META.appVersion;
+    }
+  } catch (e) { /* not available */ }
+  return "V2.6.7";
+}
+
 function migrateAppState(data) {
   if (!data || typeof data !== "object") {
     throw new Error("Migration: Invalid data format.");
@@ -29,7 +52,8 @@ function migrateAppState(data) {
 
   state.schemaVersion = "2.5.6";
   if (!state.appMeta) state.appMeta = {};
-  state.appMeta.appVersion = "V2.5.15";
+  // V2.6.7: アプリバージョンは config.js (APP_META) を単一情報源とする
+  state.appMeta.appVersion = currentAppVersion();
 
   // V2.5.14: 既存プロファイルに nickname が無い場合は空文字で補完 (表示時は name にフォールバック)
   if (Array.isArray(state.profiles)) {

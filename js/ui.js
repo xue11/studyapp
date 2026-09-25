@@ -442,16 +442,21 @@ class AppUI {
 
       <div class="question-display">
         <div class="question-text">${q.questionText}</div>
+        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : ""}
         <div class="answer-input-display" id="answer-display">
-          ${q.figureChoices
-            ? this._figureSelectionDisplay(q)
-            : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>')}
+          ${q.clockHTML
+            ? this._clockSelectionDisplay(q)
+            : (q.figureChoices
+              ? this._figureSelectionDisplay(q)
+              : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>'))}
         </div>
       </div>
 
-      ${q.figureChoices
-        ? this._renderFigureChoices(q, "app.submitLearningAnswer()", "こたえる ➔")
-        : this._renderNumpad("app.submitLearningAnswer()", "こたえる ➔")}
+      ${q.clockHTML
+        ? this._renderClockInputs(q, "app.submitLearningAnswer()", "こたえる ➔")
+        : (q.figureChoices
+          ? this._renderFigureChoices(q, "app.submitLearningAnswer()", "こたえる ➔")
+          : this._renderNumpad("app.submitLearningAnswer()", "こたえる ➔"))}
 
       <div id="modal-container"></div>
     `;
@@ -500,6 +505,77 @@ class AppUI {
   }
 
   // V2.6.3: 図形選択問題の回答表示 (選択中カードの状態を表示)
+  // V2.6.7: 時計問題 (clock_input) の「時」「分」「秒」分離入力
+  // 時計図は ClockSVG が生成した q.clockHTML をそのまま表示する
+  _renderClockInputs(q, submitAction, submitLabel) {
+    const fields = (Array.isArray(q.clockFields) && q.clockFields.length > 0)
+      ? q.clockFields
+      : [{ key: "h", label: "時", max: 2 }, { key: "m", label: "分", max: 2 }];
+    const boxes = fields.map(f => `
+        <span class="clock-field">
+          <input type="text" inputmode="numeric" id="clock-field-${f.key}" maxlength="${f.max || 2}"
+                 oninput="app.syncClockDisplay()" aria-label="${f.label}">
+          <span class="clock-field-label">${f.label}</span>
+        </span>`).join("");
+    return `
+      <div class="clock-answer-row">${boxes}</div>
+      <button class="numpad-btn ok-btn" style="width:100%; margin-top:10px;" onclick="${submitAction}">${submitLabel}</button>
+    `;
+  }
+
+  /**
+   * 入力欄から回答文字列を組み立てる (例: "3:40")
+   * @returns {{answer:string, values:Object}|null} 未入力がある場合は null
+   */
+  _readClockAnswer(q) {
+    const fields = Array.isArray(q.clockFields) ? q.clockFields : [];
+    if (fields.length === 0) return null;
+    const vals = {};
+    let empty = false;
+    fields.forEach(f => {
+      const node = document.getElementById("clock-field-" + f.key);
+      // 全角数字 → 半角に直してから、数字以外を除去（単位付き入力・スマホIME対策）
+      const raw = node ? String(node.value || "") : "";
+      const v = raw
+        .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+        .replace(/[^0-9]/g, "");
+      if (v === "") empty = true;
+      vals[f.key] = v;
+    });
+    if (empty) return null;
+    const CS = (typeof window !== "undefined" && window.ClockSVG) ? window.ClockSVG : null;
+    const fmt = q.clockFormat || "H:M";
+    let ans;
+    if (CS && typeof CS.formatHMS === "function") {
+      let h = vals.h, m = vals.m, s = vals.s;
+      if (fmt === "COUNT") h = vals.count;
+      ans = CS.formatHMS(h, m, s, fmt);
+    } else {
+      ans = fields.map(f => vals[f.key]).join(":");
+    }
+    return { answer: String(ans), values: vals };
+  }
+
+  /** 入力中の「時こく」を回答表示エリアへ反映する */
+  _clockSelectionDisplay(q) {
+    const read = this._readClockAnswer(q);
+    if (!read) return '<span class="answer-placeholder">時こくを いれてね</span>';
+    const CS = (typeof window !== "undefined" && window.ClockSVG) ? window.ClockSVG : null;
+    const label = (CS && typeof CS.answerLabel === "function")
+      ? (CS.answerLabel(read.answer, q.clockFormat || "H:M") || read.answer)
+      : read.answer;
+    return `<span>${label}</span>`;
+  }
+
+  /** 入力欄の変更時に回答表示エリアを更新する (oninput から呼ぶ) */
+  syncClockDisplay() {
+    if (!this.session || !Array.isArray(this.session.questions)) return;
+    const q = this.session.questions[this.session.currentIndex];
+    if (!q || !q.clockHTML) return;
+    const display = document.getElementById("answer-display");
+    if (display) display.innerHTML = this._clockSelectionDisplay(q);
+  }
+
   _figureSelectionDisplay(q) {
     const sel = (this.session && this.session.selectedFigureChoices) || [];
     if (!sel.length) return '<span class="answer-placeholder">？</span>';
@@ -560,7 +636,17 @@ class AppUI {
     const q = this.session.questions[this.session.currentIndex];
     // V2.6.3: 図形選択問題 (figureChoices) は選択済みカードIDを回答として扱う
     let rawAns = this.currentInput.trim();
-    if (q && q.figureChoices) {
+    // V2.6.7: 時計問題は「時」「分」「秒」の入力欄から回答を組み立てる
+    if (q && q.clockHTML) {
+      const clockRead = this._readClockAnswer(q);
+      if (!clockRead) {
+        this._showModal("こたえを いれてね", "「時」「分」の らんに すうじを いれてね。", [
+          { text: "OK", action: "app.closeModal()" }
+        ]);
+        return;
+      }
+      rawAns = clockRead.answer;
+    } else if (q && q.figureChoices) {
       const sel = this.session.selectedFigureChoices || [];
       if (sel.length === 0) return;
       rawAns = sel.join(",");
@@ -791,16 +877,21 @@ class AppUI {
 
       <div class="question-display">
         <div class="question-text">${q.questionText}</div>
+        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : ""}
         <div class="answer-input-display" id="answer-display">
-          ${q.figureChoices
-            ? this._figureSelectionDisplay(q)
-            : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>')}
+          ${q.clockHTML
+            ? this._clockSelectionDisplay(q)
+            : (q.figureChoices
+              ? this._figureSelectionDisplay(q)
+              : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>'))}
         </div>
       </div>
 
-      ${q.figureChoices
-        ? this._renderFigureChoices(q, "app.submitTestAnswer()", "回答を確定 ➔")
-        : this._renderNumpad("app.submitTestAnswer()", "回答を確定 ➔")}
+      ${q.clockHTML
+        ? this._renderClockInputs(q, "app.submitTestAnswer()", "回答を確定 ➔")
+        : (q.figureChoices
+          ? this._renderFigureChoices(q, "app.submitTestAnswer()", "回答を確定 ➔")
+          : this._renderNumpad("app.submitTestAnswer()", "回答を確定 ➔"))}
     `;
   }
 
@@ -808,7 +899,12 @@ class AppUI {
     const q = this.session.questions[this.session.currentIndex];
     // V2.6.3: 図形選択問題 (figureChoices) は選択済みカードIDを回答として扱う
     let rawAns = this.currentInput.trim();
-    if (q && q.figureChoices) {
+    // V2.6.7: 時計問題は「時」「分」「秒」の入力欄から回答を組み立てる
+    if (q && q.clockHTML) {
+      const clockRead = this._readClockAnswer(q);
+      if (!clockRead) return;
+      rawAns = clockRead.answer;
+    } else if (q && q.figureChoices) {
       const sel = this.session.selectedFigureChoices || [];
       if (sel.length === 0) return;
       rawAns = sel.join(",");
@@ -1557,6 +1653,12 @@ class AppUI {
    */
   _formatAnswerLabel(answerStr, figureChoices) {
     const raw = (answerStr === null || answerStr === undefined) ? "" : String(answerStr);
+    // V2.6.7: 時こく回答 ("3:40" 等) は「3時40分」の表示用ラベルへ変換する
+    const clockSVG = (typeof window !== "undefined" && window.ClockSVG) ? window.ClockSVG : null;
+    if (clockSVG && typeof clockSVG.answerLabel === "function" && raw.indexOf(":") >= 0) {
+      const fmt = (raw.split(":").length >= 3) ? "H:M:S" : "H:M";
+      return clockSVG.answerLabel(raw, fmt) || raw;
+    }
     if (!Array.isArray(figureChoices) || figureChoices.length === 0) return raw;
     const map = {};
     figureChoices.forEach(c => { if (c && c.id) map[c.id] = c.text || c.id; });
@@ -1566,9 +1668,15 @@ class AppUI {
   }
 
   _checkAnswer(userInput, correctAnswer) {
-    const cleanU = userInput.replace(/\s+/g, "");
-    const cleanA = correctAnswer.replace(/\s+/g, "");
+    const cleanU = (userInput || "").replace(/\s+/g, "");
+    const cleanA = (correctAnswer || "").replace(/\s+/g, "");
     if (cleanU === cleanA) return true;
+    // V2.6.7: 時こく回答 ("3:40" 等) は ClockSVG で比較（桁数ゆれ・全角数字・単位表記を吸収）
+    const clockSVG = (typeof window !== "undefined" && window.ClockSVG) ? window.ClockSVG : null;
+    if (clockSVG && typeof clockSVG.equalsAnswer === "function" &&
+        (cleanU.indexOf(":") >= 0 || cleanA.indexOf(":") >= 0)) {
+      return clockSVG.equalsAnswer(cleanU, cleanA);
+    }
     // V2.6.3: 複数選択問題 (multi_choice) はカンマ区切りID集合の完全一致で判定 (順序不問)
     const uSet = cleanU.split(",");
     const aSet = cleanA.split(",");

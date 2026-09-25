@@ -22,6 +22,14 @@ if (typeof require !== "undefined") {
   try { require("./templates_g2_extra.js"); } catch (e) {}
   try { require("./templates_figures_g1.js"); } catch (e) {}
   try { require("./templates_figures_g2.js"); } catch (e) {}
+  // V2.6.7: 時計問題 (Node 実行時の読み込み。ブラウザは index.html で先行読込済み)
+  try {
+    const clockMod = require("./clock_svg.js");
+    if (clockMod && clockMod.ClockSVG && typeof globalThis !== "undefined" && !globalThis.ClockSVG) {
+      globalThis.ClockSVG = clockMod.ClockSVG;
+    }
+  } catch (e) {}
+  try { require("./templates_clock.js"); } catch (e) {}
 }
 
 const MAX_GENERATION_RETRY = 5;
@@ -226,6 +234,25 @@ class RuleBasedQuestionSource {
           instance.answer = String(fig.answer);
           if (fig.vars) Object.assign(instance.variables, fig.vars);
         }
+      }
+    }
+
+    // V2.6.7: 時計テンプレート (answerType: "clock_input") → 時計図 + 分離入力欄の定義を付与
+    // 表示は ClockSVG 共通部品に委譲する (2年生以降で共通利用)
+    if (template.answerType === "clock_input" && template.clockSpec) {
+      const clock = (typeof globalThis !== "undefined" && globalThis.ClockSVG)
+        ? globalThis.ClockSVG
+        : ((typeof window !== "undefined" && window.ClockSVG) ? window.ClockSVG : null);
+      if (clock && typeof clock.buildDisplay === "function") {
+        const disp = clock.buildDisplay(template.clockSpec, vars);
+        instance.clockHTML = disp.clockHTML;
+        instance.clockFormat = disp.format;
+        instance.clockFields = disp.fields;
+        instance.clockSpec = template.clockSpec;
+        instance.clockAnswerLabel = (typeof clock.answerLabel === "function")
+          ? clock.answerLabel(disp.answer, disp.format)
+          : String(disp.answer);
+        instance.answer = String(disp.answer);
       }
     }
 

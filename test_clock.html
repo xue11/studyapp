@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>時計問題 動作確認ビューア (V2.6.7)</title>
+<link rel="stylesheet" href="css/app.css">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Meiryo", sans-serif; margin: 20px; background:#f8fafc; color:#1e293b; }
+  h1 { color:#2563eb; border-bottom:2px solid #cbd5e1; padding-bottom:8px; font-size:1.3rem; }
+  h2 { color:#334155; margin-top:20px; font-size:1.05rem; }
+  .card { background:#fff; border-radius:8px; padding:16px 20px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,.1); border:1px solid #e2e8f0; }
+  .badge { display:inline-block; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold; background:#e0f2fe; color:#0369a1; margin-right:6px; }
+  .badge.success { background:#dcfce7; color:#15803d; }
+  .badge.danger { background:#fee2e2; color:#b91c1c; }
+  select, button, input { padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:14px; margin-right:8px; margin-bottom:8px; }
+  button { background:#2563eb; color:#fff; border:none; font-weight:bold; cursor:pointer; }
+  button:hover { background:#1d4ed8; }
+  button.secondary { background:#64748b; }
+  .question-text { font-size:1.1rem; font-weight:bold; margin:10px 0; }
+  .result-ok { color:#15803d; font-weight:bold; }
+  .result-ng { color:#b91c1c; font-weight:bold; }
+  .hint { color:#475569; font-size:0.9rem; margin-top:4px; }
+  .clock-stage { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; margin:10px 0; }
+  .clock-figure { margin:0; text-align:center; }
+  .clock-figure svg { display:block; }
+  .clock-large svg { width:260px; height:260px; }
+  .clock-small svg { width:156px; height:156px; }
+  .clock-caption { font-size:0.85rem; color:#475569; margin-top:4px; }
+  .clock-pair { display:flex; gap:16px; flex-wrap:wrap; }
+  .clock-layout-vertical { flex-direction:column; align-items:center; }
+  .clock-layout-horizontal { flex-direction:row; align-items:flex-start; }
+  .answer-field { display:inline-flex; align-items:center; gap:4px; margin-right:12px; }
+  .answer-field input { width:64px; text-align:right; }
+  label.chk { font-size:14px; margin-right:12px; }
+</style>
+</head>
+<body>
+  <h1>時計問題 動作確認ビューア (V2.6.7)</h1>
+  <p>「時計を読む（時・分）」「秒まである時計」「2つの時計の時間差」「何分後の時こく」を確認できます。
+     大きさ（大/小）・並び（縦/横）・24時間補助数字の切替、時/分/秒を分けた入力、正誤判定まで確認できます。</p>
+
+  <div class="card">
+    <div id="badges"></div>
+    <div style="margin-top:10px;">
+      <select id="template-select"></select>
+      <select id="size-mode" title="時計の大きさ（検証用の上書き）">
+        <option value="keep">大きさ: テンプレート指定</option>
+        <option value="large">大きさ: 大</option>
+        <option value="small">大きさ: 小</option>
+      </select>
+      <select id="layout-mode" title="2つの時計の並び（検証用の上書き）">
+        <option value="auto">並び: 自動（大=縦 / 小=横）</option>
+        <option value="vertical">並び: 縦</option>
+        <option value="horizontal">並び: 横</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="show24"> 24時間の補助数字（13〜24）を表示</label>
+      <button onclick="generateQuestion()">この問題を出す</button>
+      <button onclick="generateRandom()">どれか出す</button>
+      <button class="secondary" onclick="clearHistory()">記録を消す</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>出題</h2>
+    <div id="template-id" style="font-size:12px; color:#64748b;">templateId: -</div>
+    <div class="question-text" id="question-text">（まだ出題されていません）</div>
+    <div class="clock-stage" id="clock-stage"></div>
+    <div id="answer-fields" style="margin:10px 0;"></div>
+    <button onclick="submitAnswer()">こたえる ➔</button>
+  </div>
+
+  <div class="card">
+    <h2>判定結果</h2>
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <h2>時計プレビュー（時・分・秒を直接指定して描画確認）</h2>
+    <div>
+      <label class="chk">時 <input type="number" id="preview-h" value="3" min="0" max="23" style="width:70px"></label>
+      <label class="chk">分 <input type="number" id="preview-m" value="40" min="0" max="59" style="width:70px"></label>
+      <label class="chk">秒 <input type="number" id="preview-s" value="0" min="0" max="59" style="width:70px"></label>
+      <label class="chk"><input type="checkbox" id="preview-24"> 24時間補助数字</label>
+      <button class="secondary" onclick="renderPreview()">描画</button>
+    </div>
+    <div class="hint">※ 秒=0 のとき秒針が「12の位置」にあること、短針が分の進みに応じて 3 と 4 の間に入ることを確認します。</div>
+    <div class="clock-stage" id="preview-stage"></div>
+    <h2>2つ並べたときの確認</h2>
+    <div>
+      <button class="secondary" onclick="renderPreviewPair('large')">大を2つ（縦並び）</button>
+      <button class="secondary" onclick="renderPreviewPair('small')">小を2つ（横並び）</button>
+    </div>
+    <div class="clock-stage" id="preview-pair-stage"></div>
+  </div>
+
+  <div class="card">
+    <h2>保存された回答記録（履歴/復習・結果表示用）</h2>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- 依存スクリプト (index.html と同じ読込順 + 時計2件) -->
+  <script src="js/config.js"></script>
+  <script src="js/registries.js"></script>
+  <script src="js/schema.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/templates_math.js"></script>
+  <script src="js/templates_units_p1.js"></script>
+  <script src="js/templates_units_p2.js"></script>
+  <script src="js/templates_g2_extra.js"></script>
+  <script src="js/templates_figures_g1.js"></script>
+  <script src="js/templates_figures_g2.js"></script>
+  <script src="js/clock_svg.js"></script>
+  <script src="js/templates_clock.js"></script>
+  <script src="js/question_source.js"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var current = null;        // 出題中の questionInstance
+      var currentTpl = null;     // 使用したテンプレート定義
+      var lastDisp = null;       // buildDisplay の結果（このページの上書き適用後）
+      var lastLayout = "auto";
+      var records = [];
+
+      function el(id) { return document.getElementById(id); }
+      function esc(s) {
+        return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+
+      function clockTemplates() {
+        var list = window.UNIT_TEMPLATES_CLOCK;
+        if (!list || !list.length) {
+          var reg = window.TemplateRegistry;
+          if (reg && reg.get && reg.get("g2_clock_read_01")) list = [reg.get("g2_clock_read_01")];
+        }
+        return list || [];
+      }
+      function findTemplate(id) {
+        var list = clockTemplates();
+        for (var i = 0; i < list.length; i++) { if (list[i].templateId === id) return list[i]; }
+        return null;
+      }
+
+      function initSelect() {
+        var list = clockTemplates();
+        if (!list.length) {
+          el("template-select").innerHTML = '<option value="">(時計テンプレート未読込: js/templates_clock.js を確認)</option>';
+          return;
+        }
+        el("template-select").innerHTML = list.map(function (t) {
+          return '<option value="' + esc(t.templateId) + '">' + esc(t.templateId) +
+            ' (' + esc((t.clockSpec && t.clockSpec.format) || "-") + ')</option>';
+        }).join("");
+      }
+
+      // 検証用に size / layout / show24 を上書きした時計表示を作る
+      function buildDisplayOverride(tpl, inst) {
+        var spec = tpl.clockSpec || {};
+        var sizeMode = el("size-mode").value;
+        var layoutMode = el("layout-mode").value;
+        var show24 = el("show24").checked;
+
+        var spec2 = JSON.parse(JSON.stringify(spec));
+        spec2.clocks = (spec2.clocks || []).map(function (c) {
+          var o = {};
+          for (var k in c) { if (Object.prototype.hasOwnProperty.call(c, k)) o[k] = c[k]; }
+          if (sizeMode !== "keep") o.size = sizeMode;   // 時計ごとの size 指定も上書き
+          o.show24 = show24;
+          return o;
+        });
+        if (sizeMode !== "keep") spec2.size = sizeMode;
+        if (layoutMode !== "auto") spec2.layout = layoutMode;
+
+        var disp = window.ClockSVG.buildDisplay(spec2, inst.variables || {});
+
+        var sizeName = (disp.clocks[0] && disp.clocks[0].size) === "small" ? "small" : "large";
+        lastLayout = (layoutMode !== "auto")
+          ? layoutMode
+          : ((disp.clocks.length > 1) ? window.ClockSVG.layoutForSize(sizeName) : "single");
+        return disp;
+      }
+
+      function generate(templateId) {
+        var tpl = findTemplate(templateId);
+        if (!tpl) { alert("テンプレートが見つかりません: " + templateId); return; }
+
+        var inst = null;
+        try {
+          inst = window.RuleBasedQuestionSource.generateQuestion(templateId, []);
+        } catch (e) {
+          el("result").innerHTML = '<span class="result-ng">生成エラー: ' + esc(e.message) + '</span>';
+          return;
+        }
+        if (!inst) { return; }
+
+        current = inst;
+        currentTpl = tpl;
+
+        // clockHTML が付いていない場合は buildDisplay で直接組み立てる（保険）
+        if (!current.clockHTML) {
+          try {
+            var disp0 = window.ClockSVG.buildDisplay(tpl.clockSpec, current.variables || {});
+            current.clockHTML = disp0.clockHTML;
+            current.clockFormat = disp0.format;
+            current.clockFields = disp0.fields;
+            current.answer = String(disp0.answer);
+          } catch (e) { /* 何もしない */ }
+        }
+
+        lastDisp = buildDisplayOverride(tpl, current);
+        render();
+      }
+
+      function render() {
+        var inst = current, disp = lastDisp;
+        if (!inst || !disp) return;
+
+        el("template-id").textContent = "templateId: " + inst.templateId +
+          " / unitId: " + (inst.unitId || "-") + " / Lv" + inst.difficultyLevel;
+
+        el("badges").innerHTML =
+          '<span class="badge">' + esc(inst.answerType) + '</span>' +
+          '<span class="badge">' + esc(disp.format) + '</span>' +
+          '<span class="badge">時計 ' + disp.clocks.length + '個</span>' +
+          '<span class="badge">' + esc((disp.clocks[0] && disp.clocks[0].size) || "-") + '</span>' +
+          '<span class="badge">並び: ' + esc(lastLayout) + '</span>';
+
+        el("question-text").textContent = inst.questionText || "";
+        el("clock-stage").innerHTML = disp.clockHTML || inst.clockHTML || "";
+        renderFields(disp.fields);
+
+        var valLine = "";
+        try {
+          if (window.QuestionValidator && typeof window.QuestionValidator.validate === "function") {
+            var v = window.QuestionValidator.validate(inst, []);
+            valLine = '<div class="hint">validator: ' +
+              (v.valid ? '<span class="result-ok">PASS</span>'
+                       : '<span class="result-ng">FAIL ' +
+                         esc((v.errors || []).map(function (e2) { return e2.code; }).join(",")) + '</span>') +
+              '</div>';
+          }
+        } catch (e) { /* 表示のみ */ }
+        el("result").innerHTML = valLine;
+      }
+
+      // 「時」「分」「秒」を分けた入力欄（fieldsForFormat の定義に従う）
+      function renderFields(fields) {
+        el("answer-fields").innerHTML = (fields || []).map(function (f) {
+          return '<span class="answer-field"><input type="number" id="field-' + esc(f.key) +
+            '" min="0"><span>' + esc(f.label) + '</span></span>';
+        }).join("");
+      }
+
+      function readFields(fields) {
+        var vals = {}, empty = false;
+        (fields || []).forEach(function (f) {
+          var node = el("field-" + f.key);
+          var v = node ? node.value.trim() : "";
+          if (v === "") empty = true;
+          vals[f.key] = v;
+        });
+        return { vals: vals, empty: empty };
+      }
+
+      function submitAnswer() {
+        if (!current || !lastDisp) { alert("先に出題してください"); return; }
+        var r = readFields(lastDisp.fields);
+        if (r.empty) { alert("こたえを 入力してください"); return; }
+
+        var vals = r.vals;
+        var h = vals.h, m = vals.m, s = vals.s;
+        if (lastDisp.format === "COUNT") h = vals.count;
+        var userStr = window.ClockSVG.formatHMS(h, m, s, lastDisp.format);
+        var isCorrect = window.ClockSVG.equalsAnswer(userStr, current.answer);
+
+        var labelOf = function (str) {
+          var lab = window.ClockSVG.answerLabel(str, lastDisp.format);
+          return lab || String(str);
+        };
+
+        el("result").innerHTML =
+          (isCorrect ? '<span class="result-ok">せいかい！</span>'
+                     : '<span class="result-ng">ざんねん…</span>') +
+          '<div style="margin-top:6px;">あなたのこたえ: ' + esc(labelOf(userStr)) + '</div>' +
+          '<div>せいかい: ' + esc(labelOf(current.answer)) + '</div>' +
+          (current.explanation ? '<div class="hint">' + esc(current.explanation) + '</div>' : "") +
+          (current.hintSteps && current.hintSteps.length
+            ? '<div class="hint">ヒント: ' + esc(current.hintSteps.join(" / ")) + '</div>' : "");
+
+        records.push({
+          templateId: current.templateId,
+          unitId: current.unitId,
+          questionText: current.questionText,
+          userAnswer: userStr,
+          correctAnswer: current.answer,
+          isCorrect: isCorrect,
+          format: lastDisp.format,
+          clockSpec: current.clockSpec || null
+        });
+        renderHistory();
+      }
+
+      function renderHistory() {
+        if (records.length === 0) {
+          el("history-list").innerHTML = '<span style="color:#64748b;">まだ記録がありません</span>';
+          return;
+        }
+        el("history-list").innerHTML = records.map(function (r, i) {
+          var lbl = function (str) {
+            var lab = window.ClockSVG.answerLabel(str, r.format);
+            return lab || String(str);
+          };
+          return '<div style="padding:6px 0; border-bottom:1px dashed #e2e8f0;">' +
+            '<span class="badge ' + (r.isCorrect ? "success" : "danger") + '">' +
+            (r.isCorrect ? "○" : "×") + ' 問' + (i + 1) + '</span>' +
+            esc(r.questionText) +
+            '<div style="font-size:0.85rem; color:#475569;">こたえ: ' + esc(lbl(r.userAnswer)) +
+            (r.isCorrect ? "" : ' <span style="color:#b91c1c;">(正: ' + esc(lbl(r.correctAnswer)) + ')</span>') +
+            '　<span style="color:#94a3b8;">' + esc(r.templateId) + '</span></div>' +
+            '</div>';
+        }).join("");
+      }
+
+      function clearHistory() {
+        records = [];
+        renderHistory();
+        el("result").innerHTML = "";
+      }
+
+      // ---- 時計プレビュー（時・分・秒を直接指定） ----
+      function renderPreview() {
+        var opts = {
+          hour: Number(el("preview-h").value) || 0,
+          minute: Number(el("preview-m").value) || 0,
+          second: Number(el("preview-s").value) || 0,
+          size: "large",
+          show24: el("preview-24").checked,
+          showSeconds: true,
+          label: "プレビュー"
+        };
+        el("preview-stage").innerHTML = window.ClockSVG.render(opts);
+      }
+
+      function renderPreviewPair(size) {
+        var h = Number(el("preview-h").value) || 0;
+        var m = Number(el("preview-m").value) || 0;
+        el("preview-pair-stage").innerHTML = window.ClockSVG.renderPair([
+          { hour: h, minute: m, second: 0, size: size, label: "はじめ", showSeconds: true },
+          { hour: h, minute: (m + 20) % 60, second: 0, size: size, label: "おわり", showSeconds: true }
+        ], {});
+      }
+
+      function generateQuestion() {
+        var id = el("template-select").value;
+        if (!id) { alert("時計テンプレートが読み込まれていません"); return; }
+        generate(id);
+      }
+      function generateRandom() {
+        var list = clockTemplates();
+        if (!list.length) {
+          el("template-select").innerHTML = '<option value="">(未読込)</option>';
+          return;
+        }
+        var t = list[Math.floor(Math.random() * list.length)];
+        el("template-select").value = t.templateId;
+        generate(t.templateId);
+      }
+
+      window.generateQuestion = generateQuestion;
+      window.generateRandom = generateRandom;
+      window.submitAnswer = submitAnswer;
+      window.clearHistory = clearHistory;
+      window.renderPreview = renderPreview;
+      window.renderPreviewPair = renderPreviewPair;
+
+      initSelect();
+      renderHistory();
+      renderPreview();
+      if (clockTemplates().length) { generateRandom(); }
+    })();
+  </script>
+</body>
+</html>

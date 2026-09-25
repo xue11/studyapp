@@ -271,8 +271,15 @@ class TestEngine {
   static _checkAnswer(userInput, correctAnswer, answerType) {
     if (!userInput) return false;
     const cleanUser = userInput.replace(/\s+/g, "");
-    const cleanAns = correctAnswer.replace(/\s+/g, "");
+    const cleanAns = String(correctAnswer === null || correctAnswer === undefined ? "" : correctAnswer).replace(/\s+/g, "");
     if (cleanUser === cleanAns) return true;
+    // V2.6.7: 時計問題 (clock_input) は ClockSVG で比較（桁数ゆれ・全角数字を吸収）
+    const clockSVG = (typeof globalThis !== "undefined" && globalThis.ClockSVG) ? globalThis.ClockSVG
+      : ((typeof window !== "undefined" && window.ClockSVG) ? window.ClockSVG : null);
+    if (clockSVG && typeof clockSVG.equalsAnswer === "function" &&
+        (answerType === "clock_input" || cleanUser.indexOf(":") >= 0 || cleanAns.indexOf(":") >= 0)) {
+      return clockSVG.equalsAnswer(cleanUser, cleanAns);
+    }
     // V2.6.3: 複数選択問題 (multi_choice) はカンマ区切りID集合の完全一致で判定 (順序不問)
     const uSet = cleanUser.split(",");
     const aSet = cleanAns.split(",");

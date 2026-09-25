@@ -62,8 +62,15 @@ function testMassGeneration() {
           assert.ok(q.answer !== "" && q.answer !== "undefined", `${t.templateId} answer empty`);
           assert.ok(q.hintSteps.length >= 2, `${t.templateId} needs >= 2 hint steps`);
           assert.ok(q.explanation.length > 3, `${t.templateId} explanation too short`);
-          assert.strictEqual(q.answerType, "number_input", `${t.templateId} must be number_input`);
-          assert.ok(!isNaN(Number(q.answer)), `${t.templateId} answer must be numeric: ${q.answer}`);
+          // V2.6.7: 時計問題 (clock_input) は時計図の確認へ分岐
+          if (q.answerType === "clock_input") {
+            assert.ok(q.clockHTML && q.clockHTML.indexOf("<svg") >= 0, `${t.templateId} must render clock SVG`);
+            assert.ok(Array.isArray(q.clockFields) && q.clockFields.length >= 1, `${t.templateId} must have clockFields`);
+            assert.ok(/^\d{1,2}(:\d{2}){0,2}$/.test(q.answer), `${t.templateId} clock answer format: ${q.answer}`);
+          } else {
+            assert.strictEqual(q.answerType, "number_input", `${t.templateId} must be number_input`);
+            assert.ok(!isNaN(Number(q.answer)), `${t.templateId} answer must be numeric: ${q.answer}`);
+          }
           if (q.understandingCheck && q.understandingCheck.enabled) {
             const uc = q.understandingCheck;
             assert.strictEqual(new Set(uc.choices).size, 3, `${t.templateId} must have 3 unique choices`);
