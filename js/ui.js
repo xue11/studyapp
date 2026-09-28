@@ -582,21 +582,177 @@ class AppUI {
     `;
   }
 
-  // V2.6.3: 図形選択問題の回答表示 (選択中カードの状態を表示)
   // V2.6.7: 時計問題 (clock_input) の「時」「分」「秒」分離入力
   // 時計図は ClockSVG が生成した q.clockHTML をそのまま表示する
+  // V2.6.11 (案A): 時計専用テンキー。欄は readonly でOSキーボード抑止、
+  // 欄タップ or 「つぎ」で入力対象を切替え、数字キーは対象欄へ追記する。
+  _clockFieldKeys(q) {
+    const fields = (Array.isArray(q.clockFields) && q.clockFields.length > 0)
+      ? q.clockFields
+      : [{ key: "h", label: "時", max: 2 }, { key: "m", label: "分", max: 2 }];
+    return fields.map(f => f.key);
+  }
+
+  _getClockFocusKey(q) {
+    const keys = this._clockFieldKeys(q);
+    const saved = this.session ? this.session.clockFocus : (this._clockFocus || null);
+    if (saved && keys.indexOf(saved) >= 0) return saved;
+    return keys[0];
+  }
+
+  selectClockField(key) {
+    const q = this.session && this.session.questions ? this.session.questions[this.session.currentIndex] : null;
+    if (!q || !q.clockHTML) return;
+    const keys = this._clockFieldKeys(q);
+    if (keys.indexOf(key) < 0) return;
+    if (typeof Sound !== "undefined" && Sound.playClick) Sound.playClick();
+    if (this.session) { this.session.clockFocus = key; this.session.clockFocusQ = (q.questionInstanceId || q.templateId || null); }
+    this._clockFocus = key;
+    const fields = (Array.isArray(q.clockFields) && q.clockFields.length > 0) ? q.clockFields : [];
+    fields.forEach(f => {
+      const wrap = document.getElementById("clock-wrap-" + f.key);
+      if (wrap) {
+        if (f.key === key) wrap.classList.add("active");
+        else wrap.classList.remove("active");
+      }
+    });
+  }
+
+  clockNextField() {
+    const q = this.session && this.session.questions ? this.session.questions[this.session.currentIndex] : null;
+    if (!q || !q.clockHTML) return;
+    if (typeof Sound !== "undefined" && Sound.playClick) Sound.playClick();
+    const keys = this._clockFieldKeys(q);
+    const cur = this._getClockFocusKey(q);
+    const next = keys[(keys.indexOf(cur) + 1) % keys.length];
+    this.selectClockField(next);
+  }
+
+  pressClockKey(d) {
+    const q = this.session && this.session.questions ? this.session.questions[this.session.currentIndex] : null;
+    if (!q || !q.clockHTML) return;
+    if (typeof Sound !== "undefined" && Sound.playClick) Sound.playClick();
+    const digits = String(d === null || d === undefined ? "" : d).replace(/[^0-9]/g, "");
+    if (!digits) return;
+    const keys = this._clockFieldKeys(q);
+    let focus = this._getClockFocusKey(q);
+    const fields = (Array.isArray(q.clockFields) && q.clockFields.length > 0) ? q.clockFields : [];
+    const maxOf = (k) => {
+      const f = fields.find(x => x.key === k);
+      return (f && f.max) || 2;
+    };
+    let node = document.getElementById("clock-field-" + focus);
+    let cur = node ? String(node.value || "") : "";
+    if (cur.length >= maxOf(focus)) {
+      const next = keys[(keys.indexOf(focus) + 1) % keys.length];
+      this.selectClockField(next);
+      focus = next;
+      node = document.getElementById("clock-field-" + focus);
+      cur = node ? String(node.value || "") : "";
+    }
+    const nv = (cur + digits).slice(0, maxOf(focus));
+    if (node) node.value = nv;
+    this.syncClockDisplay();
+    if (nv.length >= maxOf(focus)) {
+      const idx = keys.indexOf(focus);
+      if (idx < keys.length - 1) this.selectClockField(keys[idx + 1]);
+    }
+  }
+
+  clockBackspace() {
+    const q = this.session && this.session.questions ? this.session.questions[this.session.currentIndex] : null;
+    if (!q || !q.clockHTML) return;
+    if (typeof Sound !== "undefined" && Sound.playClick) Sound.playClick();
+    const keys = this._clockFieldKeys(q);
+    const focus = this._getClockFocusKey(q);
+    let node = document.getElementById("clock-field-" + focus);
+    let cur = node ? String(node.value || "") : "";
+    if (cur.length > 0) {
+      if (node) node.value = cur.slice(0, -1);
+    } else {
+      const idx = keys.indexOf(focus);
+      if (idx > 0) {
+        const prev = keys[idx - 1];
+        this.selectClockField(prev);
+        const pn = document.getElementById("clock-field-" + prev);
+        if (pn) pn.value = String(pn.value || "").slice(0, -1);
+      }
+    }
+    this.syncClockDisplay();
+  }
+
+  // V2.6.11 (案Aおまけ): PC物理キーボード対応。
+  // 学習/テスト画面で時計問題を表示中に数字・Backspace・Enterを押したとき、
+  // 専用テンキーと同じ動作（追記・削除・回答確定）を行う。
+  handleClockPhysicalKey(ev) {
+    if (!ev || ev.isComposing) return false;
+    const q = this.session && this.session.questions ? this.session.questions[this.session.currentIndex] : null;
+    if (!q || !q.clockHTML) return false;
+    const tag = (ev.target && ev.target.tagName) ? String(ev.target.tagName).toLowerCase() : "";
+    if (tag === "input" || tag === "textarea" || tag === "select") return false;
+    const key = ev.key;
+    if (key >= "0" && key <= "9" && key.length === 1) {
+      let d = key;
+      if (ev.shiftKey) return false;
+      this.pressClockKey(d);
+      if (ev.preventDefault) ev.preventDefault();
+      return true;
+    }
+    if (key === "Backspace") {
+      this.clockBackspace();
+      if (ev.preventDefault) ev.preventDefault();
+      return true;
+    }
+    if (key === "Enter") {
+      if (this.session && this.session.type === "test") {
+        if (typeof this.submitTestAnswer === "function") this.submitTestAnswer();
+      } else {
+        if (typeof this.submitLearningAnswer === "function") this.submitLearningAnswer();
+      }
+      if (ev.preventDefault) ev.preventDefault();
+      return true;
+    }
+    return false;
+  }
+
   _renderClockInputs(q, submitAction, submitLabel) {
     const fields = (Array.isArray(q.clockFields) && q.clockFields.length > 0)
       ? q.clockFields
       : [{ key: "h", label: "時", max: 2 }, { key: "m", label: "分", max: 2 }];
+    // 問題が変わったら先頭欄にフォーカスを戻す（前問の残りを引き継がない）
+    const qid = q.questionInstanceId || q.templateId || null;
+    let focusKey;
+    if (this.session && this.session.clockFocusQ === qid && this.session.clockFocus) {
+      const keys = fields.map(f => f.key);
+      focusKey = keys.indexOf(this.session.clockFocus) >= 0 ? this.session.clockFocus : keys[0];
+    } else {
+      focusKey = fields.map(f => f.key)[0];
+    }
+    if (this.session) { this.session.clockFocus = focusKey; this.session.clockFocusQ = qid; }
+    this._clockFocus = focusKey;
     const boxes = fields.map(f => `
-        <span class="clock-field">
-          <input type="text" inputmode="numeric" id="clock-field-${f.key}" maxlength="${f.max || 2}"
-                 oninput="app.syncClockDisplay()" aria-label="${f.label}">
+        <span class="clock-field ${f.key === focusKey ? "active" : ""}" id="clock-wrap-${f.key}" onclick="app.selectClockField('${f.key}')">
+          <input type="text" inputmode="none" readonly id="clock-field-${f.key}" maxlength="${f.max || 2}"
+                 oninput="app.syncClockDisplay()" aria-label="${f.label}" autocomplete="off">
           <span class="clock-field-label">${f.label}</span>
         </span>`).join("");
     return `
       <div class="clock-answer-row">${boxes}</div>
+      <div class="clock-pad-grid" role="group" aria-label="とけいテンキー">
+        <button class="clock-pad-btn" onclick="app.pressClockKey('7')">7</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('8')">8</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('9')">9</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('4')">4</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('5')">5</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('6')">6</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('1')">1</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('2')">2</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('3')">3</button>
+        <button class="clock-pad-btn action-btn" onclick="app.pressClockKey('00')">00</button>
+        <button class="clock-pad-btn" onclick="app.pressClockKey('0')">0</button>
+        <button class="clock-pad-btn action-btn" onclick="app.clockBackspace()">⌫ けす</button>
+        <button class="clock-pad-btn next-btn" style="grid-column: span 3;" onclick="app.clockNextField()">つぎ ➔</button>
+      </div>
       <button class="numpad-btn ok-btn" style="width:100%; margin-top:10px;" onclick="${submitAction}">${submitLabel}</button>
     `;
   }

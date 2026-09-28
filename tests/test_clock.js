@@ -170,7 +170,13 @@ check("ラベル「時」「分」が出る", inputsHTML.indexOf(">時<") >= 0 &
 check("oninput に syncClockDisplay が紐付く", inputsHTML.indexOf("app.syncClockDisplay()") >= 0);
 check("submitAction がボタンに反映", inputsHTML.indexOf("app.submitLearningAnswer()") >= 0);
 check("submitLabel がボタンに反映", inputsHTML.indexOf("こたえる ➔") >= 0);
-check("入力が数値のみに制限 (inputmode=numeric)", inputsHTML.indexOf('inputmode="numeric"') >= 0);
+// V2.6.11 (案A): OSキーボード抑止 + 専用テンキー
+check("OSキーボード抑止 (readonly + inputmode=none)", inputsHTML.indexOf('readonly') >= 0 && inputsHTML.indexOf('inputmode="none"') >= 0);
+check("時計専用テンキー (clock-pad-grid) を出す", inputsHTML.indexOf("clock-pad-grid") >= 0);
+check("テンキーに 00 / けす / つぎ がある", inputsHTML.indexOf("app.pressClockKey('00')") >= 0 && inputsHTML.indexOf("app.clockBackspace()") >= 0 && inputsHTML.indexOf("app.clockNextField()") >= 0);
+check("欄タップでフォーカス選択", inputsHTML.indexOf("app.selectClockField('h')") >= 0);
+check("先頭欄が active", inputsHTML.indexOf('id="clock-wrap-h"') >= 0 || inputsHTML.indexOf("clock-field active") >= 0);
+check("新メソッド群が定義済み", typeof AppUI.prototype.selectClockField === "function" && typeof AppUI.prototype.pressClockKey === "function" && typeof AppUI.prototype.clockBackspace === "function" && typeof AppUI.prototype.clockNextField === "function" && typeof AppUI.prototype.handleClockPhysicalKey === "function");
 
 // 未入力の表示プレースホルダー
 const dispEmpty = ui._clockSelectionDisplay(qHM);
@@ -223,8 +229,71 @@ const screen = ui._renderLearningScreen();
 check("clock-stage コンテナを含む", screen.indexOf('class="clock-stage"') >= 0);
 check("時計SVGを含む", screen.indexOf("<svg") >= 0);
 check("時計入力欄を含む", screen.indexOf('id="clock-field-h"') >= 0 && screen.indexOf('id="clock-field-m"') >= 0);
-check("テンキーを出さない", screen.indexOf("numpad-grid") < 0);
+// V2.6.11: 時計専用テンキー (clock-pad-grid) は出す。通常テンキー (numpad-grid) は出さない
+check("時計専用テンキーを出す", screen.indexOf("clock-pad-grid") >= 0);
+check("通常テンキーを出さない", screen.indexOf("numpad-grid") < 0);
 check("回答表示に ？ プレースホルダー", screen.indexOf("answer-placeholder") >= 0);
+// V2.6.11: 専用テンキーの入力フロー (DOMモックで pressClockKey / 削除 / 次欄)
+console.log("6b. 時計専用テンキーの入力フロー");
+(function () {
+  const store = { "clock-field-h": "", "clock-field-m": "" };
+  const origGet = global.document.getElementById;
+  const origSync = ui.syncClockDisplay;
+  ui.syncClockDisplay = () => {};
+  global.document.getElementById = (id) => {
+    if (Object.prototype.hasOwnProperty.call(store, id)) {
+      return {
+        get value() { return store[id]; },
+        set value(v) { store[id] = String(v); },
+        classList: { add() {}, remove() {} },
+      };
+    }
+    if (id.indexOf("clock-wrap-") === 0) return { classList: { add() {}, remove() {} } };
+    return null;
+  };
+  try {
+    ui.session = {
+      questions: [{ ...qHM, questionInstanceId: "q-pad-1" }],
+      currentIndex: 0, totalCount: 1, selectedFigureChoices: [],
+      clockFocus: undefined, clockFocusQ: undefined,
+    };
+    ui._clockFocus = undefined;
+    ui.selectClockField("h");
+    check("先頭欄 h にフォーカス", ui.session.clockFocus === "h");
+    ui.pressClockKey("4");
+    ui.pressClockKey("5");
+    check("4→5 で時欄が2桁に (h=45, focus=m)", store["clock-field-h"] === "45" && ui.session.clockFocus === "m");
+    ui.pressClockKey("3");
+    check("分欄に 3 が入る", store["clock-field-m"] === "3");
+    ui.clockBackspace();
+    check("削除で分欄が空になる", store["clock-field-m"] === "");
+    ui.clockBackspace();
+    check("空欄での削除は前の欄へ戻る (focus=h, h=4)", ui.session.clockFocus === "h" && store["clock-field-h"] === "4");
+    // 満杯欄への追記は次欄へ送られる
+    store["clock-field-h"] = "12"; store["clock-field-m"] = "";
+    ui.selectClockField("h");
+    ui.pressClockKey("9");
+    check("満杯欄への追記は次欄へ (m=9)", store["clock-field-m"] === "9" && store["clock-field-h"] === "12");
+    // 物理キーボード: 数字・Backspace・Enter
+    store["clock-field-h"] = ""; store["clock-field-m"] = "";
+    ui.selectClockField("h");
+    const handledDigit = ui.handleClockPhysicalKey({ key: "7", target: { tagName: "DIV" }, preventDefault() {} });
+    check("物理キー 7 が処理される (h=7)", handledDigit === true && store["clock-field-h"] === "7");
+    const handledBs = ui.handleClockPhysicalKey({ key: "Backspace", target: { tagName: "DIV" }, preventDefault() {} });
+    check("物理キー Backspace が処理される (h=空)", handledBs === true && store["clock-field-h"] === "");
+    let submitted = false;
+    ui.submitLearningAnswer = () => { submitted = true; };
+    ui.session.type = "learning";
+    const handledEnter = ui.handleClockPhysicalKey({ key: "Enter", target: { tagName: "DIV" }, preventDefault() {} });
+    check("物理キー Enter で回答確定が呼ばれる", handledEnter === true && submitted === true);
+    const ignored = ui.handleClockPhysicalKey({ key: "7", target: { tagName: "INPUT" }, preventDefault() {} });
+    check("入力欄フォーカス中の物理キーは無視", ignored === false);
+  } finally {
+    global.document.getElementById = origGet;
+    ui.syncClockDisplay = origSync;
+    delete ui.submitLearningAnswer;
+  }
+})();
 // ---------------------------------------------------------------
 console.log("7. 回答判定 (_checkAnswer / _formatAnswerLabel / TestEngine)");
 // ---------------------------------------------------------------

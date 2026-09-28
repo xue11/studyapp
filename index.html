@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>小学生向け算数学習アプリ (V2.6.10)</title>
+  <title>小学生向け算数学習アプリ (V2.6.11)</title>
     <meta name="description" content="サーバー不要・ブラウザだけで手軽に遊べる小学生向け算数学習Webアプリ">
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -142,6 +142,14 @@
     // アプリ初期化
     window.addEventListener("DOMContentLoaded", () => {
       app.init();
+      // V2.6.11 (案Aおまけ): PC物理キーボードで時計入力 (数字/Backspace/Enter)
+      document.addEventListener("keydown", (ev) => {
+        try {
+          if (typeof app !== "undefined" && app && typeof app.handleClockPhysicalKey === "function") {
+            app.handleClockPhysicalKey(ev);
+          }
+        } catch (e) { /* ignore */ }
+      });
     });
   </script>
 </body>

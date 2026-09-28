@@ -383,6 +383,68 @@ body {
   background: #047857;
 }
 
+/* V2.6.11: 時計専用テンキー (通常テンキーと同サイズ・通常の回答欄と共用) */
+.clock-pad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.clock-pad-btn {
+  min-height: 56px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.08s, background-color 0.1s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.clock-pad-btn:active {
+  transform: scale(0.92);
+  background: #e2e8f0;
+}
+
+.clock-pad-btn.action-btn {
+  background: #f1f5f9;
+  font-size: 1.15rem;
+  color: #475569;
+}
+
+.clock-pad-btn.next-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  font-size: 1.1rem;
+  border: none;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+.clock-pad-btn.next-btn:active {
+  background: #1d4ed8;
+}
+
+.clock-field {
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 2px 4px;
+}
+.clock-field.active {
+  border-color: var(--primary, #3b82f6);
+  background: #eff6ff;
+}
+.clock-field input {
+  pointer-events: none;
+}
+
 /* モーダル / ポップアップ */
 .modal-overlay {
   position: absolute;

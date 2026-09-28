@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>時計問題 動作確認ビューア (V2.6.8)</title>
+<title>時計問題 動作確認ビューア (V2.6.11)</title>
 <link rel="stylesheet" href="css/app.css">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Meiryo", sans-serif; margin: 20px; background:#f8fafc; color:#1e293b; }
@@ -36,7 +36,7 @@
 </style>
 </head>
 <body>
-  <h1>時計問題 動作確認ビューア (V2.6.8)</h1>
+  <h1>時計問題 動作確認ビューア (V2.6.11)</h1>
   <p>「時計を読む（時・分）」「秒まである時計」「2つの時計の時間差」「何分後の時こく」を確認できます。
      大きさ（大/小）・並び（縦/横）・24時間補助数字の切替、時/分/秒を分けた入力、正誤判定まで確認できます。</p>
 
@@ -232,7 +232,8 @@
 
         el("question-text").textContent = inst.questionText || "";
         el("clock-stage").innerHTML = disp.clockHTML || inst.clockHTML || "";
-        renderFields(disp.fields);
+        current.padState = clockPadState();
+        renderFields(disp.fields, current.padState);
 
         var valLine = "";
         try {
@@ -248,19 +249,97 @@
         el("result").innerHTML = valLine;
       }
 
-      // 「時」「分」「秒」を分けた入力欄（fieldsForFormat の定義に従う）
-      function renderFields(fields) {
-        el("answer-fields").innerHTML = (fields || []).map(function (f) {
-          return '<span class="answer-field"><input type="number" id="field-' + esc(f.key) +
-            '" min="0"><span>' + esc(f.label) + '</span></span>';
-        }).join("");
+      // 「時」「分」を分けた入力欄（fieldsForFormat の定義に従う）
+      // V2.6.11: 本番と同じ時計専用テンキー付き表示に更新
+      function clockPadState() { return { focus: null }; }
+      function renderFields(fields, padState) {
+        var focus = (padState && padState.focus) || (fields[0] && fields[0].key) || "h";
+        padState.focus = focus;
+        el("answer-fields").innerHTML =
+          '<div class="clock-answer-row">' + (fields || []).map(function (f) {
+            return '<span class="clock-field' + (f.key === focus ? " active" : "") + '" id="p-clock-wrap-' + esc(f.key) + '" data-key="' + esc(f.key) + '">' +
+              '<input type="text" inputmode="none" readonly id="p-field-' + esc(f.key) + '" maxlength="' + (f.max || 2) + '" autocomplete="off" aria-label="' + esc(f.label) + '">' +
+              '<span>' + esc(f.label) + '</span></span>';
+          }).join("") + '</div>' +
+          '<div class="clock-pad-grid" role="group" aria-label="とけいテンキー">' +
+          ["7","8","9","4","5","6","1","2","3"].map(function (d) {
+            return '<button class="clock-pad-btn" data-d="' + d + '">' + d + '</button>';
+          }).join("") +
+          '<button class="clock-pad-btn action-btn" data-d="00">00</button>' +
+          '<button class="clock-pad-btn" data-d="0">0</button>' +
+          '<button class="clock-pad-btn action-btn" id="p-clock-bs">⌫ けす</button>' +
+          '<button class="clock-pad-btn next-btn" style="grid-column: span 3;" id="p-clock-next">つぎ ➔</button></div>';
+        // 欄タップでフォーカス切替
+        Array.prototype.forEach.call(el("answer-fields").querySelectorAll(".clock-field"), function (w) {
+          w.addEventListener("click", function () {
+            padState.focus = w.getAttribute("data-key");
+            syncPadActive();
+          });
+        });
+        function syncPadActive() {
+          Array.prototype.forEach.call(el("answer-fields").querySelectorAll(".clock-field"), function (w) {
+            if (w.getAttribute("data-key") === padState.focus) w.classList.add("active");
+            else w.classList.remove("active");
+          });
+        }
+        function maxOf(k) {
+          for (var i = 0; i < fields.length; i++) if (fields[i].key === k) return fields[i].max || 2;
+          return 2;
+        }
+        function node(k) { return el("p-field-" + k); }
+        // 数字キー
+        Array.prototype.forEach.call(el("answer-fields").querySelectorAll(".clock-pad-btn[data-d]"), function (b) {
+          b.addEventListener("click", function () {
+            var keys = fields.map(function (f) { return f.key; });
+            var focus = padState.focus;
+            var n = node(focus);
+            var cur = n ? String(n.value || "") : "";
+            if (cur.length >= maxOf(focus)) {
+              var ni = (keys.indexOf(focus) + 1) % keys.length;
+              padState.focus = keys[ni];
+              focus = padState.focus;
+              n = node(focus);
+              cur = n ? String(n.value || "") : "";
+              syncPadActive();
+            }
+            var nv = (cur + b.getAttribute("data-d")).slice(0, maxOf(focus));
+            if (n) n.value = nv;
+            if (nv.length >= maxOf(focus)) {
+              var idx = keys.indexOf(focus);
+              if (idx < keys.length - 1) { padState.focus = keys[idx + 1]; syncPadActive(); }
+            }
+          });
+        });
+        var bs = el("p-clock-bs");
+        if (bs) bs.addEventListener("click", function () {
+          var keys = fields.map(function (f) { return f.key; });
+          var focus = padState.focus;
+          var n = node(focus);
+          var cur = n ? String(n.value || "") : "";
+          if (cur.length > 0) { n.value = cur.slice(0, -1); }
+          else {
+            var idx = keys.indexOf(focus);
+            if (idx > 0) {
+              padState.focus = keys[idx - 1];
+              var pn = node(padState.focus);
+              if (pn) pn.value = String(pn.value || "").slice(0, -1);
+              syncPadActive();
+            }
+          }
+        });
+        var nx = el("p-clock-next");
+        if (nx) nx.addEventListener("click", function () {
+          var keys = fields.map(function (f) { return f.key; });
+          padState.focus = keys[(keys.indexOf(padState.focus) + 1) % keys.length];
+          syncPadActive();
+        });
       }
 
       function readFields(fields) {
         var vals = {}, empty = false;
         (fields || []).forEach(function (f) {
-          var node = el("field-" + f.key);
-          var v = node ? node.value.trim() : "";
+          var node = el("p-field-" + f.key);
+          var v = node ? String(node.value || "").trim() : "";
           if (v === "") empty = true;
           vals[f.key] = v;
         });
