@@ -3,7 +3,7 @@
  * V2.5.10 詳細設計書 第29章・第30章 準拠
  * 
  * - schemaVersion: "2.5.6" (永続化スキーマバージョン)
- * - appVersion: "V2.6.8" (アプリケーションバージョン)
+ * - appVersion: "V2.6.10" (アプリケーションバージョン)
  * - learningStartDate: 初回通常学習完了時まで null
  * - accuracy: attempts === 0 時は null
  * - incorrectStreak は保持しない
@@ -85,7 +85,7 @@ function createInitialAppState() {
     profiles: [defaultProfile],
     activeProfileId: defaultProfile.identity.id,
     appMeta: {
-      appVersion: "V2.6.8",
+      appVersion: "V2.6.10",
       generationMode: "rule_based",
       features: {}
     }

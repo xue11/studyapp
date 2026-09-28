@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.6.8)
-const CACHE_NAME = 'arith-study-v2.6.8-clock-g3';
+// PWA Service Worker (V2.6.10)
+const CACHE_NAME = 'arith-study-v2.6.10-auto-update';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -35,14 +35,20 @@ const urlsToCache = [
   '/icon-512.png'
 ];
 
-// インストール時：キャッシュプリフェッチ
-self.addEventListener('install', e =>
+// メッセージ受信：クライアントからの SKIP_WAITING 要求に応答
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// インストール時：キャッシュプリフェッチ & 直ちに有効化待機へ
+self.addEventListener('install', e => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
       .catch(err => console.error('[SW] キャッシュ失敗:', err))
-  )
-);
+  );
+});
 
 // フェッチ時：キャッシュから返す or ネットワーク
 self.addEventListener('fetch', e =>
@@ -53,13 +59,13 @@ self.addEventListener('fetch', e =>
   )
 );
 
-// 古いキャッシュ削除
-self.addEventListener('activate', e =>
+// 古いキャッシュ削除 & 即座にクライアントを制御下に置く
+self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
         keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
       )
-    )
-  )
-);
+    ).then(() => self.clients.claim())
+  );
+});

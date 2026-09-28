@@ -94,6 +94,9 @@ class AppUI {
       case "review_history":
         html += this._renderReviewHistoryScreen(profile);
         break;
+      case "unit_select":
+        html += this._renderUnitSelectScreen(params);
+        break;
       case "settings":
         html += this._renderSettingsScreen(profile);
         break;
@@ -209,7 +212,8 @@ class AppUI {
 
       <div style="margin-top:auto;">
         <button class="btn btn-primary" onclick="app.startLearningSession()">🚀 学習をはじめる（10問）</button>
-        <button class="btn btn-secondary" onclick="app.startTestSession()">📝 テストを受ける（10問）</button>
+        <button class="btn btn-secondary" onclick="app.navigate('unit_select')">🎯 たんげんをえらんで練習</button>
+        <button class="btn btn-secondary" style="background:linear-gradient(135deg, #10b981, #059669);" onclick="app.startTestSession()">📝 テストを受ける（10問）</button>
         <button class="btn btn-purple" onclick="app.navigate('review_history')">📚 ふくしゅう・きろく (${profile.reviewQueue?.filter(r=>r.status==='active').length || 0})</button>
         <button class="btn btn-outline" onclick="app.navigate('settings')">⚙️ せってい・学年変更</button>
         ${(typeof APP_CONFIG !== "undefined" && APP_CONFIG.features && APP_CONFIG.features.parentMode) ? `
@@ -341,6 +345,79 @@ class AppUI {
     this.navigate("learning");
   }
 
+  /**
+   * 単元選択練習（特訓モード）セッションを開始する
+   * @param {string} unitId 練習対象の単元ID (例: 'time_clock_basic', 'kuku_intro')
+   * @param {number} count 出題数 (デフォルト 10問、5問も指定可能)
+   * @param {number|null} targetGrade 対象学年 (nullなら現在学年)
+   */
+  startUnitPracticeSession(unitId, count = 10, targetGrade = null) {
+    const profile = this.getActiveProfile();
+    const currentGrade = targetGrade || profile.skill.subject.currentGrade;
+    const tReg = TemplateRegistry;
+
+    // 指定単元のテンプレートをレベル横断で収集
+    let pool = [];
+    for (let lv = 1; lv <= 3; lv++) {
+      const tmpls = tReg.getByUnit("math", currentGrade, lv, unitId) || [];
+      pool = pool.concat(tmpls);
+    }
+
+    if (pool.length === 0) {
+      alert("この単元の問題は準備中です。");
+      return;
+    }
+
+    const unitInfo = (typeof UnitRegistry !== "undefined" && UnitRegistry.findUnit)
+      ? UnitRegistry.findUnit("math", currentGrade, unitId)
+      : null;
+    const unitName = (unitInfo && unitInfo.name) || unitId;
+
+    this.session = {
+      type: "learning",
+      mode: "unit_practice",
+      targetUnitId: unitId,
+      targetUnitName: unitName,
+      targetGrade: currentGrade,
+      currentIndex: 0,
+      totalCount: count,
+      correctCount: 0,
+      earnedPointsTotal: 0,
+      questions: [],
+      currentAttemptCount: 0,
+      currentHintUsed: false,
+      historySummary: [],
+      startedAt: Date.now()
+    };
+
+    let deck = this._shuffleArray([...pool]);
+
+    for (let i = 0; i < count; i++) {
+      if (deck.length === 0) {
+        deck = this._shuffleArray([...pool]);
+      }
+      // 直近2問で使用したテンプレートを優先回避
+      const recentTemplateIds = this.session.questions.slice(-2).map(q => q.templateId);
+      const freshIdx = deck.findIndex(x => !recentTemplateIds.includes(x.templateId));
+      let t = null;
+      if (freshIdx >= 0) {
+        t = deck.splice(freshIdx, 1)[0];
+      } else {
+        t = deck.pop();
+      }
+      if (!t) t = pool[Math.floor(Math.random() * pool.length)];
+
+      const qInstance = RuleBasedQuestionSource.generateQuestion(t.templateId, this.session.questions, {
+        isReview: false
+      });
+      this.session.questions.push(qInstance);
+    }
+
+    this._startSessionTimer();
+    Sound.playClick();
+    this.navigate("learning");
+  }
+
   _shuffleArray(array) {
     const a = [...array];
     for (let i = a.length - 1; i > 0; i--) {
@@ -419,6 +496,7 @@ class AppUI {
 
     const q = this.session.questions[this.session.currentIndex];
     const progress = `${this.session.currentIndex + 1} / ${this.session.totalCount}`;
+    const isPracticeMode = (this.session.mode === "unit_practice");
     // V2.6.1: 出題中のunit名を表示 (新単元の出題可視化)
     let unitName = "";
     try {
@@ -433,7 +511,7 @@ class AppUI {
     return `
       <div class="question-meta">
         <span><b>第 ${progress} 問</b> <span id="session-timer" style="color:var(--text-muted); font-weight:normal;">⏱ ${formatElapsed(0)}</span></span>
-        <span><span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
+        <span>${isPracticeMode ? '<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.75rem;">🎯 とっくん</span> ' : ''}<span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
       </div>
 
       <div class="progress-container">
@@ -795,7 +873,9 @@ class AppUI {
         correctCount: this.session.correctCount,
         totalCount: this.session.totalCount,
         earnedPoints: this.session.earnedPointsTotal,
-        elapsedSeconds: elapsedSeconds
+        elapsedSeconds: elapsedSeconds,
+        isPracticeMode: this.session.mode === "unit_practice",
+        targetUnitName: this.session.targetUnitName || ""
       });
     } else {
       this.render();
@@ -807,11 +887,18 @@ class AppUI {
   // ==========================================
   _renderSessionResultScreen(params) {
     const accuracyPct = Math.round((params.correctCount / params.totalCount) * 100);
+    const title = params.isPracticeMode
+      ? `🎯 ${params.targetUnitName || 'たんげん'} 特訓完了！`
+      : `🏆 学習セッション完了！`;
+    const subtitle = params.isPracticeMode
+      ? `集中してよくれんしゅうしました！`
+      : `よくがんばりました！`;
+
     return `
       <div class="card" style="text-align:center; padding:24px 16px;">
-        <div style="font-size:3rem; margin-bottom:8px;">🏆</div>
-        <h2>学習セッション完了！</h2>
-        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:18px;">よくがんばりました！</p>
+        <div style="font-size:3rem; margin-bottom:8px;">${params.isPracticeMode ? "🎯" : "🏆"}</div>
+        <h2>${title}</h2>
+        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:18px;">${subtitle}</p>
 
         <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:16px;">
           <div style="background:var(--primary-light); padding:12px; border-radius:var(--radius-md);">
@@ -830,6 +917,7 @@ class AppUI {
         <div style="font-size:0.9rem; font-weight:bold; margin-top:4px; margin-bottom:8px;">正答率: ${accuracyPct}%</div>
         <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:20px;">⏱ かかった時間: ${formatElapsed(params.elapsedSeconds || 0)}</div>
 
+        ${params.isPracticeMode ? `<button class="btn btn-secondary" style="margin-bottom:8px;" onclick="app.navigate('unit_select')">🎯 別の単元をえらぶ</button>` : ""}
         <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
       </div>
     `;
@@ -991,6 +1079,120 @@ class AppUI {
       // フォールバック
     }
     return unitId;
+  }
+
+  // ==========================================
+  // 7.5. 単元選択練習画面 (Screen: unit_select)
+  // ==========================================
+  _renderUnitSelectScreen(params = {}) {
+    const profile = this.getActiveProfile();
+    const currentGrade = profile.skill.subject.currentGrade;
+    const viewGrade = (params && params.grade) ? parseInt(params.grade, 10) : currentGrade;
+    const gp = profile.skill.subject.gradeProgress[`grade${viewGrade}`] || {};
+    const unitStats = gp.unitStats || {};
+
+    const tReg = TemplateRegistry;
+    const allUnits = [];
+    const seenIds = new Set();
+
+    if (typeof UnitRegistry !== "undefined") {
+      for (let lv = 1; lv <= 3; lv++) {
+        const list = UnitRegistry.getUnitsForLevel("math", viewGrade, lv) || [];
+        for (const u of list) {
+          if (!seenIds.has(u.id)) {
+            seenIds.add(u.id);
+            let tmplCount = 0;
+            for (let l2 = 1; l2 <= 3; l2++) {
+              tmplCount += (tReg.getByUnit("math", viewGrade, l2, u.id) || []).length;
+            }
+            if (tmplCount > 0) {
+              allUnits.push({ ...u, templateCount: tmplCount, defaultLevel: lv });
+            }
+          }
+        }
+      }
+    }
+
+    const getUnitIcon = (u) => {
+      const id = u.id;
+      if (id.includes("clock") || id.includes("time")) return "🕒";
+      if (id.includes("kuku") || id.includes("mul")) return "✖️";
+      if (id.includes("div")) return "➗";
+      if (id.includes("fraction")) return "🍰";
+      if (id.includes("shape") || id.includes("box") || id.includes("tri_quad")) return "🔷";
+      if (id.includes("length") || id.includes("volume") || id.includes("weight") || id.includes("area")) return "📏";
+      if (id.includes("sub")) return "➖";
+      return "➕";
+    };
+
+    return `
+      <div class="card" style="padding:16px 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2 style="font-size:1.2rem; margin:0;">🎯 単元をえらんで練習</h2>
+          <button class="btn btn-outline" style="min-height:36px; padding:6px 12px; font-size:0.85rem; width:auto; margin-bottom:0;" onclick="app.navigate('home')">🏠 もどる</button>
+        </div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">
+          時計や九九など、れんしゅうしたい単元を選んで集中特訓できます！
+        </p>
+
+        <!-- 学年切り替えタブ -->
+        <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:14px; -webkit-overflow-scrolling:touch;">
+          ${[1, 2, 3, 4, 5, 6].map(g => `
+            <button class="btn ${g === viewGrade ? 'btn-primary' : 'btn-outline'}" 
+              style="min-height:36px; padding:6px 14px; font-size:0.85rem; width:auto; flex-shrink:0; margin-bottom:0;"
+              onclick="app.navigate('unit_select', { grade: ${g} })">
+              ${g}年 ${g === currentGrade ? '★' : ''}
+            </button>
+          `).join("")}
+        </div>
+
+        <!-- 単元一覧リスト -->
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${allUnits.length === 0 ? `
+            <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.9rem;">
+              この学年の単元問題は準備中です。
+            </div>
+          ` : allUnits.map(u => {
+            const stats = unitStats[u.id];
+            const attempts = stats?.attempts || 0;
+            const accuracy = (attempts > 0 && stats?.accuracy !== null && stats?.accuracy !== undefined)
+              ? Math.round(stats.accuracy * 100) : null;
+            const icon = getUnitIcon(u);
+
+            let accuracyBadge = '';
+            if (accuracy !== null) {
+              if (accuracy >= 80) accuracyBadge = `<span class="badge success">正解率 ${accuracy}%</span>`;
+              else if (accuracy >= 60) accuracyBadge = `<span class="badge" style="background:#fef3c7; color:#b45309;">正解率 ${accuracy}%</span>`;
+              else accuracyBadge = `<span class="badge warn">正解率 ${accuracy}% (にがて)</span>`;
+            } else {
+              accuracyBadge = `<span class="badge" style="background:var(--bg); color:var(--text-muted);">未学習</span>`;
+            }
+
+            return `
+              <div style="border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; background:var(--card-bg); box-shadow:var(--shadow-sm);">
+                <div style="font-weight:bold; font-size:0.95rem; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                  <span style="font-size:1.2rem;">${icon}</span>
+                  <span>${u.name}</span>
+                </div>
+
+                <div style="display:flex; gap:6px; align-items:center; font-size:0.8rem; color:var(--text-muted); margin-bottom:10px; flex-wrap:wrap;">
+                  ${accuracyBadge}
+                  <span>練習: <b>${attempts}問</b></span>
+                  <span>種類: <b>${u.templateCount}問型</b></span>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                  <button class="btn btn-outline" style="min-height:38px; padding:6px 10px; font-size:0.85rem; margin-bottom:0;" 
+                    onclick="app.startUnitPracticeSession('${u.id}', 5, ${viewGrade})">⚡ 5問れんしゅう</button>
+                  <button class="btn btn-primary" style="min-height:38px; padding:6px 10px; font-size:0.85rem; margin-bottom:0;" 
+                    onclick="app.startUnitPracticeSession('${u.id}', 10, ${viewGrade})">🚀 10問れんしゅう</button>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
   }
 
   // ==========================================

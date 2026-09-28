@@ -126,6 +126,58 @@ body {
   gap: 6px;
 }
 
+/* アプリ更新通知バナー */
+.app-update-banner[hidden] {
+  display: none !important;
+}
+
+.app-update-banner {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #f8fafc;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+  animation: slideDown 0.3s ease;
+}
+
+.app-update-banner .update-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.app-update-banner .btn-update {
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  font-weight: bold;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s, background-color 0.15s;
+}
+
+.app-update-banner .btn-update:active {
+  transform: scale(0.95);
+  background: #0284c7;
+  color: white;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 /* ボタン群 (48px以上タップ領域確保) */
 .btn {
   display: inline-flex;

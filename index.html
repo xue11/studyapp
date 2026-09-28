@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>小学生向け算数学習アプリ (V2.6.8)</title>
+  <title>小学生向け算数学習アプリ (V2.6.10)</title>
     <meta name="description" content="サーバー不要・ブラウザだけで手軽に遊べる小学生向け算数学習Webアプリ">
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -57,13 +57,85 @@
   <script src="js/audio.js"></script>
   <script src="js/ui.js"></script>
   
-  <!-- PWA Service Worker登録 -->
+  <!-- PWA Service Worker登録 + 自動更新検知 (V2.6.10) -->
+  <div id="app-update-bar" class="app-update-banner" hidden>
+    <span class="update-text">✨ 新しいバージョンがあります</span>
+    <button id="app-update-btn" class="btn-update" type="button">今すぐ更新</button>
+  </div>
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('[PWA] SW登録成功:', reg.scope))
-        .catch(err => console.error('[PWA] SW登録失敗:', err));
-    }
+    (function () {
+      var updateBar = document.getElementById('app-update-bar');
+      var updateBtn = document.getElementById('app-update-btn');
+      var refreshing = false;
+      function isLearning() {
+        try {
+          var screen = (typeof app !== 'undefined' && app.currentScreen) ? app.currentScreen : '';
+          if (screen === 'learning' || screen === 'test') return true;
+          if (typeof app !== 'undefined' && app.session) {
+            var s = app.session;
+            if ((s.questionCount > 0) && (s.currentIndex < s.questionCount)) return true;
+          }
+        } catch (e) { /* ignore */ }
+        return false;
+      }
+      function showUpdateBar(waiting) {
+        if (!updateBar) return;
+        updateBar.hidden = false;
+        var text = updateBar.querySelector('.update-text');
+        if (text) {
+          text.textContent = isLearning()
+            ? '✨ 新しいバージョンがあります（学習後に更新されます）'
+            : '✨ 新しいバージョンがあります';
+        }
+        if (updateBtn) {
+          updateBtn.onclick = function () {
+            if (!waiting) { window.location.reload(); return; }
+            try { waiting.postMessage({ type: 'SKIP_WAITING' }); }
+            catch (e) { window.location.reload(); }
+          };
+        }
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+          .then(function (reg) {
+            console.log('[PWA] SW登録成功:', reg.scope);
+            // 待機中の新SWがあれば通知
+            if (reg.waiting) showUpdateBar(reg.waiting);
+            reg.addEventListener('updatefound', function () {
+              var nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', function () {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  showUpdateBar(nw);
+                }
+              });
+            });
+          })
+          .catch(function (err) { console.error('[PWA] SW登録失敗:', err); });
+        // 新SWが有効化されたら一度だけリロード（学習中は結果画面遷移後に反映）
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (refreshing) return;
+          refreshing = true;
+          if (isLearning()) {
+            var iv = setInterval(function () {
+              if (!isLearning()) { clearInterval(iv); window.location.reload(); }
+            }, 2000);
+            // 安全弁: 5分経っても学習中なら強制リロードしない (バナー継続表示)
+            setTimeout(function () { clearInterval(iv); refreshing = false; }, 5 * 60 * 1000);
+          } else {
+            window.location.reload();
+          }
+        });
+        // 起動時に更新チェック
+        setInterval(function () {
+          try {
+            navigator.serviceWorker.getRegistration().then(function (reg) {
+              if (reg) reg.update().catch(function () {});
+            });
+          } catch (e) { /* ignore */ }
+        }, 60 * 60 * 1000);
+      }
+    })();
   </script>
 
   <script>
