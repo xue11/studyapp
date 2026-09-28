@@ -735,7 +735,7 @@ class AppUI {
       const ptsBadge = coordRes.summary.pointsEarned > 0 ? `<span class="badge success">+${coordRes.summary.pointsEarned} pt</span>` : "";
 
       let bodyHtml = `
-        <div style="font-size:1.1rem; font-weight:bold; margin-bottom:8px;">正解: ${q.answer} ${ptsBadge}</div>
+        <div style="font-size:1.1rem; font-weight:bold; margin-bottom:8px;">正解: ${q.clockAnswerLabel || q.answer} ${ptsBadge}</div>
         <div style="background:#eff6ff; padding:10px; border-radius:8px; text-align:left; font-size:0.9rem; margin-bottom:12px;">
           <b>📖 解説:</b><br>${q.explanation}
         </div>
@@ -967,7 +967,7 @@ class AppUI {
               <tr style="border-bottom:1px solid var(--border); background:${d.isCorrect ? '#f0fdf4' : '#fef2f2'};">
                 <td style="padding:6px 8px;">${d.isCorrect ? '⭕' : '❌'} 問${i+1}</td>
                 <td style="padding:6px 8px;">${d.questionText}</td>
-                <td style="padding:6px 8px; text-align:right;">${d.isCorrect ? this._formatAnswerLabel(d.userAnswer, d.figureChoices) : `${this._formatAnswerLabel(d.userAnswer, d.figureChoices)} (正: ${this._formatAnswerLabel(d.correctAnswer, d.figureChoices)})`}</td>
+                <td style="padding:6px 8px; text-align:right;">${d.isCorrect ? this._formatAnswerLabel(d.userAnswer, d.figureChoices, d.clockFormat) : `${this._formatAnswerLabel(d.userAnswer, d.figureChoices, d.clockFormat)} (正: ${this._formatAnswerLabel(d.correctAnswer, d.figureChoices, d.clockFormat)})`}</td>
               </tr>
             `).join("")}
           </table>
@@ -1647,17 +1647,24 @@ class AppUI {
   /**
    * V2.6.3: 図形選択問題の回答 (カンマ区切りカードID) をカード文ラベルへ変換する
    * figureChoices が無い通常問題では、そのまま回答文字列を返す
-   * @param {string} answerStr 回答または正解の文字列 (例: "c1" / "p2,p4,p6")
+   * V2.6.8: clockFormat を指定すると時計回答の表示ラベル精度が上がる (HhM → 「2時間30分」)
+   * @param {string} answerStr 回答または正解の文字列 (例: "c1" / "p2,p4,p6" / "3:40")
    * @param {Array<{id:string, text:string}>} figureChoices 出題時のカード情報
+   * @param {string} [clockFormat] 時計回答の形式 ("H:M" / "H:M:S" / "HhM" / "M")
    * @returns {string} 表示用ラベル
    */
-  _formatAnswerLabel(answerStr, figureChoices) {
+  _formatAnswerLabel(answerStr, figureChoices, clockFormat) {
     const raw = (answerStr === null || answerStr === undefined) ? "" : String(answerStr);
     // V2.6.7: 時こく回答 ("3:40" 等) は「3時40分」の表示用ラベルへ変換する
     const clockSVG = (typeof window !== "undefined" && window.ClockSVG) ? window.ClockSVG : null;
-    if (clockSVG && typeof clockSVG.answerLabel === "function" && raw.indexOf(":") >= 0) {
-      const fmt = (raw.split(":").length >= 3) ? "H:M:S" : "H:M";
-      return clockSVG.answerLabel(raw, fmt) || raw;
+    if (clockSVG && typeof clockSVG.answerLabel === "function") {
+      if (clockFormat) {
+        const label = clockSVG.answerLabel(raw, clockFormat);
+        if (label) return label;
+      } else if (raw.indexOf(":") >= 0) {
+        const fmt = (raw.split(":").length >= 3) ? "H:M:S" : "H:M";
+        return clockSVG.answerLabel(raw, fmt) || raw;
+      }
     }
     if (!Array.isArray(figureChoices) || figureChoices.length === 0) return raw;
     const map = {};

@@ -1,12 +1,12 @@
 /**
- * 時計問題 (answerType: "clock_input") 自動テスト — V2.6.7
+ * 時計問題 (answerType: "clock_input") 自動テスト — V2.6.8
  * Run with: node tests/test_clock.js
  *
  * 検証項目:
  *  1. ClockSVG 公開APIと針の角度計算
- *  2. 時計テンプレート4件の登録 (answerType: clock_input / clockSpec 付き)
+ *  2. 時計テンプレート4件 (G2) + 4件 (G3) の登録 (answerType: clock_input / clockSpec 付き)
  *  3. 大量生成 + QuestionValidator 検証 + clockHTML / clockFields / answer の付与
- *  4. 回答の正規化・比較 (formatHMS / equalsAnswer / answerLabel)
+ *  4. 回答の正規化・比較 (formatHMS / equalsAnswer / answerLabel) + HhM 形式
  *  5. AppUI の時計入力UI (_renderClockInputs / _readClockAnswer / _clockSelectionDisplay)
  *  6. AppUI 学習画面が時計図・時計入力欄を含むこと
  *  7. 回答判定 (AppUI._checkAnswer / _formatAnswerLabel / TestEngine._checkAnswer)
@@ -41,6 +41,11 @@ const CLOCK_TEMPLATE_IDS = [
   "g2_clock_read_02",       // H:M:S (時計1つ・大・秒まで)
   "g2_clock_elapsed_01",    // M    (時計2つ・小・横並び)
   "g2_clock_time_after_01", // H:M  (時計1つ・大)
+  // V2.6.8: 3年生 (time_unit)
+  "g3_clock_read_24_01",     // H:M  (24時間表記・大・show24)
+  "g3_clock_time_after_h_01", // H:M  (何時間後・大・show24)
+  "g3_clock_elapsed_hm_01",   // HhM  (時間差・時計2つ・小)
+  "g3_clock_to_minutes_01",   // M    (単位変換・大)
 ];
 
 let pass = 0, fail = 0;
@@ -49,7 +54,7 @@ function check(name, cond) {
   else { fail++; console.log("  [FAIL] " + name); }
 }
 
-console.log("=== V2.6.7 時計問題 (clock_input) tests ===\n");
+console.log("=== V2.6.8 時計問題 (clock_input) tests ===\n");
 
 // ---------------------------------------------------------------
 console.log("1. ClockSVG 公開APIと針の角度");
@@ -81,7 +86,9 @@ CLOCK_TEMPLATE_IDS.forEach((id) => {
   if (!t) return;
   check(`${id} は clock_input`, t.answerType === "clock_input");
   check(`${id} は clockSpec を持つ`, !!(t.clockSpec && Array.isArray(t.clockSpec.clocks) && t.clockSpec.clocks.length >= 1));
-  check(`${id} は time_clock_basic 単位`, t.unitId === "time_clock_basic");
+  // V2.6.8: G2 は time_clock_basic / G3 は time_unit
+  const expUnit = id.indexOf("g3_") === 0 ? "time_unit" : "time_clock_basic";
+  check(`${id} は ${expUnit} 単位`, t.unitId === expUnit);
 });
 // ---------------------------------------------------------------
 console.log("3. 大量生成 + 検証 + 時計表示データ");
@@ -98,7 +105,7 @@ CLOCK_TEMPLATE_IDS.forEach((id) => {
     }
     assert.ok(q.clockHTML && q.clockHTML.indexOf("<svg") >= 0, `${id}: clockHTML がSVGを含まない`);
     assert.ok(Array.isArray(q.clockFields) && q.clockFields.length >= 1, `${id}: clockFields なし`);
-    assert.ok(/^\d{1,2}(:\d{2}){0,2}$/.test(q.answer), `${id}: answer 形式異常: ${q.answer}`);
+    assert.ok(/^(\d{1,3}(:\d{2}){0,2})$/.test(q.answer), `${id}: answer 形式異常: ${q.answer}`);
     assert.ok(typeof q.clockFormat === "string" && q.clockFormat.length > 0, `${id}: clockFormat なし`);
     assert.ok(typeof q.clockAnswerLabel === "string" && q.clockAnswerLabel.length > 0, `${id}: clockAnswerLabel なし`);
     assert.ok(q.hintSteps.length >= 2, `${id}: hintSteps不足`);
@@ -111,6 +118,9 @@ CLOCK_TEMPLATE_IDS.forEach((id) => {
 check("H:M は 時・分 の2欄", ClockSVG.fieldsForFormat("H:M").map(f => f.key).join(",") === "h,m");
 check("H:M:S は 時・分・秒 の3欄", ClockSVG.fieldsForFormat("H:M:S").map(f => f.key).join(",") === "h,m,s");
 check("M は 分 の1欄", ClockSVG.fieldsForFormat("M").map(f => f.key).join(",") === "m");
+// V2.6.8: HhM (時間差) 形式
+check("HhM は 時間・分 の2欄", ClockSVG.fieldsForFormat("HhM").map(f => f.key).join(",") === "h,m");
+check('HhM のラベルは「時間」「分」', ClockSVG.fieldsForFormat("HhM").map(f => f.label).join(",") === "時間,分");
 
 // ---------------------------------------------------------------
 console.log("4. 回答の正規化・比較 (formatHMS / equalsAnswer / answerLabel)");
@@ -119,6 +129,10 @@ check('formatHMS(3,40,0,"H:M") = "3:40"', ClockSVG.formatHMS(3, 40, 0, "H:M") ==
 check('formatHMS(3,5,0,"H:M") = "3:05" (ゼロ埋め)', ClockSVG.formatHMS(3, 5, 0, "H:M") === "3:05");
 check('formatHMS(3,40,25,"H:M:S") = "3:40:25"', ClockSVG.formatHMS(3, 40, 25, "H:M:S") === "3:40:25");
 check('formatHMS(0,45,0,"M") = "45"', ClockSVG.formatHMS(0, 45, 0, "M") === "45");
+// V2.6.8: HhM (時間差) 形式
+check('formatHMS(2,30,0,"HhM") = "2:30"', ClockSVG.formatHMS(2, 30, 0, "HhM") === "2:30");
+check('answerLabel("2:30","HhM") = "2時間30分"', ClockSVG.answerLabel("2:30", "HhM") === "2時間30分");
+check('answerLabel("775","M") = "775分"', ClockSVG.answerLabel("775", "M") === "775分");
 
 check('equalsAnswer("3:40", "03:40") = true (桁数ゆれ)', ClockSVG.equalsAnswer("3:40", "03:40") === true);
 check('equalsAnswer("3時40分", "3:40") = true (単位付き)', ClockSVG.equalsAnswer("3時40分", "3:40") === true);

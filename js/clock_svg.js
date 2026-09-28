@@ -61,6 +61,8 @@
   var FORMATS = {
     "H:M":   [{ key: "h", label: "時", max: 2 }, { key: "m", label: "分", max: 2 }],
     "H:M:S": [{ key: "h", label: "時", max: 2 }, { key: "m", label: "分", max: 2 }, { key: "s", label: "秒", max: 2 }],
+    // V2.6.8: 時間差（何時間何分）用。「時」ではなく「時間」と読ませる
+    "HhM":   [{ key: "h", label: "時間", max: 2 }, { key: "m", label: "分", max: 2 }],
     "M":     [{ key: "m", label: "分", max: 3 }],
     "M:S":   [{ key: "m", label: "分", max: 2 }, { key: "s", label: "秒", max: 2 }],
     "COUNT": [{ key: "count", label: "こ", max: 3 }]
@@ -249,7 +251,7 @@
         aria: c.aria || buildAria(c, vars),
         size: sizeName,
         showSeconds: showSeconds,
-        show24: !!c.show24
+        show24: !!(c.show24 || spec.show24)
       };
     });
   }
@@ -276,7 +278,7 @@
 
   /**
    * 回答形式に対応する入力欄の定義を返す（「時」「分」「秒」は分けて入力させる）
-   * @param {string} format "H:M" | "H:M:S" | "M:S" | "M" | "COUNT"
+   * @param {string} format "H:M" | "H:M:S" | "HhM" | "M:S" | "M" | "COUNT"
    * @param {string} [unitLabel] COUNT 形式のときに使う単位ラベル
    * @returns {Array<{key:string,label:string,max:number}>}
    */
@@ -300,6 +302,7 @@
     var M = Math.round(Number(m) || 0);
     var S = Math.round(Number(s) || 0);
     if (fmt === "H:M:S") return H + ":" + pad2(M) + ":" + pad2(S);
+    if (fmt === "HhM") return H + ":" + pad2(M);
     if (fmt === "M:S") return M + ":" + pad2(S);
     if (fmt === "M") return String(M);
     if (fmt === "COUNT") return String(H);
@@ -342,6 +345,7 @@
     if (str === null || str === undefined || str === "") return "";
     var p = parseHMS(str);
     if (fmt === "H:M:S" && p.length >= 3) return p[0] + "時" + p[1] + "分" + p[2] + "秒";
+    if (fmt === "HhM" && p.length >= 2) return p[0] + "時間" + p[1] + "分";
     if (fmt === "H:M" && p.length >= 2) return p[0] + "時" + p[1] + "分";
     if (fmt === "M:S" && p.length >= 2) return p[0] + "分" + p[1] + "秒";
     if (fmt === "M" && p.length >= 1) return p[0] + "分";

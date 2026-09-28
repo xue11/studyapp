@@ -78,7 +78,7 @@ class UnitRegistry {
           { id: "div_no_remainder", name: "わり算（あまりなし）", concepts: ["division_equal_share", "division_by_multiplication"] },
           { id: "length_unit", name: "長さの単位（m・cm・km）", concepts: ["length_convert_m_km"] },
           { id: "weight_unit", name: "重さの単位（kg・g）", concepts: ["weight_convert_basic"] },
-          { id: "time_unit", name: "時間の単位（時・分・秒）", concepts: ["time_convert_calc"] }
+          { id: "time_unit", name: "時間の単位（時・分・秒）", concepts: ["time_convert_calc", "clock_read_24h", "clock_time_after_h", "clock_duration_hm", "clock_to_minutes"] }
         ],
         3: [
           { id: "div_with_remainder", name: "わり算（あまりあり）", concepts: ["division_with_remainder"] },

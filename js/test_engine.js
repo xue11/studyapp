@@ -180,7 +180,9 @@ class TestEngine {
         // V2.6.3: 図形選択問題は結果表示でカード文ラベルへ変換するためにスナップショットを保持
         figureChoices: Array.isArray(q.figureChoices)
           ? q.figureChoices.map(c => ({ id: c.id, text: c.text || "" }))
-          : null
+          : null,
+        // V2.6.8: 時計問題の回答ラベル変換に使う形式 ("H:M" / "H:M:S" / "HhM" / "M")
+        clockFormat: q.clockFormat || null
       });
     }
 
