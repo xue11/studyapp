@@ -214,7 +214,11 @@ class RuleBasedQuestionSource {
       understandingCheck: understandingCheck,
       isReview: !!options.isReview,
       isFallback: !!options.isFallback,
-      commutativePairs: Array.isArray(template.commutativePairs) ? template.commutativePairs : null
+      commutativePairs: Array.isArray(template.commutativePairs) ? template.commutativePairs : null,
+      // V2.6.12: DiversitySelector の多様性判定 (story系 Level 1〜3) に必要なメタ情報を伝搬
+      story: template.story || null,
+      variationGroupId: template.variationGroupId || null,
+      similarityGroupId: template.similarityGroupId || template.templateId
     };
 
     // V2.6.3: 図形テンプレート (figure) → 図+文カード選択肢を生成して付与

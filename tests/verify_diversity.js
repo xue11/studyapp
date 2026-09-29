@@ -1,4 +1,4 @@
-const { DiversitySelector } = require('./js/diversity_selector.js');
+const { DiversitySelector } = require('../js/diversity_selector.js');
 
 const q1 = {
   templateId: 'g1_word_add_01',

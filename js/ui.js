@@ -325,14 +325,9 @@ class AppUI {
         decks[sel.unitId] = this._shuffleArray([...templates]);
       }
       // V2.6.1: 直近3問で使用したテンプレートを優先的に回避 (同一unit連続時の単調さを軽減)
-      const recentTemplateIds = this.session.questions.slice(-3).map(q => q.templateId);
+      // V2.6.12: DiversitySelector を接続し、デッキ先頭の候補から最も多様な問題を選択
       const deck = decks[sel.unitId];
-      const freshIdx = deck.findIndex(x => !recentTemplateIds.includes(x.templateId));
-      if (freshIdx >= 0) {
-        t = deck.splice(freshIdx, 1)[0];
-      } else {
-        t = deck.pop();
-      }
+      t = this._pickDiverseTemplate(deck, this.session.questions, 4);
       if (!t) t = templates[Math.floor(Math.random() * templates.length)];
       const qInstance = RuleBasedQuestionSource.generateQuestion(t.templateId, this.session.questions, {
         isReview: sel.type === "review"
@@ -396,15 +391,8 @@ class AppUI {
       if (deck.length === 0) {
         deck = this._shuffleArray([...pool]);
       }
-      // 直近2問で使用したテンプレートを優先回避
-      const recentTemplateIds = this.session.questions.slice(-2).map(q => q.templateId);
-      const freshIdx = deck.findIndex(x => !recentTemplateIds.includes(x.templateId));
-      let t = null;
-      if (freshIdx >= 0) {
-        t = deck.splice(freshIdx, 1)[0];
-      } else {
-        t = deck.pop();
-      }
+      // V2.6.12: DiversitySelector を接続 (従来の「直近2問のテンプレート回避」もフォールバックとして維持)
+      let t = this._pickDiverseTemplate(deck, this.session.questions, 4);
       if (!t) t = pool[Math.floor(Math.random() * pool.length)];
 
       const qInstance = RuleBasedQuestionSource.generateQuestion(t.templateId, this.session.questions, {
@@ -416,6 +404,43 @@ class AppUI {
     this._startSessionTimer();
     Sound.playClick();
     this.navigate("learning");
+  }
+
+  /**
+   * テンプレートデッキから DiversitySelector を用いて「最も多様な」テンプレートを1つ選び、
+   * 選択済みをデッキから取り除く (V2.6.12)
+   * デッキの1巡ローテーション性を保つため、候補は常にデッキ先頭側 (window件) から取得する。
+   * @param {Array} deck テンプレートのデッキ (破壊的に選択済みを除去する)
+   * @param {Array} recentInstances 直近の出題インスタンス (多様性判定の履歴)
+   * @param {number} window 候補として取り出すデッキ先頭件数 (デフォルト4)
+   * @returns {Object|null} 選択されたテンプレート (デッキが空なら null)
+   */
+  _pickDiverseTemplate(deck, recentInstances = [], window = 4) {
+    if (!Array.isArray(deck) || deck.length === 0) return null;
+    const candidates = deck.slice(0, Math.max(1, window));
+    const recent = Array.isArray(recentInstances) ? recentInstances : [];
+
+    let picked = null;
+    // V2.6.12: DiversitySelector が未ロードの環境 (Nodeテスト等) でも動作するようガード
+    if (typeof DiversitySelector !== "undefined" && DiversitySelector
+        && typeof DiversitySelector.selectDiverseCandidate === "function") {
+      try {
+        picked = DiversitySelector.selectDiverseCandidate(candidates, recent);
+      } catch (err) {
+        console.warn("[DiversitySelector] 選択に失敗したため従来ロジックへフォールバック:", err);
+        picked = null;
+      }
+    }
+
+    if (!picked) {
+      // フォールバック: 直近3問で使用したテンプレートを優先的に回避
+      const recentTemplateIds = recent.slice(-3).map(q => q.templateId);
+      picked = candidates.find(x => !recentTemplateIds.includes(x.templateId)) || candidates[0];
+    }
+
+    const idx = deck.indexOf(picked);
+    if (idx >= 0) deck.splice(idx, 1);
+    return picked;
   }
 
   _shuffleArray(array) {
@@ -1362,17 +1387,26 @@ class AppUI {
     return `
       <div class="card">
         <div class="card-title">📚 復習キュー (${active.length} 件)</div>
-        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">間違えた問題は、忘れた頃（1日後・3日後・7日後・14日後）に再出題されます。</p>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">間違えた問題は、忘れた頃（1日後・3日後・7日後・14日後）に再出題されます。「とっくん」ボタンで今すぐ集中特訓もできます。</p>
 
         ${active.length === 0 ? '<div style="color:var(--text-muted); font-size:0.9rem; padding:12px 0;">現在、復習待ちの単元はありません。完璧です！✨</div>' : `
           <div style="max-height:240px; overflow-y:auto;">
             ${active.map(r => `
-              <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                  <div style="font-weight:bold; font-size:0.9rem;">${this._getUnitLabel(r.unitId, r.grade)}</div>
-                  <div style="font-size:0.8rem; color:var(--text-muted);">次回復習: ${r.dueAt} (間隔: ${r.intervalDays}日) / 成功: ${r.successCount}回</div>
+              <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                  <div>
+                    <div style="font-weight:bold; font-size:0.9rem;">${this._getUnitLabel(r.unitId, r.grade)}</div>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">次回復習: ${r.dueAt} (間隔: ${r.intervalDays}日) / 成功: ${r.successCount}回</div>
+                  </div>
+                  <span class="badge warn">復習中</span>
                 </div>
-                <span class="badge warn">復習中</span>
+                <!-- V2.6.12: 復習キューから単元特訓へ直結 -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+                  <button class="btn btn-outline" style="min-height:36px; padding:6px 10px; font-size:0.85rem; margin-bottom:0;"
+                    onclick="app.startUnitPracticeSession('${r.unitId}', 5, ${r.grade})">⚡ 5問とっくん</button>
+                  <button class="btn btn-primary" style="min-height:36px; padding:6px 10px; font-size:0.85rem; margin-bottom:0;"
+                    onclick="app.startUnitPracticeSession('${r.unitId}', 10, ${r.grade})">🚀 10問とっくん</button>
+                </div>
               </div>
             `).join("")}
           </div>
@@ -1733,9 +1767,18 @@ class AppUI {
 
     const weakRows = s.weakUnits.length
       ? s.weakUnits.map(w => `
-          <div class="unit-progress-row">
-            <div class="unit-name">${w.name} <span style="color:var(--text-muted); font-weight:normal;">（小学${w.grade}年）</span></div>
-            <div style="font-size:0.8rem; color:#991b1b; font-weight:bold;">正答率 ${fmtPct(w.accuracy)}</div>
+          <div class="unit-progress-row" style="flex-direction:column; align-items:stretch; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <div class="unit-name">${w.name} <span style="color:var(--text-muted); font-weight:normal;">（小学${w.grade}年）</span></div>
+              <div style="font-size:0.8rem; color:#991b1b; font-weight:bold;">正答率 ${fmtPct(w.accuracy)}</div>
+            </div>
+            <!-- V2.6.12: 苦手単元からそのまま特訓へ -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <button class="btn btn-outline" style="min-height:34px; padding:6px 10px; font-size:0.8rem; margin-bottom:0;"
+                onclick="app.startUnitPracticeSession('${w.unitId}', 5, ${w.grade})">⚡ 5問とっくん</button>
+              <button class="btn btn-outline" style="min-height:34px; padding:6px 10px; font-size:0.8rem; margin-bottom:0;"
+                onclick="app.startUnitPracticeSession('${w.unitId}', 10, ${w.grade})">🚀 10問とっくん</button>
+            </div>
           </div>`).join("")
       : `<div style="color:var(--text-muted); font-size:0.85rem; padding:8px 0;">弱点単元はありません 🎉</div>`;
 

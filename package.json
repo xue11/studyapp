@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "check:version": "node scripts/check_version.js"
+  },
   "dependencies": {
     "firebase-tools": "^15.29.0"
   }

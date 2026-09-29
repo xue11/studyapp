@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.6.11  
+**バージョン**: V2.6.12  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -24,7 +24,7 @@ index.html
     ├── learning_score_engine.js   ← 1問あたりの学習スコア算出
     ├── learning_engine.js         ← unitStats・masteryScore・日次ストリーク更新
     ├── unit_selector.js           ← 次の出題単元選択
-    ├── diversity_selector.js      ← 問題多様性フィルタ
+    ├── diversity_selector.js      ← 問題多様性フィルタ（V2.6.12: ui.js の出題選択に接続済み）
     ├── review_engine.js           ← 復習キュー管理（間隔反復）
     ├── level_engine.js            ← 難易度レベル上下判定
     ├── gamification_engine.js     ← ポイント・バッジ・達成レベル
@@ -121,11 +121,31 @@ index.html
 **卒業条件**: `successCount ≥ 3` かつ `intervalDays = 14`  
 **復帰**: 卒業済み単元が再トリガーされた場合は `active` に戻して再利用
 
+**V2.6.12 導線追加**: 復習・履歴画面の復習待ち単元、および保護者ダッシュボードの弱点単元から
+「⚡ 5問とっくん / 🚀 10問とっくん」でその単元の集中特訓（`startUnitPracticeSession`）へ直結できる。
+
 ### 3-6. 問題多様性（`DiversitySelector`）
 
 - 直近1問と同一パターン（Level 3）は禁止
 - 直近3問で同一パターン（Level 3）は禁止・Level 2 は回避
 - 直近5問で同一コンテキストを可能な限り回避
+
+**V2.6.12 接続仕様**
+
+- `RuleBasedQuestionSource` は生成した問題インスタンスに `story` / `variationGroupId` / `similarityGroupId` を伝搬する（判定の前提データ）
+- `ui.js` の `startLearningSession` / `startUnitPracticeSession` は `_pickDiverseTemplate()` を経由し、
+  デッキ先頭の最大4候補から `DiversitySelector.selectDiverseCandidate()` で最も多様な問題を選択する
+- 候補が枯渇する場合は `DiversitySelector` 内部の緩和ルール → 直近3問のテンプレート回避 → ランダム の順にフォールバックする（問題数は常に確保）
+- `DiversitySelector` 未ロード環境では従来のテンプレート重複回避ロジックで動作する
+
+### 3-7. バージョン整合チェック（`scripts/check_version.js`）
+
+`npm run check:version` でバージョン表記のズレを検出する（リリース手順の一部）。
+
+- 突合対象: `js/config.js`（`appVersion` / `schemaVersion`）、`js/migration.js`（フォールバック値）、
+  `sw.js`（`CACHE_NAME`）、`index.html` / `dist/index.html`（`<title>`）、`tests/test_phase1.js`、
+  `test_phase1.html`、`app_overview.md`
+- 不一致がある場合は内容を一覧表示し、終了コード 1 で失敗する
 
 ---
 

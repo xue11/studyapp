@@ -1,11 +1,12 @@
-// PWA Service Worker (V2.6.11)
-const CACHE_NAME = 'arith-study-v2.6.11-clock-pad';
+// PWA Service Worker (V2.6.12)
+const CACHE_NAME = 'arith-study-v2.6.12-diversity';
 const urlsToCache = [
   '/',
   '/index.html',
   '/css/app.css',
   '/js/config.js',
   '/js/registries.js',
+  '/js/diversity_selector.js',
   '/js/schema.js',
   '/js/migration.js',
   '/js/storage.js',
