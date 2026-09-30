@@ -60,12 +60,16 @@ class UnitRegistry {
           { id: "kuku_intro", name: "かけ算のいみと九九（2〜5のだん）", concepts: ["kuku_basic_groups"] },
           { id: "volume_unit", name: "かさの単位（L・dL・mL）", concepts: ["volume_convert_basic", "volume_compare_basic"] },
           { id: "calc_idea_basic", name: "計算のくふう（まとめて計算）", concepts: ["calc_idea_make_100", "calc_idea_sub_together"] },
-          { id: "estimation_basic", name: "計算の見積もり（およその数）", concepts: ["estimation_round10_add", "estimation_round100_mul"] }
+          { id: "estimation_basic", name: "計算の見積もり（およその数）", concepts: ["estimation_round10_add", "estimation_round100_mul"] },
+          // V2.8.0: 図形を「直接タップ」して答える問題。Lv1の識別中心から段階的に進む。
+          { id: "shape_figure_tap", name: "図形（辺・頂点を さがそう）", concepts: ["tri_quad_tap_vertex", "tri_quad_tap_edge"] }
         ],
         3: [
           { id: "kuku_partial", name: "九九（6〜9のだん）", concepts: ["kuku_advanced_groups", "kuku_mastery"] },
           { id: "add_3terms_2digit", name: "3つの数のたし算・ひき算", concepts: ["three_terms_2digit"] },
-          { id: "add_sub_2digit_2step", name: "2けたの2段階計算", concepts: ["two_step_2digit", "working_backwards"] }
+          { id: "add_sub_2digit_2step", name: "2けたの2段階計算", concepts: ["two_step_2digit", "working_backwards"] },
+          // V2.8.0: 図を見て数値で答える問題（方眼・辺の長さ・頂点の数）。
+          { id: "shape_figure_measure", name: "図形（図から 長さや 数を みよう）", concepts: ["tri_quad_count_parts", "tri_quad_grid_length"] }
         ]
       },
       3: {

@@ -27,6 +27,8 @@
  *   FigureSVG.renderTappable(spec, ids, opts) タップ可能な図 (figure_tap 用)
  *   FigureSVG.parts(spec)                    タップ部品の一覧 [{id,kind,label}]
  *   FigureSVG.selectParts(spec, select)      条件に合う部品IDの決定（正解の算出）
+ *   FigureSVG.varySpec(spec, vars)           回転などの出題ゆらぎを spec へ適用
+ *   FigureSVG.fillSpecVars(spec, vars)       spec 内の {変数名} を生成変数で置換
  *   FigureSVG.buildDisplay(spec, vars)       question_source から呼ぶ組み立て
  *   FigureSVG.toLegacy(type, params)         旧 createFigureSVG(type, params) 互換
  *   FigureSVG.esc(s)                         HTMLエスケープ
@@ -166,6 +168,7 @@
     square:              { A: [0, 0], B: [4, 0], C: [4, 4], D: [0, 4] },
     rectangle:           { A: [0, 0], B: [5, 0], C: [5, 3], D: [0, 3] },
     rectangle_wide:      { A: [0, 0], B: [5, 0], C: [5, 3.5], D: [0, 3.5] },
+    rectangle_tall:      { A: [0, 0], B: [3, 0], C: [3, 5], D: [0, 5] },
     parallelogram:       { A: [0.9, 0], B: [5.1, 0], C: [4.2, 2.8], D: [0, 2.8] },
     rhombus:             { A: [2, 0], B: [4, 1.6], C: [2, 3.2], D: [0, 1.6] },
     trapezoid:           { A: [0, 0], B: [4.4, 0], C: [3.4, 2.6], D: [1, 2.6] },
@@ -190,6 +193,14 @@
       return { points: clonePoints(TRI[variant] || TRI.equilateral), circle: null, elems: null, open: false };
     }
     if (shape === "quadrilateral") {
+      // V2.8.0: w / h が指定されていればその寸法の長方形を描く。
+      // 方眼問題（何cmか）は variant では表現できないため、変数と結びつけて使う。
+      if (typeof spec.w === "number" && typeof spec.h === "number" && spec.w > 0 && spec.h > 0) {
+        return {
+          points: { A: [0, 0], B: [spec.w, 0], C: [spec.w, spec.h], D: [0, spec.h] },
+          circle: null, elems: null, open: false
+        };
+      }
       return { points: clonePoints(QUAD[variant] || QUAD.square), circle: null, elems: null, open: false };
     }
     if (shape === "polygon") {
@@ -224,6 +235,12 @@
       var B = [len * Math.cos(a2), len * Math.sin(a2)];
       return {
         points: { O: [0, 0], A: A, B: B }, circle: null, open: true,
+        // V2.8.0: 頂点順と辺を明示する。
+        // 此前はアルファベット順 (A,B,O) が使われ、角のタップ部品が頂点Oではなく
+        // 頂点Aを指していた（辺も A-B / B-O という誤った2本になっていた）。
+        order: ["O", "A", "B"],
+        vertexName: "O",
+        edges: [["O", "A"], ["O", "B"]],
         elems: [
           { kind: "line", a: [0, 0], b: A, style: "solid" },
           { kind: "line", a: [0, 0], b: B, style: "solid" }
@@ -460,7 +477,10 @@
     var ctx = fit(spec);
     var geo = ctx.geo;
     var points = {};
-    var order = Object.keys(geo.points || {}).sort();
+    // V2.8.0: 形状が頂点順を明示していればそれを優先する（角の O を先頭にするため）
+    var order = (Array.isArray(geo.order) && geo.order.length)
+      ? geo.order.slice()
+      : Object.keys(geo.points || {}).sort();
     order.forEach(function (k) { points[k] = ctx.toPx(geo.points[k]); });
     var elems = [];
     (geo.elems || []).forEach(function (el) {
@@ -529,11 +549,15 @@
   function effectiveMarks(spec) {
     var m = { rightAngle: [], equalSides: [], parallel: [] };
     var shape = spec.shape, variant = spec.variant || "";
-    var names = Object.keys(unitShape(shape, variant, spec).points || {}).sort();
+    var us = unitShape(shape, variant, spec);
+    // V2.8.0: 形状が頂点順を明示していればそれを使う（parts / labels と順序を揃える）
+    var names = (Array.isArray(us.order) && us.order.length)
+      ? us.order.slice()
+      : Object.keys(us.points || {}).sort();
 
     if (spec.autoMarks !== false) {
       if (shape === "quadrilateral" &&
-          (variant === "square" || variant === "rectangle" || variant === "rectangle_wide")) {
+          (variant === "square" || variant === "rectangle" || variant === "rectangle_wide" || variant === "rectangle_tall")) {
         m.rightAngle = names.slice();
       }
       if (variant === "rhombus" || variant === "square") {
@@ -587,6 +611,20 @@
     return out;
   }
 
+  /**
+   * 形状が辺を明示していればそれを、無ければ頂点順序から生成する。
+   * parts() と selectParts() が同じ結果を返さないと「タップできる辺」と「正解の辺」がずれるため、
+   * 辺の生成はこの1箇所に集約する。
+   */
+  function geoEdgesOf(geo, order) {
+    if (geo && Array.isArray(geo.edges) && geo.edges.length > 0) {
+      return geo.edges.map(function (pair) {
+        return { id: "e-" + edgeKey(pair[0], pair[1]), a: pair[0], b: pair[1], key: edgeKey(pair[0], pair[1]) };
+      });
+    }
+    return edgesOf(order, !!(geo && geo.open));
+  }
+
   // ------------------------------------------------------------ タップ部品 (parts)
 
   /**
@@ -610,7 +648,7 @@
         });
       });
       // 辺
-      edgesOf(order, !!res.ctx.geo.open).forEach(function (e) {
+      geoEdgesOf(res.ctx.geo, order).forEach(function (e) {
         out.push({
           id: e.id, kind: "edge", label: "辺" + e.key, short: e.key,
           a: e.a, b: e.b,
@@ -633,18 +671,20 @@
           });
         });
       } else {
-        // 角の図形: 頂点 O の角のみ
-        var o = order[0];
-        var others = order.slice(1);
-        var r2 = Math.min(dist(res.points[o], res.points[others[0]]), dist(res.points[o], res.points[others[1]])) * 0.32;
-        out.push({
-          id: "a-" + o, kind: "angle", label: "角O", short: "角O", vertex: o,
-          hit: {
-            type: "wedge", v: res.points[o],
-            p1: res.points[others[0]], p2: res.points[others[1]],
-            r: Math.max(14, Math.min(30, r2))
-          }
-        });
+        // 角の図形: 頂点（既定 O）の角のみ。頂点名は形状が明示する。
+        var o = res.ctx.geo.vertexName || order[0];
+        var others = order.filter(function (nm) { return nm !== o; });
+        if (others.length >= 2) {
+          var r2 = Math.min(dist(res.points[o], res.points[others[0]]), dist(res.points[o], res.points[others[1]])) * 0.32;
+          out.push({
+            id: "a-" + o, kind: "angle", label: "角" + o, short: "角" + o, vertex: o,
+            hit: {
+              type: "wedge", v: res.points[o],
+              p1: res.points[others[0]], p2: res.points[others[1]],
+              r: Math.max(14, Math.min(30, r2))
+            }
+          });
+        }
       }
     }
 
@@ -1082,7 +1122,7 @@
       });
       if (topId) ids.push(topId);
     } else if (select.longest || select.shortest) {
-      var edges = edgesOf(res.order, !!res.ctx.geo.open).map(function (e) {
+      var edges = geoEdgesOf(res.ctx.geo, res.order).map(function (e) {
         return { id: e.id, len: dist(res.points[e.a], res.points[e.b]) };
       });
       edges.sort(function (a, b) { return select.longest ? b.len - a.len : a.len - b.len; });
@@ -1188,6 +1228,32 @@
       }
     });
     return spec;
+  }
+
+  /**
+   * V2.8.0: spec の中の "{変数名}" を生成変数で置換する。
+   * 方眼の「4cm」ラベルや、指定した値（辺の数など）を spec 自身へ埋め込むために使う。
+   * 置換できない "{...}" は spec 側を汚さないよう元の文字列を返す（Validator が検出する）。
+   */
+  function fillSpecVars(spec, vars) {
+    if (!spec || typeof spec !== "object") return spec;
+    vars = vars || {};
+    function sub(v) {
+      if (typeof v !== "string") return v;
+      return v.replace(/\{([a-zA-Z0-9_]+)\}/g, function (m, key) {
+        return Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : m;
+      });
+    }
+    function walk(node) {
+      if (Array.isArray(node)) return node.map(walk);
+      if (node && typeof node === "object") {
+        var out = {};
+        Object.keys(node).forEach(function (k) { out[k] = walk(node[k]); });
+        return out;
+      }
+      return sub(node);
+    }
+    return walk(spec);
   }
 
   /**
@@ -1339,6 +1405,8 @@
     parts: parts,
     selectParts: selectParts,
     effectiveMarks: effectiveMarks,
+    varySpec: varySpec,
+    fillSpecVars: fillSpecVars,
     buildDisplay: buildDisplay,
     toLegacy: toLegacy,
     esc: esc,

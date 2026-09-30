@@ -66,7 +66,8 @@ console.log("=== V2.6.4 figure toggle + G2 tests ===");
 
 // 5. G2 templates gen+validate
 {
-  for (const id of ["g2_tri_quad_identify", "g2_rect_square"]) {
+  // V2.8.0: 図形問題は 12件（Lv1:4 / Lv2 figure_tap:4 / Lv3 figure_display:4）
+  for (const id of ["g2_tri_quad_identify", "g2_rect_square", "g2_shape_sides_pick", "g2_shape_vertices_pick"]) {
     const t = TemplateRegistry.get(id);
     assert.ok(t, id + " registered");
     assert.strictEqual(t.unitId, "shape_tri_quad", id + " unit");
@@ -81,7 +82,7 @@ console.log("=== V2.6.4 figure toggle + G2 tests ===");
   // G2 unit registered at grade2 Lv1
   const units = UnitRegistry.getUnitsForLevel("math", 2, 1).map(u => u.id);
   assert.ok(units.includes("shape_tri_quad"), "shape_tri_quad in grade2 Lv1");
-  console.log("  [PASS] G2 2 templates gen+validate x5");
+  console.log("  [PASS] G2 4 Lv1 templates gen+validate x5");
 }
 
 // 6. G2 helpers (right-angle mark, card, judgment)
@@ -104,7 +105,6 @@ console.log("=== V2.6.4 figure toggle + G2 tests ===");
   }
   console.log("  [PASS] G2 helpers + identify coverage");
 }
-
 // 7. TestEngine OFF excludes figure
 {
   const p = createNewProfile("t_test", "A", 1);

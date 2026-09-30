@@ -17,7 +17,8 @@ const ok = (c, m) => { console.log((c ? 'PASS' : 'FAIL') + ' ' + m); if (!c) fai
 });
 
 // --- テンプレートが登録されていること
-const g3 = Object.values(TemplateRegistry.templates).filter(t => t.answerType === 'figure_tap');
+// V2.8.0: G2 にも figure_tap が加わったため、grade 3 で絞る
+const g3 = Object.values(TemplateRegistry.templates).filter(t => t.answerType === 'figure_tap' && t.grade === 3);
 ok(g3.length === 9, 'G3 図形テンプレート 9件が登録されている (count=' + g3.length + ')');
 ok(g3.every(t => t.grade === 3 && t.difficultyLevel === 3), 'すべて 3年生 Lv3');
 
@@ -58,5 +59,20 @@ ok(on.includes('angle_figure') && on.includes('area_grid_figure') && on.includes
   'figureEnabled=true で G3図形3単元が選択される (n=' + on.length + ')');
 ok(off.includes('div_with_remainder'), '非図形単元は figureEnabled=false でも残る');
 
+// --- V2.8.0 回帰: figure_tap の設問文がカード問題に潰されないこと
+// 此前は question_source が problemType だけで buildProblem を呼んでいたため、
+// G3の figure_tap すべてが G1の「おおきいほうをえらびましょう」+ 正方形カードになっていた。
+{
+  let polluted = 0, wrongText = 0;
+  g3.forEach(t => {
+    const q = RuleBasedQuestionSource.generateQuestion(t.templateId, []);
+    if (q.figureChoices && q.figureChoices.length > 0) polluted++;
+    if (q.questionText !== t.format) wrongText++;
+  });
+  ok(polluted === 0, 'figure_tap に figureChoices が混ざらない (混入=' + polluted + ')');
+  ok(wrongText === 0, 'figure_tap の設問文が format と一致 (不一致=' + wrongText + ')');
+  const sample = RuleBasedQuestionSource.generateQuestion('g3_angle_right_vertex', []);
+  ok(/タップ/.test(sample.questionText), 'g3_angle_right_vertex: ' + sample.questionText);
+}
 console.log('\n--- ' + (fail === 0 ? 'ALL PASS' : 'FAIL ' + fail) + ' ---');
 process.exit(fail === 0 ? 0 : 1);

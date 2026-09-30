@@ -1,0 +1,274 @@
+/**
+ * V2.8.0: G2「三角形と四角形」の FigureSVG ネイティブ移行テスト
+ *
+ * 検証する契約:
+ *   1. Lv1 / Lv2 / Lv3 の単元とテンプレートが登録されている
+ *   2. 12本すべてが10問ずつ生成でき、QuestionValidator を通る
+ *   3. figure_tap: 正解部品が figureParts に実在し、条件（直角/最長/等辺/すべて）と一致する
+ *   4. figure_display: 描かれた図が「答え」と一致する（頂点数・辺の長さ・周）
+ *   5. Engine 回帰: angle の頂点O / rectangle_tall / 設問文の潰れが直っているか
+ *   6. UnitSelector / TestEngine が G2 の新図形単元を正しく扱う
+ */
+const path = require("path");
+const R = path.join(__dirname, "..", "js");
+["templates_math.js", "templates_units_p1.js", "templates_units_p2.js", "templates_g2_extra.js",
+  "templates_figures_g1.js", "templates_figures_g2.js", "templates_figures_g3.js"
+].forEach(f => require(path.join(R, f)));
+const { RuleBasedQuestionSource } = require(path.join(R, "question_source.js"));
+const { QuestionValidator } = require(path.join(R, "validator.js"));
+const { TemplateRegistry, UnitRegistry } = require(path.join(R, "registries.js"));
+const { FigureSVG } = require(path.join(R, "figure_svg.js"));
+const { UnitSelector } = require(path.join(R, "unit_selector.js"));
+const { TestEngine } = require(path.join(R, "test_engine.js"));
+
+let fail = 0;
+const ok = (c, m) => { console.log((c ? "  [PASS] " : "  [FAIL] ") + m); if (!c) fail++; };
+const near = (a, b, e) => Math.abs(a - b) < (e || 0.01);
+
+console.log("=== V2.8.0 G2 図形テスト ===");
+
+// ---------------------------------------------------------------
+console.log("\n1. 単元の登録");
+{
+  const lv1 = UnitRegistry.getUnitsForLevel("math", 2, 1).map(u => u.id);
+  const lv2 = UnitRegistry.getUnitsForLevel("math", 2, 2).map(u => u.id);
+  const lv3 = UnitRegistry.getUnitsForLevel("math", 2, 3).map(u => u.id);
+  ok(lv1.includes("shape_tri_quad"), "shape_tri_quad は 2年Lv1");
+  ok(lv2.includes("shape_figure_tap"), "shape_figure_tap は 2年Lv2");
+  ok(lv3.includes("shape_figure_measure"), "shape_figure_measure は 2年Lv3");
+}
+
+// ---------------------------------------------------------------
+console.log("\n2. テンプレートの登録");
+const EXPECTED = [
+  ["g2_tri_quad_identify", "shape_tri_quad", 1, "multi_choice"],
+  ["g2_rect_square", "shape_tri_quad", 1, "multi_choice"],
+  ["g2_shape_sides_pick", "shape_tri_quad", 1, "single_choice"],
+  ["g2_shape_vertices_pick", "shape_tri_quad", 1, "multi_choice"],
+  ["g2_tap_right_vertex", "shape_figure_tap", 2, "figure_tap"],
+  ["g2_tap_all_edges", "shape_figure_tap", 2, "figure_tap"],
+  ["g2_tap_longest_side", "shape_figure_tap", 2, "figure_tap"],
+  ["g2_tap_equal_sides", "shape_figure_tap", 2, "figure_tap"],
+  ["g2_disp_count_vertices", "shape_figure_measure", 3, "figure_display"],
+  ["g2_disp_count_angles", "shape_figure_measure", 3, "figure_display"],
+  ["g2_disp_grid_sides", "shape_figure_measure", 3, "figure_display"],
+  ["g2_disp_square_perimeter", "shape_figure_measure", 3, "figure_display"]
+];
+{
+  EXPECTED.forEach(s => {
+    const id = s[0], unit = s[1], lv = s[2], at = s[3];
+    const t = TemplateRegistry.get(id);
+    ok(!!t, id + " が登録されている");
+    if (!t) return;
+    ok(t.unitId === unit && t.difficultyLevel === lv && t.answerType === at,
+      id + " は " + unit + " / Lv" + lv + " / " + at);
+  });
+  const g2fig = Object.values(TemplateRegistry.templates)
+    .filter(t => t.problemType === "figure" && t.grade === 2);
+  ok(g2fig.length === 12, "G2 図形テンプレートは 12件 (actual=" + g2fig.length + ")");
+}
+
+// ---------------------------------------------------------------
+console.log("\n3. 10問生成 + Validator");
+{
+  EXPECTED.forEach(s => {
+    const id = s[0];
+    let good = 0, firstErr = "";
+    for (let i = 0; i < 10; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      if (!q) { firstErr = firstErr || "null question"; continue; }
+      const v = QuestionValidator.validate(q, []);
+      if (v.valid) good++;
+      else if (!firstErr) firstErr = (v.errors || []).map(e => e.message).join(" | ").slice(0, 160);
+    }
+    ok(good === 10, id + " 10問生成 " + good + "/10" + (firstErr ? "  err=" + firstErr : ""));
+  });
+}
+
+// ---------------------------------------------------------------
+console.log("\n4. figure_tap: 正解部品が図と一致すること");
+{
+  EXPECTED.filter(s => s[3] === "figure_tap").forEach(s => {
+    const id = s[0];
+    let bad = 0;
+    for (let i = 0; i < 10; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      if (!q) { bad++; continue; }
+      const ids = new Set((q.figureParts || []).map(p => p.id));
+      const miss = (q.correctPartIds || []).filter(x => !ids.has(x));
+      if (miss.length || !q.figureParts || q.figureParts.length < 2) bad++;
+    }
+    ok(bad === 0, id + " 正解部品がすべて figureParts に実在 (" + (10 - bad) + "/10)");
+  });
+
+  {
+    const q = RuleBasedQuestionSource.generateQuestion("g2_tap_right_vertex", []);
+    ok(q.correctPartIds.length === 4, "g2_tap_right_vertex 正解は頂点4つ (n=" + q.correctPartIds.length + ")");
+    const marks = FigureSVG.effectiveMarks(q.figureSpec);
+    ok(marks.rightAngle.length === 4, "直角マークが4頂点分ある");
+    ok(q.correctPartIds.every(id => marks.rightAngle.indexOf(id.slice(2)) >= 0),
+      "正解頂点と直角マーク位置が一致: " + JSON.stringify(q.correctPartIds));
+  }
+
+  {
+    const q = RuleBasedQuestionSource.generateQuestion("g2_tap_all_edges", []);
+    const edges = FigureSVG.parts(q.figureSpec).filter(p => p.kind === "edge");
+    ok(edges.length === 4, "g2_tap_all_edges 図に辺が4本");
+    ok(q.correctPartIds.length === 4, "g2_tap_all_edges 正解は4本 (n=" + q.correctPartIds.length + ")");
+    // 横長 = 上の辺(AB)が 縦の辺(BC) より長い / 縦長 = 逆
+    const wide = FigureSVG.resolve({ shape: "quadrilateral", variant: "rectangle_wide" });
+    const tall = FigureSVG.resolve({ shape: "quadrilateral", variant: "rectangle_tall" });
+    const width = (r) => Math.abs(r.points.B[0] - r.points.A[0]);
+    const height = (r) => Math.abs(r.points.C[1] - r.points.B[1]);
+    ok(width(wide) > height(wide),
+      "rectangle_wide は横長 (w=" + width(wide).toFixed(0) + " h=" + height(wide).toFixed(0) + ")");
+    ok(height(tall) > width(tall),
+      "rectangle_tall は縦長 (w=" + width(tall).toFixed(0) + " h=" + height(tall).toFixed(0) + ")");
+  }
+
+  {
+    let good = 0;
+    for (let i = 0; i < 10; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion("g2_tap_longest_side", []);
+      const parts = FigureSVG.parts(q.figureSpec).filter(p => p.kind === "edge");
+      const lens = parts.map(p => ({ id: p.id, len: FigureSVG.dist(p.hit.a, p.hit.b) }));
+      const best = Math.max.apply(null, lens.map(e => e.len));
+      const expect = lens.filter(e => near(e.len, best, 0.6)).map(e => e.id).sort();
+      const got = (q.correctPartIds || []).slice().sort();
+      if (JSON.stringify(expect) === JSON.stringify(got)) good++;
+    }
+    ok(good === 10, "g2_tap_longest_side 正解が実測の最長辺と一致 (" + good + "/10)");
+  }
+
+  {
+    let good = 0;
+    for (let i = 0; i < 10; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion("g2_tap_equal_sides", []);
+      const parts = FigureSVG.parts(q.figureSpec).filter(p => p.kind === "edge");
+      const ids = parts.map(p => p.id);
+      const marks = FigureSVG.effectiveMarks(q.figureSpec);
+      const expect = marks.equalSides
+        .map(pair => "e-" + (pair[0] < pair[1] ? pair[0] + pair[1] : pair[1] + pair[0]))
+        .filter(id => ids.indexOf(id) >= 0)
+        .sort();
+      const got = (q.correctPartIds || []).slice().sort();
+      if (expect.length >= 2 && JSON.stringify(expect) === JSON.stringify(got)) good++;
+    }
+    ok(good === 10, "g2_tap_equal_sides 正解が実測の等辺と一致 (" + good + "/10)");
+  }
+}
+
+// ---------------------------------------------------------------
+console.log("\n5. figure_display: 図が答えと一致すること");
+{
+  ["g2_disp_count_vertices", "g2_disp_count_angles"].forEach(id => {
+    let good = 0;
+    for (let i = 0; i < 10; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      const verts = FigureSVG.parts(q.figureSpec).filter(p => p.kind === "vertex").length;
+      if (String(verts) === String(q.answer)) good++;
+    }
+    ok(good === 10, id + " 答え=top点の数 (" + good + "/10)");
+  });
+
+  {
+    let good = 0;
+    for (let i = 0; i < 10; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion("g2_disp_grid_sides", []);
+      const lab = (q.figureSpec.labels || {}).edges || {};
+      const cm = String(lab.AB || "").replace("cm", "");
+      if (cm === String(q.answer)) good++;
+    }
+    ok(good === 10, "g2_disp_grid_sides 答え=辺のラベル長 (" + good + "/10)");
+  }
+
+  {
+    let good = 0;
+    for (let i = 0; i < 10; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion("g2_disp_square_perimeter", []);
+      const lab = (q.figureSpec.labels || {}).edges || {};
+      const side = Number(String(lab.AB || "").replace("cm", ""));
+      if (Number.isFinite(side) && side * 4 === Number(q.answer)) good++;
+    }
+    ok(good === 10, "g2_disp_square_perimeter 答え=1辺×4 (" + good + "/10)");
+  }
+
+  {
+    let good = 0;
+    ["g2_disp_count_vertices", "g2_disp_count_angles", "g2_disp_grid_sides", "g2_disp_square_perimeter"]
+      .forEach(id => {
+        for (let i = 0; i < 5; i++) {
+          const q = RuleBasedQuestionSource.generateQuestion(id, []);
+          const h = q.figureHTML || "";
+          if (h.indexOf("<svg") >= 0 && h.indexOf("NaN") < 0
+            && !/\{[a-zA-Z0-9_]+\}/.test(h)
+            && !q.figureParts && !q.figureChoices) good++;
+        }
+      });
+    ok(good === 20, "figureHTML が描画され、数値入力形式である (" + good + "/20)");
+  }
+}
+
+// ---------------------------------------------------------------
+console.log("\n6. Engine 回帰（angle / rectangle_tall / 設問文）");
+{
+  const spec = { shape: "angle", variant: "right" };
+  const ps = FigureSVG.parts(spec);
+  const ang = ps.find(p => p.kind === "angle");
+  ok(!!ang && ang.id === "a-O", "angle の角部品は a-O (actual=" + (ang ? ang.id : "none") + ")");
+  const O = FigureSVG.resolve(spec).points.O;
+  ok(!!ang && ang.hit.v[0] === O[0] && ang.hit.v[1] === O[1], "a-O のヒット位置が頂点O と一致");
+  const edgeIds = ps.filter(p => p.kind === "edge").map(p => p.id).sort();
+  ok(JSON.stringify(edgeIds) === JSON.stringify(["e-AO", "e-BO"]),
+    "angle の辺は O から伸びる2本 (actual=" + JSON.stringify(edgeIds) + ")");
+  ok(JSON.stringify(FigureSVG.resolve(spec).order) === JSON.stringify(["O", "A", "B"]),
+    "angle の頂点順は O,A,B");
+
+  const tall = FigureSVG.resolve({ shape: "quadrilateral", variant: "rectangle_tall" });
+  const sq = FigureSVG.resolve({ shape: "quadrilateral", variant: "square" });
+  ok(JSON.stringify(tall.points) !== JSON.stringify(sq.points), "rectangle_tall が square と異なる図形");
+  ok(FigureSVG.effectiveMarks({ shape: "quadrilateral", variant: "rectangle_tall" }).rightAngle.length === 4,
+    "rectangle_tall に直角マークが4つ付く");
+
+  let polluted = 0;
+  Object.values(TemplateRegistry.templates)
+    .filter(t => t.answerType === "figure_tap")
+    .forEach(t => {
+      const q = RuleBasedQuestionSource.generateQuestion(t.templateId, []);
+      if (q && q.figureChoices && q.figureChoices.length > 0) polluted++;
+    });
+  ok(polluted === 0, "figure_tap に figureChoices が混ざらない (混入=" + polluted + ")");
+
+  const tapQ = RuleBasedQuestionSource.generateQuestion("g2_tap_all_edges", []);
+  ok(tapQ.questionText === TemplateRegistry.get("g2_tap_all_edges").format,
+    "figure_tap の設問文が format と一致: " + tapQ.questionText);
+}
+
+// ---------------------------------------------------------------
+console.log("\n7. 単元選択 / テスト生成との整合");
+{
+  const off2 = UnitSelector._filterFigureUnits(
+    UnitRegistry.getUnitsForLevel("math", 2, 2), { settings: { figureEnabled: false } }
+  ).map(u => u.id);
+  ok(off2.indexOf("shape_figure_tap") < 0, "figureEnabled=false で shape_figure_tap が除外");
+  const off3 = UnitSelector._filterFigureUnits(
+    UnitRegistry.getUnitsForLevel("math", 2, 3), { settings: { figureEnabled: false } }
+  ).map(u => u.id);
+  ok(off3.indexOf("shape_figure_measure") < 0, "figureEnabled=false で shape_figure_measure が除外");
+
+  ok(TestEngine._isFigureUnitId("shape_figure_tap") === true, "TestEngine が shape_figure_tap を図形と判定");
+  ok(TestEngine._isFigureUnitId("shape_figure_measure") === true, "TestEngine が shape_figure_measure を図形と判定");
+  ok(TestEngine._isFigureUnitId("kuku_partial") === false, "TestEngine が非図形単元を判定");
+
+  const tapPool = TemplateRegistry.getByUnit("math", 2, 2, "shape_figure_tap");
+  ok(tapPool.length === 4, "shape_figure_tap に4件のテンプレート (n=" + tapPool.length + ")");
+  ok(tapPool.every(t => t.answerType === "figure_tap"), "shape_figure_tap はすべて figure_tap");
+  const dispPool = TemplateRegistry.getByUnit("math", 2, 3, "shape_figure_measure");
+  ok(dispPool.length === 4, "shape_figure_measure に4件のテンプレート (n=" + dispPool.length + ")");
+  ok(dispPool.every(t => t.answerType === "figure_display"), "shape_figure_measure はすべて figure_display");
+  const lv1Pool = TemplateRegistry.getByUnit("math", 2, 1, "shape_tri_quad");
+  ok(lv1Pool.length === 4, "shape_tri_quad に4件のテンプレート (n=" + lv1Pool.length + ")");
+}
+
+console.log("\n--- " + (fail === 0 ? "ALL PASS" : "FAIL " + fail) + " ---");
+process.exit(fail === 0 ? 0 : 1);

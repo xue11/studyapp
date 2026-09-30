@@ -231,7 +231,13 @@ class RuleBasedQuestionSource {
 
     // V2.6.3: 図形テンプレート (figure) → 図+文カード選択肢を生成して付与
     // V2.6.4: g2_shape_* は FigureShapeUI_G2、それ以外は FigureShapeUI (G1)
-    if (template.problemType === "figure") {
+    // V2.8.0: 「図を出す」だけのテンプレート (figure_tap / figure_display) は
+    // カード選択の設問ではないため、buildProblem を経由させない。
+    // 此前は problemType だけで判定していたため、G3の figure_tap が
+    // FigureShapeUI.buildProblem に落ち、設問文と選択肢がG1のカード問題に
+    // 上書きされていた（angle_right_vertex すら「おおきいほうをえらびましょう」になっていた）。
+    const isCardChoice = (template.answerType === "single_choice" || template.answerType === "multi_choice");
+    if (template.problemType === "figure" && isCardChoice) {
       const g = (typeof globalThis !== "undefined") ? globalThis : null;
       const isG2 = typeof template.templateId === "string" && template.templateId.indexOf("g2_") === 0;
       const figUI = (g && isG2 && g.FigureShapeUI_G2 && typeof g.FigureShapeUI_G2.buildProblem === "function")
@@ -263,6 +269,34 @@ class RuleBasedQuestionSource {
           instance.correctPartIds = disp.correctPartIds;
           instance.partLabels = disp.partLabels;
           instance.answer = String(disp.answer);
+        }
+      }
+    }
+
+    // V2.8.0: 図＋数値入力問題 (answerType: "figure_display")
+    // 図は表示するだけでタップ部品は作らない。figureParts / figureChoices を持たないので
+    // UI は naturally に numpad へフォールスルーし、currentInput を回答として扱う。
+    if (template.answerType === "figure_display" && template.figureSpec) {
+      const fig = (typeof globalThis !== "undefined" && globalThis.FigureSVG) ? globalThis.FigureSVG
+        : ((typeof window !== "undefined" && window.FigureSVG) ? window.FigureSVG : null);
+      if (fig && typeof fig.render === "function") {
+        const base = JSON.parse(JSON.stringify(template.figureSpec));
+        // 変数を spec へ埋め込む（{n}cm のようなラベルにも使える）
+        const filled = typeof fig.fillSpecVars === "function" ? fig.fillSpecVars(base, vars) : base;
+        // 数値フィールドは文字列 "{sides}" のまま描画できないため数値へ変換する
+        ["sides", "radius", "pxPerUnit", "rotate", "w", "h"].forEach(k => {
+          if (typeof filled[k] === "string") {
+            const n = Number(filled[k]);
+            if (Number.isFinite(n)) filled[k] = n;
+          }
+        });
+        const spec = typeof fig.varySpec === "function" ? fig.varySpec(filled, vars) : filled;
+        const html = fig.render(spec, { size: spec.sizeName || "large" });
+        // 描画に失敗した spec（NaN 座標など）は出題しない
+        if (typeof html === "string" && html.indexOf("<svg") >= 0 && html.indexOf("NaN") < 0) {
+          instance.figureHTML = html;
+          instance.figureSpec = spec;
+          instance.figureAnswerUnit = template.figureAnswerUnit || "";
         }
       }
     }

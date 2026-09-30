@@ -222,6 +222,41 @@ class QuestionValidator {
       }
     }
 
+    // V2.8.0: figure_display (図を見て数値で答える) の構造チェック
+    //   図は表示のみ。figureParts / figureChoices を持たないことが契約で、
+    //   回答は answer の数値（テンキー入力）をそのまま使う。
+    if (questionInstance.answerType === "figure_display") {
+      const html = questionInstance.figureHTML;
+      if (typeof html !== "string" || html.indexOf("<svg") < 0) {
+        errors.push({
+          code: VALIDATION_ERROR_CODES.STRUCTURE_ERROR,
+          message: "figure_display must provide figureHTML containing an <svg> element.",
+          variables: vars
+        });
+      } else if (html.indexOf("NaN") >= 0 || html.indexOf("undefined") >= 0) {
+        errors.push({
+          code: VALIDATION_ERROR_CODES.CALCULATION_ERROR,
+          message: "figureHTML contains NaN/undefined in the rendered figure.",
+          variables: vars
+        });
+      }
+      if (questionInstance.figureParts || questionInstance.figureChoices) {
+        errors.push({
+          code: VALIDATION_ERROR_CODES.STRUCTURE_ERROR,
+          message: "figure_display must not define figureParts/figureChoices (numeric input expected).",
+          variables: vars
+        });
+      }
+      // 回答は数値として解釈できること（図を見て「いくつ？」に答えるため）
+      if (String(questionInstance.answer).trim() === "" || isNaN(Number(questionInstance.answer))) {
+        errors.push({
+          code: VALIDATION_ERROR_CODES.ANSWER_ERROR,
+          message: "figure_display answer must be a number.",
+          variables: vars
+        });
+      }
+    }
+
     // 6. understandingCheck チェック (有効な場合)
     const check = questionInstance.understandingCheck;
     if (check && check.enabled) {

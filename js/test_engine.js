@@ -17,6 +17,7 @@ let QuestionSourceForTest = typeof window !== "undefined" ? window.RuleBasedQues
 let ReviewEngineForTest = typeof window !== "undefined" ? window.ReviewEngine : null;
 let PointEngineForTest = typeof window !== "undefined" ? window.PointEngine : null;
 let StorageModuleForTest = typeof window !== "undefined" ? window : null;
+let UnitSelectorForTest = typeof window !== "undefined" ? (window.UnitSelector || null) : null;
 
 if (typeof require !== "undefined") {
   try { TemplateRegistryForTest = require("./registries.js").TemplateRegistry; } catch (e) {}
@@ -25,9 +26,22 @@ if (typeof require !== "undefined") {
   try { ReviewEngineForTest = require("./review_engine.js").ReviewEngine; } catch (e) {}
   try { PointEngineForTest = require("./gamification_engine.js").PointEngine; } catch (e) {}
   try { StorageModuleForTest = require("./storage.js"); } catch (e) {}
+  try { UnitSelectorForTest = require("./unit_selector.js").UnitSelector; } catch (e) {}
 }
 
 class TestEngine {
+  /**
+   * 図形単元かどうかの判定。
+   * UnitSelector._isFigureUnit() に委譲して、判定ルールを二重管理しない。
+   * （UnitSelector が読めない環境では従来の "shape_" 前缀判定へフォールバックする）
+   */
+  static _isFigureUnitId(unitId) {
+    if (typeof unitId !== "string" || !unitId) return false;
+    const US = UnitSelectorForTest;
+    if (US && typeof US._isFigureUnit === "function") return US._isFigureUnit(unitId);
+    return unitId.indexOf("shape_") === 0;
+  }
+
   /**
    * 10問のテスト問題を生成する (第23.2章 & 第24.3章)
    * @param {Object} profile 
@@ -42,10 +56,13 @@ class TestEngine {
     const count = config?.math?.testEngine?.questionCount || 10;
 
     const rawUnits = this._getUnitsForLevel("math", currentGrade, level);
-    // V2.6.4: figureEnabled===false profiles exclude shape_* units (same rule as UnitSelector)
+    // V2.6.4: figureEnabled===false profiles exclude figure units (same rule as UnitSelector)
+    // V2.8.0: 判定を UnitSelector._isFigureUnit() に委譲する。
+    // 此前は "shape_" 前缀のハードコードで、angle_figure / area_grid_figure /
+    // solid_net_figure のような新図形単元が除外されていなかった。
     let availableUnits = Array.isArray(rawUnits) ? rawUnits : [];
     if (profile && profile.settings && profile.settings.figureEnabled === false) {
-      availableUnits = availableUnits.filter(u => !(u && typeof u.id === "string" && u.id.indexOf("shape_") === 0));
+      availableUnits = availableUnits.filter(u => !this._isFigureUnitId(u && u.id));
       if (availableUnits.length === 0) availableUnits = rawUnits;
     }
     if (!availableUnits || availableUnits.length === 0) {

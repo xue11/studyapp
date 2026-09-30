@@ -186,11 +186,18 @@ function generateQuestion(templateId) {
         el("badge-answer-type").textContent = "answerType: " + q.answerType;
         var modeTxt = (q.answerType === "multi_choice") ? "grid（複数選択・完全一致）"
           : (q.answerType === "figure_tap" ? ("図タップ（" + (tapModeOf({ figureSpec: q.figureSpec, correctPartIds: q.correctPartIds }) === "multi" ? "複数タップ" : "単一タップ") + "）")
-            : "list（単一選択）");
+            : (q.answerType === "figure_display" ? "図＋数値入力（テンキー）"
+              : "list（単一選択）"));
         el("badge-presentation").textContent = modeTxt;
         el("result").innerHTML = "";
         if (Array.isArray(q.figureParts)) {
           renderTapQuestion(q);
+        } else if (q.answerType === "figure_display") {
+          // V2.8.0: 図だけを表示し、答えは数値で入力する形式
+          el("question-figure").innerHTML = q.figureHTML || "";
+          tap = null;
+          tapSel = [];
+          el("result").innerHTML = "答え（数値）を入力: <b>" + esc(String(q.answer)) + "</b>";
         } else {
           el("question-figure").innerHTML = "";
           tap = null;
