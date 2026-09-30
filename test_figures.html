@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>図形問題 動作確認ビューア (V2.6.5)</title>
+  <title>図形問題 動作確認ビューア (V2.7.0)</title>
   <link rel="stylesheet" href="css/app.css">
   <style>
     body {
@@ -13,72 +13,94 @@
       color: #1e293b;
     }
     h1 { color: #2563eb; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; font-size: 1.3rem; }
-    h2 { color: #334155; margin-top: 20px; font-size: 1.05rem; }
-    .card {
-      background: white;
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border: 1px solid #e2e8f0;
-    }
-    .badge {
-      display: inline-block; padding: 4px 8px; border-radius: 4px;
-      font-size: 12px; font-weight: bold; background: #e0f2fe; color: #0369a1; margin-right: 6px;
-    }
+    h2 { color: #334155; margin-top: 0; font-size: 1.05rem; }
+    .card { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #e0f2fe; color: #0369a1; margin-right: 6px; }
     .badge.success { background: #dcfce7; color: #15803d; }
     .badge.danger { background: #fee2e2; color: #b91c1c; }
-    select, button {
-      padding: 8px 14px; border-radius: 6px; border: 1px solid #cbd5e1;
-      font-size: 14px; margin-right: 8px; margin-bottom: 8px;
-    }
-    button { background: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; }
+    select, button { padding: 8px 14px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; margin-right: 8px; margin-bottom: 8px; }
+    button { background: #2563eb; color: #fff; border: none; font-weight: bold; cursor: pointer; }
     button:hover { background: #1d4ed8; }
+    button.gray { background: #64748b; }
     .question-text { font-size: 1.1rem; font-weight: bold; margin: 10px 0; }
     .result-ok { color: #15803d; font-weight: bold; }
     .result-ng { color: #b91c1c; font-weight: bold; }
+    .hint-line { font-size: 0.85rem; color: #475569; margin: 4px 0; }
   </style>
 </head>
 <body>
-  <h1> 図形問題 動作確認ビューア (V2.6.5)</h1>
-  <p>【1年】基本図形の識別 / すべて選ぶ (完全一致判定) / 大小・向き比較、【2年】三角形・四角形の識別 / 長方形・正方形の識別 (直角マーク付き) を確認できます。</p>
+  <h1>図形問題 動作確認ビューア (V2.7.0)</h1>
+  <p class="hint-line">
+    【1年】基本図形の識別 / すべて選ぶ（完全一致判定）/ 大小・向き比較、
+    【2年】三角形・四角形の識別 / 長方形・正方形の識別（直角マーク付き）を確認できます。<br>
+    V2.7.0 では <b>FigureSVG</b>（js/figure_svg.js）で図形を描画し、<b>図形タップ問題（figure_tap）</b>の確認と
+    <b>全カタログ図形</b>のプレビューを追加しました。
+  </p>
 
   <div class="card">
+    <h2>① テンプレートから出題</h2>
     <div>
       <span class="badge" id="badge-answer-type">-</span>
       <span class="badge" id="badge-presentation">-</span>
     </div>
-    <div style="margin-top:10px;">
+    <div style="margin-top: 10px;">
       <select id="template-select"></select>
       <button onclick="generateQuestion()">この問題を出す</button>
       <button onclick="generateRandom()">どれか出す</button>
-      <button onclick="clearHistory()" style="background:#64748b;">記録を消す</button>
+      <button onclick="clearHistory()" class="gray">記録を消す</button>
     </div>
   </div>
 
   <div class="card">
-    <h2>出題</h2>
-    <div id="template-id" style="font-size:12px; color:#64748b;">templateId: -</div>
+    <h2>② 出題</h2>
+    <div id="template-id" style="font-size: 12px; color: #64748b;">templateId: -</div>
     <div class="question-text" id="question-text">（まだ出題されていません）</div>
-    <div id="figure-choices"></div>
-    <button onclick="submitAnswer()" style="margin-top:10px;">こたえる ➔</button>
+    <div id="question-figure"></div>
   </div>
 
   <div class="card">
-    <h2>判定結果</h2>
+    <h2>③ 回答</h2>
+    <div class="answer-input-display" id="answer-display"><span class="answer-placeholder">？</span></div>
+    <div id="figure-choices"></div>
+    <button onclick="submitAnswer()" style="margin-top: 10px;">こたえる ➔</button>
+  </div>
+
+  <div class="card">
+    <h2>④ 判定結果</h2>
     <div id="result"></div>
   </div>
-
-  <div class="card">
-    <h2>保存された回答記録（履歴/復習・結果表示用）</h2>
+<div class="card">
+    <h2>⑤ 回答履歴（履歴/復習・結果表示用）</h2>
     <div id="history-list"></div>
   </div>
 
-  <!-- 依存スクリプト (index.html と同じ読込順) -->
+  <div class="card">
+    <h2>⑥ 図形タップ（figure_tap）デモ</h2>
+    <p class="hint-line">
+      「図の部品をタップして回答する」形式の確認用です。answerType:"figure_tap" の正式テンプレートはまだ未登録のため、
+      FigureSVG のカタログ spec から直接生成しています。
+    </p>
+    <select id="tap-spec-select"></select>
+    <button onclick="renderTapDemo()">この図を出す</button>
+    <div id="tap-question" class="question-text"></div>
+    <div id="tap-stage"></div>
+    <div class="hint-line" id="tap-mode"></div>
+    <button onclick="submitTap()" style="margin-top: 10px;">こたえる ➔</button>
+    <div id="tap-result" style="margin-top: 10px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>⑦ FigureSVG カタログ（全 <span id="catalog-count">-</span> 種）</h2>
+    <p class="hint-line">FigureSVG.CATALOG の全 spec を描画しています。角・直角マーク・方眼・回転時の余白などを目視確認できます。</p>
+    <div id="catalog-grid" class="fig-catalog"></div>
+  </div>
+
+  <!-- 依存スクリプト（index.html と同じ読込順） -->
   <script src="js/config.js"></script>
   <script src="js/registries.js"></script>
   <script src="js/schema.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/figure_svg.js"></script>
   <script src="js/validator.js"></script>
   <script src="js/templates_math.js"></script>
   <script src="js/templates_units_p1.js"></script>
@@ -86,48 +108,95 @@
   <script src="js/templates_g2_extra.js"></script>
   <script src="js/templates_figures_g1.js"></script>
   <script src="js/templates_figures_g2.js"></script>
+  <script src="js/templates_figures_g3.js"></script>
   <script src="js/question_source.js"></script>
 
   <script>
     (function () {
       "use strict";
 
-      var current = null;   // 出題中の questionInstance
+      var FIG = (typeof globalThis !== "undefined" && globalThis.FigureSVG) ? globalThis.FigureSVG : window.FigureSVG;
+      var current = null;   // 出題中の questionInstance（図形選択）
       var selected = [];    // 選択中のカードID
-      var records = [];     // 回答記録 (結果表示のもと)
+      var tap = null;       // figure_tap の表示データ（FigureSVG.buildDisplay の戻り値 or 出題 instance から）
+      var tapSel = [];      // figure_tap の選択中部品ID
+      var tapTarget = "tap-stage"; // 図の描画先要素ID（"tap-stage"=デモ / "question-figure"=テンプレート）
+      var records = [];     // 回答記録（結果表示のもと）
 
       function el(id) { return document.getElementById(id); }
       function esc(s) {
         return String(s === null || s === undefined ? "" : s)
           .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       }
+      function labelText(ids, labels, choices) {
+        return (ids || []).map(function (id) {
+          if (labels && labels[id] !== undefined) return labels[id];
+          if (choices) {
+            var c = choices.filter(function (x) { return x.id === id; })[0];
+            if (c) return c.text || c.id;
+          }
+          return id;
+        }).join("・");
+      }
 
+      // ---- 図形選択テンプレート（1年 shape_basic / 2年 shape_tri_quad / 3年 figure_tap） ----
       function getFigureTemplates() {
         var reg = (typeof TemplateRegistry !== "undefined") ? TemplateRegistry : window.TemplateRegistry;
-        // V2.6.5: 1年生 (shape_basic) + 2年生 (shape_tri_quad) の両方を対象に
-        var g1 = (reg && reg.getByUnit) ? (reg.getByUnit("math", 1, 1, "shape_basic") || []) : [];
-        var g2 = (reg && reg.getByUnit) ? (reg.getByUnit("math", 2, 1, "shape_tri_quad") || []) : [];
-        return g1.concat(g2).filter(function (t) { return t.problemType === "figure"; });
+        if (!reg || !reg.getByUnit) return [];
+        var out = [];
+        [["math", 1, 1, "shape_basic"], ["math", 2, 1, "shape_tri_quad"]].forEach(function (a) {
+          out = out.concat(reg.getByUnit(a[0], a[1], a[2], a[3]) || []);
+        });
+        // V2.7.0: 3年生の図形タップ単元 (answerType: "figure_tap")
+        ["angle_figure", "area_grid_figure", "solid_net_figure"].forEach(function (uid) {
+          out = out.concat(reg.getByUnit("math", 3, 3, uid) || []);
+        });
+        return out.filter(function (t) { return t.problemType === "figure"; });
       }
 
       function initSelect() {
-        var list = getFigureTemplates();
-        el("template-select").innerHTML = list.map(function (t) {
-          return '<option value="' + esc(t.templateId) + '">' + esc(t.templateId) + ' (' + esc(t.answerType) + ')</option>';
+        el("template-select").innerHTML = getFigureTemplates().map(function (t) {
+          return '<option value="' + esc(t.templateId) + '">' + esc(t.templateId) + " (" + esc(t.answerType) + ")</option>";
         }).join("");
       }
 
-      function generateQuestion(templateId) {
+      // V2.6.5: templateId が g2_ で始まる場合は FigureShapeUI_G2（直角マーク対応）を使用
+      function cardRenderer() {
+        var isG2 = current && typeof current.templateId === "string" && current.templateId.indexOf("g2_") === 0;
+        var g2 = window.FigureShapeUI_G2;
+        if (isG2 && g2 && typeof g2.shapeCardHTML2 === "function") {
+          return { shapeCardHTML: g2.shapeCardHTML2, isMulti: g2.isMultiCorrect, isSingle: g2.isSingleCorrect, snapshot: g2.choicesSnapshot };
+        }
+        return {
+          shapeCardHTML: FigureShapeUI.shapeCardHTML,
+          isMulti: FigureShapeUI.isMultiCorrect,
+          isSingle: FigureShapeUI.isSingleCorrect,
+          snapshot: FigureShapeUI.choicesSnapshot
+        };
+      }
+function generateQuestion(templateId) {
         var id = templateId || el("template-select").value;
+        if (!id) return;
         var q = RuleBasedQuestionSource.generateQuestion(id, []);
         current = q;
         selected = [];
-        el("template-id").textContent = "templateId: " + q.templateId + " / unitId: " + (q.unitId || "-");
+        el("template-id").textContent = "templateId: " + q.templateId + " / unitId: " + (q.unitId || "-") +
+          " / difficultyLevel: " + (q.difficultyLevel || "-");
         el("question-text").textContent = q.questionText;
         el("badge-answer-type").textContent = "answerType: " + q.answerType;
-        el("badge-presentation").textContent = q.answerType === "multi_choice" ? "grid (複数選択)" : "list (単一選択)";
+        var modeTxt = (q.answerType === "multi_choice") ? "grid（複数選択・完全一致）"
+          : (q.answerType === "figure_tap" ? ("図タップ（" + (tapModeOf({ figureSpec: q.figureSpec, correctPartIds: q.correctPartIds }) === "multi" ? "複数タップ" : "単一タップ") + "）")
+            : "list（単一選択）");
+        el("badge-presentation").textContent = modeTxt;
         el("result").innerHTML = "";
-        renderChoices();
+        if (Array.isArray(q.figureParts)) {
+          renderTapQuestion(q);
+        } else {
+          el("question-figure").innerHTML = "";
+          tap = null;
+          tapSel = [];
+          renderChoices();
+        }
       }
 
       function generateRandom() {
@@ -136,31 +205,21 @@
         if (t) generateQuestion(t.templateId);
       }
 
-      // V2.6.5: templateId が g2_ で始まる場合は FigureShapeUI_G2（直角マーク対応）を使用
-      function cardRenderer() {
-        var isG2 = current && typeof current.templateId === "string" && current.templateId.indexOf("g2_") === 0;
-        var g2 = (typeof window !== "undefined") ? window.FigureShapeUI_G2 : null;
-        if (isG2 && g2 && typeof g2.shapeCardHTML2 === "function") {
-          return { shapeCardHTML: g2.shapeCardHTML2, isMulti: g2.isMultiCorrect, isSingle: g2.isSingleCorrect, snapshot: g2.choicesSnapshot };
-        }
-        return { shapeCardHTML: FigureShapeUI.shapeCardHTML, isMulti: FigureShapeUI.isMultiCorrect, isSingle: FigureShapeUI.isSingleCorrect, snapshot: FigureShapeUI.choicesSnapshot };
-      }
-
       function renderChoices() {
         var container = el("figure-choices");
-        if (!current || !Array.isArray(current.figureChoices)) {
+        if (!current) { container.innerHTML = ""; return; }
+        if (!Array.isArray(current.figureChoices)) {
           container.innerHTML = '<span style="color:#b91c1c;">figureChoices がありません</span>';
           return;
         }
         var R = cardRenderer();
         container.className = current.answerType === "multi_choice" ? "shape-grid" : "shape-list";
         container.innerHTML = current.figureChoices.map(function (c) {
-          return R.shapeCardHTML(c, selected.indexOf(c.id) >= 0)
-            .replace('onclick="app.toggleFigureChoice(', 'onclick="window.__toggle(');
+          return R.shapeCardHTML(c, selected.indexOf(c.id) >= 0);
         }).join("");
       }
 
-      window.__toggle = function (id) {
+      function toggleChoice(id) {
         if (!current) return;
         var idx = selected.indexOf(id);
         if (current.answerType === "multi_choice") {
@@ -169,67 +228,51 @@
           selected = [id];
         }
         renderChoices();
-      };
-
-      function judge() {
-        if (!current) return false;
-        var R = cardRenderer();
-        var correct = current.correctChoiceIds || [];
-        if (current.answerType === "multi_choice") {
-          return R.isMulti(selected, correct);
-        }
-        return R.isSingle(selected[0], correct);
-      }
-
-      function textOf(ids) {
-        return ids.map(function (id) {
-          var c = (current.figureChoices || []).filter(function (x) { return x.id === id; })[0];
-          return c ? c.text : id;
-        }).join("・");
+        el("answer-display").innerHTML = "<span>" + esc(labelText(selected, null, current.figureChoices)) + "</span>";
       }
 
       function submitAnswer() {
         if (!current) { alert("先に出題してください"); return; }
+        if (Array.isArray(current.figureParts)) { submitTapAnswer(); return; }
         if (selected.length === 0) { alert("カードを選んでください"); return; }
-
-        var isCorrect = judge();
+        var R = cardRenderer();
+        var correct = current.correctChoiceIds || [];
+        var isCorrect = (current.answerType === "multi_choice")
+          ? R.isMulti(selected, correct)
+          : R.isSingle(selected[0], correct);
+        var choices = R.snapshot(current.figureChoices);
         el("result").innerHTML =
           (isCorrect ? '<span class="result-ok">せいかい！</span>' : '<span class="result-ng">ざんねん…</span>') +
-          '<div style="margin-top:6px;">えらんだ: ' + esc(textOf(selected)) + '</div>' +
-          '<div>せいかい: ' + esc(textOf(current.correctChoiceIds || [])) + '</div>';
-
-        // ui.js の session.historySummary と同等の形で記録
+          '<div style="margin-top:6px;">えらんだ: ' + esc(labelText(selected, null, choices)) + "</div>" +
+          "<div>せいかい: " + esc(labelText(correct, null, choices)) + "</div>";
         records.push({
           templateId: current.templateId,
           unitId: current.unitId,
           questionText: current.questionText,
           userAnswer: selected.join(","),
-          correctAnswer: (current.correctChoiceIds || []).join(","),
+          correctAnswer: correct.join(","),
           isCorrect: isCorrect,
-          figureChoices: cardRenderer().snapshot(current.figureChoices)
+          figureChoices: choices,
+          partLabels: null
         });
         renderHistory();
       }
-
-      function renderHistory() {
+function renderHistory() {
         if (records.length === 0) {
           el("history-list").innerHTML = '<span style="color:#64748b;">まだ記録がありません</span>';
           return;
         }
         el("history-list").innerHTML = records.map(function (r, i) {
-          var map = {};
-          (r.figureChoices || []).forEach(function (c) { map[c.id] = c.text || c.id; });
-          var label = function (answerStr) {
-            return String(answerStr).split(",").map(function (id) {
-              return map[id] !== undefined ? map[id] : id;
-            }).join("・");
-          };
+          var mine = labelText(String(r.userAnswer).split(","), r.partLabels, r.figureChoices);
+          var right = String(r.correctAnswer).split(",");
+          var tail = r.isCorrect ? "" : ' <span style="color:#b91c1c;">(正: ' +
+            esc(labelText(right, r.partLabels, r.figureChoices)) + ")</span>";
           return '<div style="padding:6px 0; border-bottom:1px dashed #e2e8f0;">' +
-            '<span class="badge ' + (r.isCorrect ? "success" : "danger") + '">' + (r.isCorrect ? "○" : "×") + ' 問' + (i + 1) + '</span>' +
-            esc(r.questionText) +
-            '<div style="font-size:0.85rem; color:#475569;">こたえ: ' + esc(label(r.userAnswer)) +
-            (r.isCorrect ? "" : ' <span style="color:#b91c1c;">(正: ' + esc(label(r.correctAnswer)) + ')</span>') + '</div>' +
-            '</div>';
+            '<span class="badge ' + (r.isCorrect ? "success" : "danger") + '">' +
+            (r.isCorrect ? "○" : "×") + " 問" + (i + 1) + "</span> " +
+            esc(r.templateId) + " / " + esc(r.questionText) +
+            '<div style="font-size:0.85rem; color:#475569;">こたえ: ' + esc(mine) + tail + "</div>" +
+            "</div>";
         }).join("");
       }
 
@@ -239,13 +282,164 @@
         el("result").innerHTML = "";
       }
 
+      // ---- 図形タップ（figure_tap）デモ ----
+      function initTapSelect() {
+        var withTap = FIG.CATALOG.filter(function (c) { return c.spec && c.spec.tap; });
+        var list = withTap.length > 0 ? withTap : FIG.CATALOG;
+        el("tap-spec-select").innerHTML = list.map(function (c) {
+          return '<option value="' + esc(c.id) + '">' + esc(c.id) + " — " + esc(c.name) + "</option>";
+        }).join("");
+      }
+
+      function tapModeOf(disp) {
+        var t = disp && disp.figureSpec ? disp.figureSpec.tap : null;
+        if (t && t.mode) return t.mode;
+        return (disp && Array.isArray(disp.correctPartIds) && disp.correctPartIds.length > 1) ? "multi" : "single";
+      }
+
+      // テンプレート経路（answerType: figure_tap）で出題した図の描画
+      function renderTapQuestion(q) {
+        tap = {
+          figureSpec: q.figureSpec,
+          correctPartIds: q.correctPartIds || [],
+          partLabels: q.partLabels || {},
+          answer: q.answer,
+          hint: (q.figureSpec && q.figureSpec.tap) ? q.figureSpec.tap.hint : null
+        };
+        tapSel = [];
+        tapTarget = "question-figure";
+        var hint = tap.hint || (tapModeOf(tap) === "multi"
+          ? "あてはまる ぶぶん を すべて タップしてね。" : "あてはまる ぶぶん を タップしてね。");
+        el("figure-choices").className = "";
+        el("figure-choices").innerHTML = '<div class="figure-tap-hint">' + esc(hint) + "</div>";
+        drawTap();
+        el("answer-display").innerHTML = '<span class="answer-placeholder">？</span>';
+      }
+
+      function renderTapDemo() {
+        var id = el("tap-spec-select").value;
+        var entry = FIG.CATALOG.filter(function (c) { return c.id === id; })[0];
+        var disp = FIG.buildDisplay(FIG.spec(id), {});
+        if (!disp) {
+          tap = null;
+          el("tap-stage").innerHTML = "";
+          el("tap-mode").textContent = "";
+          el("tap-result").innerHTML = '<span class="result-ng">この spec には tap 条件がないため、正解部品を判定できません</span>';
+          return;
+        }
+        tap = disp;
+        tapSel = [];
+        tapTarget = "tap-stage";
+        el("tap-question").textContent = "「" + (entry ? entry.name : id) + "」の図から、こたえの ぶぶんを タップしてね";
+        var mode = tapModeOf(disp);
+        el("tap-mode").textContent = "判定方式: " + (mode === "multi"
+          ? "複数タップ（正解 " + disp.correctPartIds.length + " 個すべて）" : "単一タップ");
+        el("tap-result").innerHTML = "";
+        drawTap();
+      }
+
+      function drawTap() {
+        var host = el(tapTarget || "tap-stage");
+        if (!host || !tap) return;
+        host.innerHTML = FIG.renderTappable(tap.figureSpec, tapSel, { size: "large" });
+      }
+
+      function togglePart(id) {
+        if (!tap) return;
+        var idx = tapSel.indexOf(id);
+        if (tapModeOf(tap) === "multi") {
+          if (idx >= 0) tapSel.splice(idx, 1); else tapSel.push(id);
+        } else {
+          tapSel.length = 0;
+          if (idx < 0) tapSel.push(id);
+        }
+        drawTap();
+        if (tapTarget === "question-figure") {
+          el("answer-display").innerHTML = "<span>" + esc(labelText(tapSel, tap.partLabels)) + "</span>";
+        }
+      }
+
+      function submitTap() {
+        if (!tap) { alert("先に図を出してください"); return; }
+        if (tapSel.length === 0) { alert("図の部品をタップしてください"); return; }
+        var a = tapSel.slice().sort();
+        var b = tap.correctPartIds.slice().sort();
+        var isCorrect = a.length === b.length && a.every(function (v, i) { return v === b[i]; });
+        el("tap-result").innerHTML =
+          (isCorrect ? '<span class="result-ok">せいかい！</span>' : '<span class="result-ng">ざんねん…</span>') +
+          '<div style="margin-top:6px;">えらんだ: ' + esc(labelText(tapSel, tap.partLabels)) + "</div>" +
+          "<div>せいかい: " + esc(labelText(tap.correctPartIds, tap.partLabels)) + "</div>";
+        records.push({
+          templateId: "tap-demo:" + el("tap-spec-select").value,
+          unitId: "-",
+          questionText: "図形タップデモ",
+          userAnswer: tapSel.join(","),
+          correctAnswer: tap.correctPartIds.join(","),
+          isCorrect: isCorrect,
+          figureChoices: [],
+          partLabels: tap.partLabels
+        });
+        renderHistory();
+      }
+
+      // テンプレート経路（answerType: figure_tap）の回答
+      function submitTapAnswer() {
+        if (tapSel.length === 0) { alert("図の部品をタップしてください"); return; }
+        var mine = tapSel.slice().sort();
+        var correct = (current.correctPartIds || []).slice().sort();
+        var isCorrect = mine.length === correct.length && mine.every(function (v, i) { return v === correct[i]; });
+        el("result").innerHTML =
+          (isCorrect ? '<span class="result-ok">せいかい！</span>' : '<span class="result-ng">ざんねん…</span>') +
+          '<div style="margin-top:6px;">えらんだ: ' + esc(labelText(tapSel, tap.partLabels)) + "</div>" +
+          "<div>せいかい: " + esc(labelText(correct, tap.partLabels)) + "</div>" +
+          '<div style="font-size:0.85rem; color:#475569; margin-top:6px;">こたえID: ' + esc(mine.join(",")) + "</div>";
+        records.push({
+          templateId: current.templateId,
+          unitId: current.unitId,
+          questionText: current.questionText,
+          userAnswer: tapSel.join(","),
+          correctAnswer: correct.join(","),
+          isCorrect: isCorrect,
+          figureChoices: [],
+          partLabels: tap.partLabels
+        });
+        renderHistory();
+      }
+// ---- FigureSVG カタログ ----
+      function renderCatalog() {
+        var grid = el("catalog-grid");
+        grid.innerHTML = FIG.CATALOG.map(function (c) {
+          var s;
+          try {
+            s = FIG.render(c.spec, { size: "small" });
+          } catch (err) {
+            s = '<span style="color:#b91c1c;">render error</span>';
+          }
+          return '<div class="fig-catalog-item">' + s +
+            '<div class="fig-catalog-name">' + esc(c.id) + "<br>" + esc(c.name) + "</div></div>";
+        }).join("");
+        el("catalog-count").textContent = String(FIG.CATALOG.length);
+      }
+
+      // templates_figures_g1/g2 と FigureSVG の onclick は app.* を呼ぶため app を用意する
+      // (本番の js/ui.js が持つ app のうち、図形問題に必要な最小部分のみ)
+      window.app = {
+        toggleFigureChoice: function (id) { toggleChoice(id); },
+        toggleFigurePart: function (id) { togglePart(id); },
+        playClick: function () {}
+      };
+
       window.generateQuestion = generateQuestion;
       window.generateRandom = generateRandom;
       window.submitAnswer = submitAnswer;
       window.clearHistory = clearHistory;
+      window.renderTapDemo = renderTapDemo;
+      window.submitTap = submitTap;
 
       initSelect();
+      initTapSelect();
       renderHistory();
+      renderCatalog();
       generateRandom();
     })();
   </script>

@@ -181,6 +181,10 @@ class TestEngine {
         figureChoices: Array.isArray(q.figureChoices)
           ? q.figureChoices.map(c => ({ id: c.id, text: c.text || "" }))
           : null,
+        // V2.7.0: 図形タップ問題は結果表示で部品ラベルへ変換するために partLabels を保持
+        partLabels: (q && q.partLabels && typeof q.partLabels === "object")
+          ? { ...q.partLabels }
+          : null,
         // V2.6.8: 時計問題の回答ラベル変換に使う形式 ("H:M" / "H:M:S" / "HhM" / "M")
         clockFormat: q.clockFormat || null
       });

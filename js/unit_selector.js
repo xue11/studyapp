@@ -123,15 +123,52 @@ class UnitSelector {
   }
 
   // V2.6.4: figureEnabled helpers (Phase 0, plan A/A-1)
-  // A profile with settings.figureEnabled===false excludes figure units (unitId starts with "shape_").
+  // A profile with settings.figureEnabled===false excludes figure units.
+  // V2.7.0: 判定を「"shape_" 接頭辞」から「figure テンプレートを1本以上持つ単元」へ汎化する。
+  //   - box_shape（はこの形）は接頭辞が shape_ ではなく、図形問題を含みうる単元
+  //   - 今後追加される G3 図形単元（angle_figure 等）も自動的に追従する
   static _isFigureEnabled(profile) {
     if (!profile || !profile.settings) return true;
     if (typeof profile.settings.figureEnabled !== "boolean") return true;
     return profile.settings.figureEnabled;
   }
 
+  /**
+   * figure テンプレート (problemType === "figure") を持つ unitId の集合
+   * 登録済みテンプレートの増加を検知してキャッシュを破棄する。
+   */
+  static _figureUnitIds() {
+    const cache = this.__figureUnitIdCache;
+    if (cache && cache.count === Object.keys(this._templateList()).length) {
+      return cache.ids;
+    }
+    const ids = new Set();
+    const list = this._templateList();
+    list.forEach(t => {
+      if (t && t.problemType === "figure" && typeof t.unitId === "string") {
+        ids.add(t.unitId);
+      }
+    });
+    this.__figureUnitIdCache = { count: list.length, ids };
+    return ids;
+  }
+
+  /** TemplateRegistry からテンプレート一覧を安全に取得する (Node / ブラウザ両対応) */
+  static _templateList() {
+    try {
+      let reg = (typeof TemplateRegistry !== "undefined") ? TemplateRegistry : null;
+      if (!reg && typeof window !== "undefined") reg = window.TemplateRegistry;
+      if (!reg && typeof require !== "undefined") reg = require("./registries.js").TemplateRegistry;
+      if (reg && reg.templates) return Object.values(reg.templates);
+    } catch (e) { /* require不可の環境では空として扱う */ }
+    return [];
+  }
+
   static _isFigureUnit(unitId) {
-    return typeof unitId === "string" && unitId.indexOf("shape_") === 0;
+    if (typeof unitId !== "string" || !unitId) return false;
+    // 接頭辞ルールはフォールバック（テンプレートが未読込でも図形OFF判定を保つ）
+    if (unitId.indexOf("shape_") === 0) return true;
+    return this._figureUnitIds().has(unitId);
   }
 
   static _filterFigureUnits(units, profile) {

@@ -545,21 +545,25 @@ class AppUI {
 
       <div class="question-display">
         <div class="question-text">${q.questionText}</div>
-        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : ""}
+        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : (q.figureHTML ? q.figureHTML : "")}
         <div class="answer-input-display" id="answer-display">
           ${q.clockHTML
             ? this._clockSelectionDisplay(q)
-            : (q.figureChoices
-              ? this._figureSelectionDisplay(q)
-              : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>'))}
+            : (q.figureParts
+              ? this._figureTapSelectionDisplay(q)
+              : (q.figureChoices
+                ? this._figureSelectionDisplay(q)
+                : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>')))}
         </div>
       </div>
 
       ${q.clockHTML
         ? this._renderClockInputs(q, "app.submitLearningAnswer()", "こたえる ➔")
-        : (q.figureChoices
-          ? this._renderFigureChoices(q, "app.submitLearningAnswer()", "こたえる ➔")
-          : this._renderNumpad("app.submitLearningAnswer()", "こたえる ➔"))}
+        : (q.figureParts
+          ? this._renderFigureTapInputs(q, "app.submitLearningAnswer()", "こたえる ➔")
+          : (q.figureChoices
+            ? this._renderFigureChoices(q, "app.submitLearningAnswer()", "こたえる ➔")
+            : this._renderNumpad("app.submitLearningAnswer()", "こたえる ➔")))}
 
       <div id="modal-container"></div>
     `;
@@ -870,6 +874,79 @@ class AppUI {
     }
   }
 
+  // ==========================================
+  // V2.7.0: 図形タップ問題 (answerType: "figure_tap")
+  // ==========================================
+  _figureSVG() {
+    const g = (typeof window !== "undefined") ? window : null;
+    if (typeof FigureSVG !== "undefined" && FigureSVG) return FigureSVG;
+    return g ? g.FigureSVG : null;
+  }
+
+  /** 複数タップか単一タップか（figureSpec.tap.mode → 正解数 の順に判定） */
+  _figureTapMode(q) {
+    const tap = q && q.figureSpec ? q.figureSpec.tap : null;
+    if (tap && tap.mode) return tap.mode;
+    const n = Array.isArray(q && q.correctPartIds) ? q.correctPartIds.length : 1;
+    return n > 1 ? "multi" : "single";
+  }
+
+  /** タップ部品の選択状況を回答欄に表示する */
+  _figureTapSelectionDisplay(q) {
+    const sel = (this.session && this.session.selectedFigureChoices) || [];
+    if (!sel.length) return '<span class="answer-placeholder">？</span>';
+    const labels = (q && q.partLabels) ? q.partLabels : {};
+    const text = sel.map(id => labels[id] || id).join("・");
+    if (this._figureTapMode(q) === "multi") {
+      return `${text} <span class="figure-tap-count">${sel.length}こ</span>`;
+    }
+    return text;
+  }
+
+  /** タップ式の回答エリア（図をタップ → 決定ボタン） */
+  _renderFigureTapInputs(q, submitAction, submitLabel) {
+    const mode = this._figureTapMode(q);
+    const tap = q && q.figureSpec ? q.figureSpec.tap : null;
+    const hint = (tap && tap.hint) ? tap.hint
+      : (mode === "multi" ? "あてはまる ぶぶん を すべて タップしてね。" : "あてはまる ぶぶん を タップしてね。");
+    return `
+      <div class="figure-tap-hint">${hint}</div>
+      <button class="numpad-btn ok-btn" style="width:100%; margin-top:10px;" onclick="${submitAction}">${submitLabel}</button>
+    `;
+  }
+
+  /** タップ状態だけを描き直す（図全体は作り直さない） */
+  _renderFigureTapParts(q) {
+    const F = this._figureSVG();
+    if (!F || typeof F.renderTappable !== "function" || !q || !q.figureSpec) return;
+    const selected = (this.session && this.session.selectedFigureChoices) || [];
+    const html = F.renderTappable(q.figureSpec, selected);
+    const el = document.getElementById("figure-tap");
+    if (el && el.outerHTML) el.outerHTML = html;
+  }
+
+  /**
+   * 図の部品をタップして回答する (V2.7.0)
+   * @param {string} id 部品ID (例: "e-AB" / "v-A" / "a-B" / "r-90" / "p-center")
+   */
+  toggleFigurePart(id) {
+    Sound.playClick();
+    const q = this.session && this.session.questions ? this.session.questions[this.session.currentIndex] : null;
+    if (!q || !Array.isArray(q.figureParts)) return;
+    if (!this.session.selectedFigureChoices) this.session.selectedFigureChoices = [];
+    const sel = this.session.selectedFigureChoices;
+    const idx = sel.indexOf(id);
+    if (this._figureTapMode(q) === "multi") {
+      if (idx >= 0) sel.splice(idx, 1); else sel.push(id);
+    } else {
+      sel.length = 0;
+      if (idx < 0) sel.push(id);
+    }
+    this._renderFigureTapParts(q);
+    const display = document.getElementById("answer-display");
+    if (display) display.innerHTML = this._figureTapSelectionDisplay(q);
+  }
+
   pressKey(key) {
     Sound.playClick();
     if (key === "backspace") {
@@ -894,6 +971,7 @@ class AppUI {
   submitLearningAnswer() {
     const q = this.session.questions[this.session.currentIndex];
     // V2.6.3: 図形選択問題 (figureChoices) は選択済みカードIDを回答として扱う
+    // V2.7.0: 図形タップ問題 (figureParts) はタップ済み部品IDを回答として扱う
     let rawAns = this.currentInput.trim();
     // V2.6.7: 時計問題は「時」「分」「秒」の入力欄から回答を組み立てる
     if (q && q.clockHTML) {
@@ -905,6 +983,10 @@ class AppUI {
         return;
       }
       rawAns = clockRead.answer;
+    } else if (q && q.figureParts) {
+      const sel = this.session.selectedFigureChoices || [];
+      if (sel.length === 0) return;
+      rawAns = sel.join(",");
     } else if (q && q.figureChoices) {
       const sel = this.session.selectedFigureChoices || [];
       if (sel.length === 0) return;
@@ -982,11 +1064,13 @@ class AppUI {
         score: coordRes.summary.learningScore,
         pts: coordRes.summary.pointsEarned,
         // V2.6.3: 図形選択問題は結果画面でカード文ラベル表示できるよう回答とカード情報を保持
+        // V2.7.0: 図形タップ問題 (figureParts) は部品ラベル表示できるよう partLabels を保持
         userAnswer: rawAnswerForHistory,
         correctAnswer: q.answer,
         figureChoices: Array.isArray(q.figureChoices)
           ? q.figureChoices.map(c => ({ id: c.id, text: c.text || "" }))
-          : null
+          : null,
+        partLabels: (q && q.partLabels) ? { ...q.partLabels } : null
       });
 
       // 正解または3回目不正解時のモーダル表示
@@ -1146,33 +1230,42 @@ class AppUI {
 
       <div class="question-display">
         <div class="question-text">${q.questionText}</div>
-        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : ""}
+        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : (q.figureHTML ? q.figureHTML : "")}
         <div class="answer-input-display" id="answer-display">
           ${q.clockHTML
             ? this._clockSelectionDisplay(q)
-            : (q.figureChoices
-              ? this._figureSelectionDisplay(q)
-              : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>'))}
+            : (q.figureParts
+              ? this._figureTapSelectionDisplay(q)
+              : (q.figureChoices
+                ? this._figureSelectionDisplay(q)
+                : (this.currentInput ? this.currentInput : '<span class="answer-placeholder">？</span>')))}
         </div>
       </div>
 
       ${q.clockHTML
         ? this._renderClockInputs(q, "app.submitTestAnswer()", "回答を確定 ➔")
-        : (q.figureChoices
-          ? this._renderFigureChoices(q, "app.submitTestAnswer()", "回答を確定 ➔")
-          : this._renderNumpad("app.submitTestAnswer()", "回答を確定 ➔"))}
+        : (q.figureParts
+          ? this._renderFigureTapInputs(q, "app.submitTestAnswer()", "回答を確定 ➔")
+          : (q.figureChoices
+            ? this._renderFigureChoices(q, "app.submitTestAnswer()", "回答を確定 ➔")
+            : this._renderNumpad("app.submitTestAnswer()", "回答を確定 ➔")))}
     `;
   }
 
   submitTestAnswer() {
     const q = this.session.questions[this.session.currentIndex];
     // V2.6.3: 図形選択問題 (figureChoices) は選択済みカードIDを回答として扱う
+    // V2.7.0: 図形タップ問題 (figureParts) はタップ済み部品IDを回答として扱う
     let rawAns = this.currentInput.trim();
     // V2.6.7: 時計問題は「時」「分」「秒」の入力欄から回答を組み立てる
     if (q && q.clockHTML) {
       const clockRead = this._readClockAnswer(q);
       if (!clockRead) return;
       rawAns = clockRead.answer;
+    } else if (q && q.figureParts) {
+      const sel = this.session.selectedFigureChoices || [];
+      if (sel.length === 0) return;
+      rawAns = sel.join(",");
     } else if (q && q.figureChoices) {
       const sel = this.session.selectedFigureChoices || [];
       if (sel.length === 0) return;
@@ -1236,7 +1329,7 @@ class AppUI {
               <tr style="border-bottom:1px solid var(--border); background:${d.isCorrect ? '#f0fdf4' : '#fef2f2'};">
                 <td style="padding:6px 8px;">${d.isCorrect ? '⭕' : '❌'} 問${i+1}</td>
                 <td style="padding:6px 8px;">${d.questionText}</td>
-                <td style="padding:6px 8px; text-align:right;">${d.isCorrect ? this._formatAnswerLabel(d.userAnswer, d.figureChoices, d.clockFormat) : `${this._formatAnswerLabel(d.userAnswer, d.figureChoices, d.clockFormat)} (正: ${this._formatAnswerLabel(d.correctAnswer, d.figureChoices, d.clockFormat)})`}</td>
+                <td style="padding:6px 8px; text-align:right;">${d.isCorrect ? this._formatAnswerLabel(d.userAnswer, d.figureChoices, d.clockFormat, d.partLabels) : `${this._formatAnswerLabel(d.userAnswer, d.figureChoices, d.clockFormat, d.partLabels)} (正: ${this._formatAnswerLabel(d.correctAnswer, d.figureChoices, d.clockFormat, d.partLabels)})`}</td>
               </tr>
             `).join("")}
           </table>
@@ -2052,9 +2145,10 @@ class AppUI {
    * @param {string} answerStr 回答または正解の文字列 (例: "c1" / "p2,p4,p6" / "3:40")
    * @param {Array<{id:string, text:string}>} figureChoices 出題時のカード情報
    * @param {string} [clockFormat] 時計回答の形式 ("H:M" / "H:M:S" / "HhM" / "M")
+   * @param {Object} [partLabels] 図形タップ問題の部品ラベル ({部品ID: 日本語ラベル})
    * @returns {string} 表示用ラベル
    */
-  _formatAnswerLabel(answerStr, figureChoices, clockFormat) {
+  _formatAnswerLabel(answerStr, figureChoices, clockFormat, partLabels) {
     const raw = (answerStr === null || answerStr === undefined) ? "" : String(answerStr);
     // V2.6.7: 時こく回答 ("3:40" 等) は「3時40分」の表示用ラベルへ変換する
     const clockSVG = (typeof window !== "undefined" && window.ClockSVG) ? window.ClockSVG : null;
@@ -2066,6 +2160,11 @@ class AppUI {
         const fmt = (raw.split(":").length >= 3) ? "H:M:S" : "H:M";
         return clockSVG.answerLabel(raw, fmt) || raw;
       }
+    }
+    if (partLabels && typeof partLabels === "object" && Object.keys(partLabels).length > 0) {
+      const ids = raw.split(",").map(s => s.trim()).filter(s => s.length > 0);
+      if (ids.length === 0) return raw;
+      return ids.map(id => (partLabels[id] !== undefined ? partLabels[id] : id)).join("・");
     }
     if (!Array.isArray(figureChoices) || figureChoices.length === 0) return raw;
     const map = {};

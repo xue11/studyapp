@@ -10,17 +10,21 @@
     if (G1 && typeof G1.createFigureSVG === "function") return G1.createFigureSVG(type, params);
     return "";
   }
-  function rightAngleMark(x, y, s, stroke) {
-    s = s || 9;
-    stroke = stroke || "#1e293b";
-    return '<path d="M ' + x + ' ' + (y + s) + ' L ' + x + ' ' + y + ' L ' + (x + s) + ' ' + y + '"' +
-      ' fill="none" stroke="' + stroke + '" stroke-width="2.2"/>';
+  // V2.7.0: 直角マークは FigureSVG が「頂点の座標」から算出する。
+  // 旧実装は固定座標 (30,30) に描いていたため、正方形・長方形の頂点と一致しなかった。
+  function getFigureSVG() {
+    if (typeof globalThis !== "undefined" && globalThis.FigureSVG) return globalThis.FigureSVG;
+    if (typeof window !== "undefined" && window.FigureSVG) return window.FigureSVG;
+    if (typeof require !== "undefined") {
+      try { return require("./figure_svg.js").FigureSVG; } catch (e) {}
+    }
+    return null;
   }
   function createFigureSVG2(type, params) {
     params = params || {};
-    var svg = baseFigureSVG(type, params);
-    if (!params.rightAngle) return svg;
-    return svg.replace(/<\/svg>\s*$/, rightAngleMark(30, 30, 9) + "</svg>");
+    var Fig = getFigureSVG();
+    if (Fig && typeof Fig.toLegacy === "function") return Fig.toLegacy(type, params);
+    return baseFigureSVG(type, params);
   }
   function shapeCardHTML2(choice, selected) {
     var G1 = (typeof globalThis !== "undefined" && globalThis.FigureShapeUI) || null;

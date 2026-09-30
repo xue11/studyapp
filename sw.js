@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.6.12)
-const CACHE_NAME = 'arith-study-v2.6.12-diversity';
+// PWA Service Worker (V2.7.0)
+const CACHE_NAME = 'arith-study-v2.7.0-figure';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -10,6 +10,7 @@ const urlsToCache = [
   '/js/schema.js',
   '/js/migration.js',
   '/js/storage.js',
+  '/js/figure_svg.js',
   '/js/validator.js',
   '/js/templates_math.js',
   '/js/templates_units_p1.js',
@@ -17,6 +18,7 @@ const urlsToCache = [
   '/js/templates_g2_extra.js',
   '/js/templates_figures_g1.js',
   '/js/templates_figures_g2.js',
+  '/js/templates_figures_g3.js',
   '/js/clock_svg.js',
   '/js/templates_clock.js',
   '/js/question_source.js',

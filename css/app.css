@@ -743,6 +743,7 @@ body {
   overflow-wrap: anywhere;
   word-break: break-word;
   max-width: 100%;
+}
 
 /* ===== V2.6.7: 時計問題 (ClockSVG) ===== */
 .clock-stage {
@@ -811,4 +812,121 @@ body {
   color: var(--text, #1e293b);
 }
 
+/* ===== V2.7.0: 図形問題 (FigureSVG) ===== */
+/* 図を 1 つ大きく見せるステージ（figure_tap / 図形問題の設問表示） */
+.figure-stage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+}
+.fig {
+  margin: 0;
+  text-align: center;
+}
+.fig svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.fig-large svg { width: 260px; height: 260px; }
+.fig-medium svg { width: 200px; height: 200px; }
+.fig-small svg { width: 148px; height: 148px; }
+.fig-caption {
+  font-size: 0.85rem;
+  color: var(--text-muted, #475569);
+  margin-top: 4px;
+}
+/* タップで答える部品（頂点・辺・角）。当たり判定を太く透明にして誤タップを防ぐ */
+.fig-part {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 16px;
+  stroke-linecap: round;
+  cursor: pointer;
+}
+.fig-part--vertex { fill: transparent; }
+.fig-part--edge { fill: none; }
+.fig-part--angle { fill: transparent; }
+/* V2.7.0: 立体・展開図の「面」タップ部品（polygon なので塗りで反応させる） */
+.fig-part--face { fill: rgba(148, 163, 184, 0.06); stroke: rgba(148, 163, 184, 0.2); }
+.fig-part--face.fig-part--selected {
+  fill: rgba(99, 102, 241, 0.3);
+  stroke: #6366f1;
+}
+.fig-part--center, .fig-part--radius, .fig-part--diameter { fill: transparent; }
+.fig-part--selected {
+  fill: rgba(99, 102, 241, 0.25);
+  stroke: #6366f1;
+}
+.fig-part--correct {
+  fill: rgba(16, 185, 129, 0.25);
+  stroke: #10b981;
+}
+.fig-part--wrong {
+  fill: rgba(239, 68, 68, 0.22);
+  stroke: #ef4444;
+}
+.fig-part:active { opacity: 0.75; }
+/* 図中のラベル（頂点名・辺の長さ・角度）と記号（直角・等辺） */
+.fig-label {
+  font-size: 13px;
+  font-weight: 700;
+  fill: #1e293b;
+  pointer-events: none;
+}
+.fig-label--small { font-size: 11px; font-weight: 600; fill: #475569; }
+.fig-mark {
+  fill: none;
+  stroke: #1e293b;
+  stroke-width: 2.2;
+  pointer-events: none;
+}
+.fig-grid-line {
+  stroke: #cbd5e1;
+  stroke-width: 0.8;
+  fill: none;
+}
+.fig-axis {
+  stroke: #94a3b8;
+  stroke-width: 1;
+  fill: none;
+}
+.figure-tap-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted, #475569);
+  text-align: center;
+  margin-top: 6px;
+}
+.figure-tap-count {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--primary-light, #eff6ff);
+  color: var(--primary-hover, #2563eb);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+/* 図形カタログ（test_figures.html）確認用 */
+.fig-catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.fig-catalog-item {
+  background: #fff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  padding: 8px;
+  text-align: center;
+}
+.fig-catalog-item svg { width: 100%; height: auto; }
+.fig-catalog-name {
+  font-size: 0.75rem;
+  color: var(--text-muted, #475569);
+  margin-top: 4px;
+  word-break: break-all;
 }

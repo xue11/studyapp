@@ -172,6 +172,56 @@ class QuestionValidator {
       }
     }
 
+    // V2.7.0: figure_tap (図の部品をタップして答える) の構造チェック
+    //   figureParts: タップできる部品 [{id, kind, label}]
+    //   correctPartIds: 正解の部品ID（answerType が single でも配列で持つ）
+    if (questionInstance.answerType === "figure_tap") {
+      const parts = questionInstance.figureParts;
+      const correctIds = questionInstance.correctPartIds;
+      if (!Array.isArray(parts) || parts.length < 2) {
+        errors.push({
+          code: VALIDATION_ERROR_CODES.STRUCTURE_ERROR,
+          message: "figureParts must be an array with at least 2 parts.",
+          variables: vars
+        });
+      } else {
+        for (const p of parts) {
+          if (!p || typeof p.id !== "string" || typeof p.kind !== "string" || typeof p.label !== "string") {
+            errors.push({
+              code: VALIDATION_ERROR_CODES.STRUCTURE_ERROR,
+              message: "Each figurePart must have { id, kind, label } as strings.",
+              variables: vars
+            });
+            break;
+          }
+        }
+        const pIds = parts.map(p => p.id);
+        if (new Set(pIds).size !== pIds.length) {
+          errors.push({
+            code: VALIDATION_ERROR_CODES.ANSWER_ERROR,
+            message: "figureParts contain duplicate ids.",
+            variables: vars
+          });
+        }
+        if (!Array.isArray(correctIds) || correctIds.length === 0 || !correctIds.every(id => pIds.includes(id))) {
+          errors.push({
+            code: VALIDATION_ERROR_CODES.ANSWER_ERROR,
+            message: "correctPartIds must be a non-empty subset of figureParts ids.",
+            variables: vars
+          });
+        } else {
+          const norm = list => list.map(s => String(s).trim()).filter(s => s.length > 0).sort().join(",");
+          if (norm(String(questionInstance.answer).split(",")) !== norm(correctIds)) {
+            errors.push({
+              code: VALIDATION_ERROR_CODES.ANSWER_ERROR,
+              message: "answer must equal correctPartIds (comma separated).",
+              variables: vars
+            });
+          }
+        }
+      }
+    }
+
     // 6. understandingCheck チェック (有効な場合)
     const check = questionInstance.understandingCheck;
     if (check && check.enabled) {

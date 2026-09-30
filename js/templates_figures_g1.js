@@ -8,61 +8,21 @@
   }
 
   // 共通図形描画ユーティリティ (JSでSVG生成。表示配置はCSS側)
-  function createFigureSVG(type, params) {
-    params = params || {};
-    var size = typeof params.size === "number" ? params.size : 96;
-    var rotation = typeof params.rotation === "number" ? params.rotation : 0;
-    var strokeWidth = params.strokeWidth || 3;
-    var stroke = params.stroke || "#1e293b";
-    var fill = params.fill || "none";
-    var vertexMark = params.vertexMark !== false;
-    var box = 120;
-    var cx = box / 2, cy = box / 2;
-    var body = "";
-
-    if (type === "circle") {
-      body = '<circle cx="' + cx + '" cy="' + cy + '" r="' + (size / 2) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '"/>';
-    } else if (type === "triangle") {
-      var h = size * 0.866;
-      var p1 = cx + "," + (cy - h / 2);
-      var p2 = (cx - size / 2) + "," + (cy + h / 2);
-      var p3 = (cx + size / 2) + "," + (cy + h / 2);
-      body = '<polygon points="' + p1 + " " + p2 + " " + p3 + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '" stroke-linejoin="round"/>';
-      if (vertexMark) {
-        body += '<circle cx="' + cx + '" cy="' + (cy - h / 2) + '" r="3.2" fill="' + stroke + '"/>';
-        body += '<circle cx="' + (cx - size / 2) + '" cy="' + (cy + h / 2) + '" r="3.2" fill="' + stroke + '"/>';
-        body += '<circle cx="' + (cx + size / 2) + '" cy="' + (cy + h / 2) + '" r="3.2" fill="' + stroke + '"/>';
-      }
-    } else {
-      var variant = params.variant || "square";
-      var w = params.width || size;
-      var hgt = params.height || size;
-      if (variant === "rectangle_wide") { w = size; hgt = size * 0.7; }
-      else if (variant === "parallelogram") { w = size; hgt = size * 0.75; }
-      else if (variant === "trapezoid") { w = size; hgt = size * 0.7; }
-      var x0 = cx - w / 2, y0 = cy - hgt / 2;
-      var pts;
-      if (variant === "parallelogram") {
-        var skew = w * 0.22;
-        pts = (x0 + skew) + "," + y0 + " " + (x0 + w + skew) + "," + y0 + " " + (x0 + w - skew) + "," + (y0 + hgt) + " " + (x0 - skew) + "," + (y0 + hgt);
-      } else if (variant === "trapezoid") {
-        var inset = w * 0.16;
-        pts = (x0 + inset) + "," + y0 + " " + (x0 + w - inset) + "," + y0 + " " + (x0 + w) + "," + (y0 + hgt) + " " + x0 + "," + (y0 + hgt);
-      } else {
-        pts = x0 + "," + y0 + " " + (x0 + w) + "," + y0 + " " + (x0 + w) + "," + (y0 + hgt) + " " + x0 + "," + (y0 + hgt);
-      }
-      body = '<polygon points="' + pts + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '" stroke-linejoin="round"/>';
-      if (vertexMark) {
-        var corners = pts.split(" ");
-        for (var i = 0; i < corners.length; i++) {
-          var xy = corners[i].split(",");
-          body += '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="3.2" fill="' + stroke + '"/>';
-        }
-      }
+  // V2.7.0: 図形描画は FigureSVG (js/figure_svg.js) に集約した。
+  // ここは旧 createFigureSVG(type, params) の互換ラッパのみを提供する。
+  function getFigureSVG() {
+    if (typeof globalThis !== "undefined" && globalThis.FigureSVG) return globalThis.FigureSVG;
+    if (typeof window !== "undefined" && window.FigureSVG) return window.FigureSVG;
+    if (typeof require !== "undefined") {
+      try { return require("./figure_svg.js").FigureSVG; } catch (e) {}
     }
+    return null;
+  }
 
-    return '<svg viewBox="0 0 ' + box + " " + box + '" width="100%" height="96" role="img" aria-hidden="true">' +
-      '<g transform="rotate(' + rotation + " " + cx + " " + cy + ')">' + body + "</g></svg>";
+  function createFigureSVG(type, params) {
+    var Fig = getFigureSVG();
+    if (Fig && typeof Fig.toLegacy === "function") return Fig.toLegacy(type, params || {});
+    return '<svg viewBox="0 0 120 120" width="100%" height="96" role="img" aria-hidden="true"></svg>';
   }
 
   function shapeCardHTML(choice, selected) {

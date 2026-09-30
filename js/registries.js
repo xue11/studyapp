@@ -84,7 +84,11 @@ class UnitRegistry {
           { id: "div_with_remainder", name: "わり算（あまりあり）", concepts: ["division_with_remainder"] },
           { id: "mixed_mul_div_2step", name: "かけ算・わり算の2段階計算", concepts: ["mixed_mul_div"] },
           { id: "div_no_remainder", name: "わり算の逆向き問題（総数を求める）", concepts: ["division_equal_share"] },
-          { id: "kuku_all", name: "九九の応用パズル", concepts: ["kuku_mastery", "cryptarithmetic"] }
+          { id: "kuku_all", name: "九九の応用パズル", concepts: ["kuku_mastery", "cryptarithmetic"] },
+          // V2.7.0: 図形タップ問題 (answerType: "figure_tap") の3年生向け単元
+          { id: "angle_figure", name: "角と三角形（図形タップ）", concepts: ["angle_right_vertex", "angle_right_all", "tri_longest_side"] },
+          { id: "area_grid_figure", name: "面積と方眼（図形タップ）", concepts: ["area_square_sides", "area_rect_sides", "area_square_equal_sides"] },
+          { id: "solid_net_figure", name: "立体と展開図（図形タップ）", concepts: ["solid_visible_faces", "solid_top_face", "net_fold_lines"] }
         ]
       },
       4: {

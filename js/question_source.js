@@ -30,6 +30,14 @@ if (typeof require !== "undefined") {
     }
   } catch (e) {}
   try { require("./templates_clock.js"); } catch (e) {}
+  // V2.7.0: 図形SVG部品 (figure_tap の組み立てに使う)
+  try {
+    const figMod = require("./figure_svg.js");
+    if (figMod && figMod.FigureSVG && typeof globalThis !== "undefined" && !globalThis.FigureSVG) {
+      globalThis.FigureSVG = figMod.FigureSVG;
+    }
+  } catch (e) {}
+  try { require("./templates_figures_g3.js"); } catch (e) {}
 }
 
 const MAX_GENERATION_RETRY = 5;
@@ -237,6 +245,24 @@ class RuleBasedQuestionSource {
           instance.correctChoiceIds = fig.correctChoiceIds;
           instance.answer = String(fig.answer);
           if (fig.vars) Object.assign(instance.variables, fig.vars);
+        }
+      }
+    }
+
+    // V2.7.0: 図形タップ問題 (answerType: "figure_tap")
+    // 表示は FigureSVG に委譲し、タップできる部品と正解IDを付与する
+    if (template.answerType === "figure_tap" && template.figureSpec) {
+      const fig = (typeof globalThis !== "undefined" && globalThis.FigureSVG) ? globalThis.FigureSVG
+        : ((typeof window !== "undefined" && window.FigureSVG) ? window.FigureSVG : null);
+      if (fig && typeof fig.buildDisplay === "function") {
+        const disp = fig.buildDisplay(template.figureSpec, vars);
+        if (disp) {
+          instance.figureHTML = disp.figureHTML;
+          instance.figureSpec = disp.figureSpec;
+          instance.figureParts = disp.figureParts;
+          instance.correctPartIds = disp.correctPartIds;
+          instance.partLabels = disp.partLabels;
+          instance.answer = String(disp.answer);
         }
       }
     }
