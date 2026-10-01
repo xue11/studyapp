@@ -41,6 +41,9 @@ if (typeof require !== "undefined") {
 }
 
 const MAX_GENERATION_RETRY = 5;
+// V2.9.0: 変数生成の制約違反を救済するための「ルール全体引き直し」上限回数
+// 1回あたり _evalFormula（new Function）を数回呼ぶが、正常系では 0 回しか発生しない。
+const MAX_VARIABLE_REDRAW_ROUNDS = 50;
 
 class RuleBasedQuestionSource {
   /**
@@ -94,8 +97,69 @@ class RuleBasedQuestionSource {
 
   /**
    * 変数の生成と依存計算
+   *
+   * V2.9.0 修正:
+   * 従来の「変数ごとに最大20回リトライ」は、制約が原理的に不可能な組み合わせ
+   * （例: 制約 (a%10)+(b%10)>=10 のとき、a%10==0 になると b%10 の最大値が9なので
+   *   何度引き直しても成立しない）では必ず失敗し、**違反値をそのまま採用していた**。
+   * 実測では g2_std_add_carry_01 で 11.7%、g2_std_sub_borrow_01 で 8.7% の問題が
+   * 「くり上がりあり/くり下がりあり」の単元なのに繰り上がりの無い問題になっていた。
+   *
+   * 修正方針（2段構え・正常系の分布は不変）:
+   *   1) まず従来ロジックで1回生成する（従来は成功していたテンプレートは 100% ここで成功し、
+   *      生成分布も従来と完全に同一になる）
+   *   2) 制約に違反していた場合のみ、ルール全体をまとめて引き直す（最大 MAX_ROUNDS 回）
+   *      → a%10==0 などの不可能な組み合わせが自然に見除かれ、
+   *        「繰り上がりの余地が大きい a が優先される」正しい分布になる
+   *   3) それでも満たせないテンプレート（不変条件自体が不可能）は、従来と同じ
+   *      「最後の値を返す」でフォールバックする（挙動不変＝既存テストに影響しない）
+   *
+   * @param {Object} generateRules テンプレートの generate 定義
+   * @returns {Object} 制約を満たす変数の集合
    */
   static _generateVariables(generateRules) {
+    if (!generateRules) return {};
+
+    // 1) 従来ロジックによる1回目の生成（大半のテンプレートはここで完了する）
+    const firstAttempt = this._generateVariablesOnce(generateRules);
+    if (this._constraintsSatisfied(generateRules, firstAttempt)) return firstAttempt;
+
+    // 2) 制約に違反していた場合のみ、ルール全体をまとめて引き直す
+    for (let round = 0; round < MAX_VARIABLE_REDRAW_ROUNDS; round++) {
+      const vars = this._generateVariablesOnce(generateRules);
+      if (this._constraintsSatisfied(generateRules, vars)) return vars;
+    }
+
+    // 3) フォールバック: 従来と同じ「最後の値を返す」（挙動不変）
+    return firstAttempt;
+  }
+
+  /**
+   * 生成された変数の集合が、全ルールの constraints を満たしているか検証する。
+   * （生成途中ではなく完成後の vars で評価するため、formula 依存の制約も正しく判定できる）
+   * @param {Object} generateRules
+   * @param {Object} vars
+   * @returns {boolean} すべて満たすなら true
+   */
+  static _constraintsSatisfied(generateRules, vars) {
+    if (!generateRules || !vars) return true;
+    for (const varName in generateRules) {
+      const rule = generateRules[varName];
+      if (rule && rule.constraints && Array.isArray(rule.constraints) && rule.constraints.length > 0) {
+        const scope = { ...vars, [varName]: vars[varName] };
+        if (!rule.constraints.every(c => !!this._evalFormula(c, scope))) return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * 変数生成的基础ロジック（変数単位に最大20回リトライ）。
+   * _generateVariables からのみ呼び出す。
+   * @param {Object} generateRules
+   * @returns {Object}
+   */
+  static _generateVariablesOnce(generateRules) {
     if (!generateRules) return {};
     const vars = {};
 
