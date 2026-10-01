@@ -1,5 +1,5 @@
 /**
- * V2.9.2: 筆算支援 (HissanSVG) テスト
+ * V2.9.3: 筆算支援 (HissanSVG) テスト
  *
  * 検証する契約:
  *   1. 公開APIの存在
@@ -13,6 +13,7 @@
  *   9. equalsAnswer の正規化
  *  10. 先頭桁に 0 を描画しない（V2.9.1 修正の回帰防止: 2〜5桁 × 4演算）
  *  11. 答えは解説段階でのみ描画される（V2.9.2 修正の回帰防止: SVG上の数字まで検証）
+ *  12. 演算記号が左右に余白を保つ（V2.9.3 修正の回帰防止: + − × ÷ × 全段階）
  */
 const path = require("path");
 const R = path.join(__dirname, "..", "js");
@@ -68,7 +69,7 @@ function drawnInRow(spec, stage, rowType, vars) {
     .filter(c => !c.small && c.row === idx).map(c => c.digit).join("");
 }
 
-console.log("=== V2.9.2 筆算 (HissanSVG) テスト ===");
+console.log("=== V2.9.3 筆算 (HissanSVG) テスト ===");
 
 // --- 1. 公開API ---
 console.log("\n[1] 公開API");
@@ -388,6 +389,114 @@ TARGETS.forEach(id => {
   }
   ok(leaked === 0, `${id}: 出題時に答えの数字を描かない（20問 / 漏洩 ${leaked}）`);
   ok(partLeak === 0, `${id}: ヒントの部分積に答えそのものを出さない（20問 / 違反 ${partLeak}）`);
+});
+
+// --- 12. 演算記号の左右余白（V2.9.3 修正の回帰防止）---
+console.log("\n[12] 演算記号が左右に余白を保つ（+ − × ÷ 全演算 × 全段階）");
+
+const L12 = HissanSVG.LAYOUT;
+
+// 記号グリフの最悪幅 = fontSize × この係数。
+// × ÷ は East Asian Ambiguous 幅で CJK 環境では全角（＝1em）化し、
+// 全角フォントではサイドベアリング込みで 1.2〜1.25em 程度になりうるため保守的に取る。
+const GLYPH_W_RATIO = 1.25;
+
+// SVG から「演算記号の text 要素」だけを取り出す。
+// 数字 (fontSize) ・繰り上がり/中黒 (smallFont) は font-size で区別して除外する。
+function svgSigns(html) {
+  const re = /<text x="([-\d.]+)" y="([-\d.]+)" font-size="([\d.]+)" fill="[^"]+" text-anchor="middle" font-family="([^"]+)">([^<]+)<\/text>/g;
+  const list = [];
+  let mm;
+  while ((mm = re.exec(html)) !== null) {
+    const fs = Number(mm[3]);
+    if (Math.abs(fs - L12.signFont) > 0.01) continue;
+    list.push({ x: Number(mm[1]), font: mm[4], glyph: mm[5], fontSize: fs });
+  }
+  return list;
+}
+
+// 数字（fontSize サイズ）の font-family を取得（演算記号と同じであるべきもの）
+function digitFont(html) {
+  const m = html.match(/<text x="[-\d.]+" y="[-\d.]+" font-size="[\d.]+" fill="[^"]+" text-anchor="middle" font-family="([^"]+)"/);
+  return m ? m[1] : null;
+}
+
+// 罫線の始点 X をすべて集める（演算記号の列に食い込まないことの検証用）
+function svgRuleStartX(html) {
+  const re = /<line x1="([-\d.]+)"[^>]*stroke="#334155"/g;
+  const xs = [];
+  let mm;
+  while ((mm = re.exec(html)) !== null) xs.push(Number(mm[1]));
+  return xs;
+}
+
+// 加減乗除すべて。mul2 は部分積が2つ出て "+" が付くケース、div1 は1桁商の狭いケース。
+const SIGN_SPECS = {
+  add: { spec: { op: "add", a: 48, b: 32 }, signs: ["+"] },
+  sub: { spec: { op: "sub", a: 80, b: 37 }, signs: ["−"] },
+  mul: { spec: { op: "mul", a: 48, b: 8 }, signs: ["×"] },
+  mul2: { spec: { op: "mul", a: 23, b: 14 }, signs: ["×", "+"] },
+  div: { spec: { op: "div", a: 268, b: 5, q: 53, rem: 3 }, signs: ["÷"] },
+  div1: { spec: { op: "div", a: 42, b: 6, q: 7, rem: 0 }, signs: ["÷"] }
+};
+
+const signIssues = [];
+Object.keys(SIGN_SPECS).forEach(key => {
+  const { spec } = SIGN_SPECS[key];
+  ["normal", "hint", "solution"].forEach(stage => {
+    const html = HissanSVG.render(spec, { stage });
+    const m = HissanSVG.resolve(spec, { stage });
+    const expect = m.rows.filter(r => r.sign).length;
+    const signs = svgSigns(html);
+    const tag = `${key}/${stage}`;
+
+    if (signs.length !== expect) {
+      signIssues.push(`${tag}: 記号 text が ${signs.length} 個 / 期待 ${expect} 個（見落とし or 余分）`);
+      return;
+    }
+    signs.forEach(s => {
+      const half = s.fontSize * GLYPH_W_RATIO / 2;
+      const left = s.x - half;                 // viewBox の左端は 0
+      const right = s.x + half;                // 数字列の左端は opWidth
+      const rightGap = L12.opWidth - right;
+      if (left < 0) signIssues.push(`${tag} 「${s.glyph}」: インク左端 ${left.toFixed(1)} が viewBox 左端 0 を越えて欠ける`);
+      if (right > L12.opWidth) signIssues.push(`${tag} 「${s.glyph}」: インク右端 ${right.toFixed(1)} が数字列 opWidth(${L12.opWidth}) に重なる`);
+      if (left < L12.signMinMargin) signIssues.push(`${tag} 「${s.glyph}」: 左余白 ${left.toFixed(1)} < signMinMargin ${L12.signMinMargin}`);
+      if (rightGap < L12.signMinMargin) signIssues.push(`${tag} 「${s.glyph}」: 右余白 ${rightGap.toFixed(1)} < signMinMargin ${L12.signMinMargin}`);
+    });
+
+    // 罫線は必ず数字列の左端から（＝演算記号の列に食い込まない）
+    svgRuleStartX(html).forEach(x1 => {
+      if (Math.abs(x1 - L12.opWidth) > 0.01) signIssues.push(`${tag}: 罫線の始点 x1=${x1} が opWidth(${L12.opWidth}) と不一致（演算記号と重なる）`);
+    });
+
+    // 記号のフォントは数字と同じ指定（端末の既定フォント差で記号幅が変わらないこと）
+    if (signs.length > 0) {
+      const dFont = digitFont(html);
+      signs.forEach(s => {
+        if (!dFont) { signIssues.push(`${tag}: 数字の font-family を取得できない`); return; }
+        if (s.font !== dFont) signIssues.push(`${tag} 「${s.glyph}」: font-family が数字と不一致 (${s.font} vs ${dFont})`);
+      });
+    }
+  });
+});
+ok(signIssues.length === 0,
+  `演算記号が viewBox と数字列の間で左右 ${L12.signMinMargin}px 以上を保つ（4演算×3段階 / 最悪グリフ幅 ${GLYPH_W_RATIO}em 想定 / 違反 ${signIssues.length}）`);
+signIssues.forEach(i => console.log("        → " + i));
+
+// 記号が列の中央に置いてある（旧実装の opWidth*0.45 = 左0.7px/右14.3px の非対称配置の回帰防止）
+ok(Math.abs(L12.signX - L12.opWidth / 2) < 1e-9,
+  `signX は演算記号列の中央 (${L12.signX}) に置かれている（左 ${L12.signX} / 右 ${(L12.opWidth - L12.signX).toFixed(0)} が対称）`);
+ok(L12.signMinMargin > 0, "signMinMargin が定義されている");
+
+// 記号の出現位置（どの行にどの記号があるか）を実測で固定する
+Object.keys(SIGN_SPECS).forEach(key => {
+  const { spec, signs } = SIGN_SPECS[key];
+  const got = svgSigns(HissanSVG.render(spec, { stage: "hint" }))
+    .map(s => s.glyph).filter(g => signs.indexOf(g) >= 0);
+  const expectSigns = HissanSVG.resolve(spec, { stage: "hint" }).rows.filter(r => r.sign).map(r => r.sign);
+  ok(got.join("") === expectSigns.join("") && expectSigns.length > 0,
+    `${key}/hint: 記号の並びが [${expectSigns.join("")}] で一致`);
 });
 
 // --- 結果 ---

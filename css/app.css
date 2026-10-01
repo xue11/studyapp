@@ -820,13 +820,21 @@ body {
   align-items: center;
   justify-content: center;
   margin: 14px 0;
+  /* 筆算図は桁位置が性命なので、はみ出してもスクロールで全体を見られるようにする。
+     V2.9.3: 演算記号列が広がって図が 8px 幅広くなったため、
+     記号の左端がステージの左端で切れないよう左右に数pxの余白を持たせる。 */
   overflow-x: auto;
+  padding: 0 4px;
 }
 .hissan-stage .hissan-svg {
   display: block;
   max-width: 100%;
   height: auto;
-  transform: scale(1.15);
+  /* V2.9.3: 1.15 → 1.08。
+     演算記号列の拡大で図が幅広くなったため、細長い端末では
+     scale(1.15) + overflow-x: auto がスクロールを誘発していた。
+     余白は SVG 側（opWidth）で確保しているので、ここでは控えめに留める。 */
+  transform: scale(1.08);
   transform-origin: center;
   margin: 8px 0;
 }

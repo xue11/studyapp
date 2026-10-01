@@ -1,5 +1,5 @@
 /**
- * HissanSVG — 筆算（ひっ算）の共通SVG部品 (V2.9.2)
+ * HissanSVG — 筆算（ひっ算）の共通SVG部品 (V2.9.3)
  *
  * 加減乗除の「筆算」を、教科書の書き方に従ってSVGで描画する共通部品。
  * 2〜4年生の 計算/筆算 単元で共通して使う。
@@ -22,10 +22,18 @@
  *    部分積／商の先頭1桁）を出し、答えそのものは見せない。
  *    この段階制御は resolve が一手に担い、render は model をそのまま描くだけにする。
  *  - 答えはSVGへ埋め込まず、正規化可能な値（answerText）として別途保持する
+ *  - V2.9.3: 演算記号（+ − × ÷）の左右余白を保証する。
+ *    旧実装は記号を `opWidth * 0.45` (= 11.7) に text-anchor=middle で置いており、
+ *    グリフ幅が 24px を超えるとインク左端が viewBox の左端 x=0 を越えて欠けていた。
+ *    × (U+00D7) と ÷ (U+00F7) は East Asian Ambiguous 幅で、CJK 環境では全角化するため
+ *    特に欠けやすい。＋ − も同じ座標を通っているため同等のリスクを持っていた。
+ *    演算記号列を1桁幅 (cellW) まで広げ、記号を列の中央 (LAYOUT.signX) に置き、
+ *    数字と同じフォント (FONT) で描画することで端末差を吸収する。
+ *    加減乗除すべてがこの経路を通るため、4演算が同時に改善する。
  *
  * 公開API:
  *   HissanSVG.OPS                         対応する演算 ["add","sub","mul","div"]
- *   HissanSVG.LAYOUT                      レイアウト寸法
+ *   HissanSVG.LAYOUT                      レイアウト寸法（opWidth / signX / signMinMargin を含む）
  *   HissanSVG.resolve(spec, opts)          spec → 行・桁・空マスの構造化モデル
  *   HissanSVG.fillSpecVars(spec, vars)    spec 内の "{a}" を生成変数で置換
  *   HissanSVG.render(spec, opts)           1つの筆算SVG文字列
@@ -46,13 +54,25 @@
   var LAYOUT = {
     cellW: 34,     // 1桁分の幅
     rowH: 36,      // 1行の高さ
-    opWidth: 26,   // 演算記号の確保幅
+    // 演算記号（+ − × ÷）を収める列の幅。1桁分の幅 (cellW) と同じにして、
+    // 記号が数字列の左隣に「1桁ぶんの欄」を持つ教科書どおりの体裁にする。
+    // V2.9.3: 26 → 34（旧値は記号のインク左端に 0.7px しか余白がなく、
+    // × ÷ が全角幅で描かれる端末では viewBox の左端を突き抜けて左側が欠けていた）
+    opWidth: 34,
     fontSize: 24,  // 数字のフォントサイズ
     smallFont: 15, // 繰り上がり・あまりなど小さい文字
     signFont: 22,  // 演算記号のフォントサイズ
     padTop: 6,
-    padRight: 10
+    padRight: 10,
+    // 演算記号のインクが「数字列の左端(opWidth)」から必ず残す最低余白 (viewBox 座標)。
+    // 記号グリフの実幅は環境依存（× ÷ は East Asian Ambiguous 幅で全角化することがある）のため、
+    // 最低でもこの分だけ空けておく。tests/test_hissan.js [12] が検証する。
+    signMinMargin: 3
   };
+
+  // 演算記号の中心 X。記号は演算記号列の中央に置き、左右に均等に余白を作る。
+  // 旧実装の `opWidth * 0.45` (= 11.7) は左 0.7px / 右 14.3px と極端に非対称だった。
+  LAYOUT.signX = LAYOUT.opWidth / 2;
 
   var COLORS = {
     digit: "#1e293b",
@@ -523,7 +543,9 @@
 
       if (row.type === "rule") {
         var ry = y + L.rowH * 0.74;
-        out.push('<line x1="' + (L.opWidth * 0.35) + '" y1="' + ry + '" x2="' + (m.width - L.padRight) + '" y2="' + ry +
+        // 罫線は「数字列の左端 (opWidth)」から引く。演算記号の列に食い込ませると
+        // × ÷ のインクと重なるため、必ず opWidth を始点にする。
+        out.push('<line x1="' + L.opWidth + '" y1="' + ry + '" x2="' + (m.width - L.padRight) + '" y2="' + ry +
           '" stroke="' + COLORS.rule + '" stroke-width="2.5" stroke-linecap="round"/>');
         y += L.rowH;
         continue;
@@ -554,13 +576,20 @@
       // 商行の "_" 罫線（÷の筆算では商の下に線を引くのが教科書表記）
       if (row.rule) {
         var qy = y + L.rowH * 0.8;
-        out.push('<line x1="' + (L.opWidth * 0.35) + '" y1="' + qy + '" x2="' + (m.width - L.padRight) + '" y2="' + qy +
+        // 商の下の "_" 罫線も、上の算式の罫線と同じく数字列の左端から引く
+        out.push('<line x1="' + L.opWidth + '" y1="' + qy + '" x2="' + (m.width - L.padRight) + '" y2="' + qy +
           '" stroke="' + COLORS.rule + '" stroke-width="2"/>');
       }
 
       if (row.sign) {
-        out.push('<text x="' + (L.opWidth * 0.45) + '" y="' + (y + L.rowH * 0.72) + '" font-size="' + L.signFont +
-          '" fill="' + COLORS.sign + '" text-anchor="middle" font-family="sans-serif">' + row.sign + '</text>');
+        // 演算記号は演算記号列の中央 (L.signX) に置く。
+        // 旧実装は `opWidth * 0.45` (= 11.7) に text-anchor=middle で置いていたため、
+        // 全角幅で描かれる × ÷ のインク左端が viewBox の左端 (x=0) を越えて欠けていた。
+        // また数字とフォント指定が異なっていた（数字 = FONT / 記号 = sans-serif）のため、
+        // 端末の既定フォントによって記号幅が変わり「場合によって欠けていた」。
+        // ここでは数字と同じ FONT を使い、幅のばらつきで欠けないよう中央寄せする。
+        out.push('<text x="' + L.signX + '" y="' + (y + L.rowH * 0.72) + '" font-size="' + L.signFont +
+          '" fill="' + COLORS.sign + '" text-anchor="middle" font-family="' + FONT + '">' + row.sign + '</text>');
       }
 
       for (var di = 0; di < row.digits.length; di++) {
