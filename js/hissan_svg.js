@@ -1,0 +1,536 @@
+/**
+ * HissanSVG — 筆算（ひっ算）の共通SVG部品 (V2.9.0)
+ *
+ * 加減乗除の「筆算」を、教科書の書き方に従ってSVGで描画する共通部品。
+ * 2〜4年生の 計算/筆算 単元で共通して使う。
+ *
+ * 仕様 (詳細設計):
+ *  - 4演算 (add / sub / mul / div) に対応し、教科書と同じ行構成・記号で描く
+ *      add : a / +b / 罫線 / 答え        （繰り上がりは行頭に小さな "1"）
+ *      sub : a / −b / 罫線 / 答え        （繰り降りは教科書どおり数字でなく "・"）
+ *      mul : a / ×b / 罫線 / 部分積 / 罫線 / 答え
+ *      div : 商（上に "_" 罫線つき）/ 被除数 / ÷b / あまり
+ *  - 桁は均等割りのセルに配置し、桁送りは「右詰め」で表現する
+ *      （例: 23 × 4 の部分積 92 は 1桁右にオフセットして描く）
+ *  - 段階表示: 通常の出題時は「答えの行が空」の図、ヒント時は「繰り上がり/部分積まで出た」図、
+ *    解説時は「答えが埋まった完成版」の図を出し分けられる
+ *  - 答えはSVGへ埋め込まず、正規化可能な値（answerText）として別途保持する
+ *
+ * 公開API:
+ *   HissanSVG.OPS                         対応する演算 ["add","sub","mul","div"]
+ *   HissanSVG.LAYOUT                      レイアウト寸法
+ *   HissanSVG.resolve(spec, opts)          spec → 行・桁・空マスの構造化モデル
+ *   HissanSVG.fillSpecVars(spec, vars)    spec 内の "{a}" を生成変数で置換
+ *   HissanSVG.render(spec, opts)           1つの筆算SVG文字列
+ *   HissanSVG.buildDisplay(spec, vars)     question_source から呼ぶ組み立て
+ *   HissanSVG.answerDigits(value)         数値を桁配列へ（右詰め・先頭0除去）
+ *   HissanSVG.equalsAnswer(a, b)          筆算回答の比較
+ */
+(function () {
+  "use strict";
+
+  // 対応する演算
+  var OPS = ["add", "sub", "mul", "div"];
+
+  // 演算ごとの記号（教科書表記）
+  var OP_SIGN = { add: "+", sub: "−", mul: "×", div: "÷" };
+
+  // レイアウト寸法 (viewBox 座標)。1桁 = cellW、高さ = rowH
+  var LAYOUT = {
+    cellW: 34,     // 1桁分の幅
+    rowH: 36,      // 1行の高さ
+    opWidth: 26,   // 演算記号の確保幅
+    fontSize: 24,  // 数字のフォントサイズ
+    smallFont: 15, // 繰り上がり・あまりなど小さい文字
+    signFont: 22,  // 演算記号のフォントサイズ
+    padTop: 6,
+    padRight: 10
+  };
+
+  var COLORS = {
+    digit: "#1e293b",
+    sign: "#334155",
+    carry: "#2563eb",
+    rule: "#334155",    // 罫線
+    subRule: "#94a3b8", // 補助罫線
+    mark: "#dc2626"     // 解答済みの強調
+  };
+
+  var FONT = "'Hiragino Sans','Noto Sans JP',sans-serif";
+
+  // ------------------------------------------------------------------
+  // ユーティリティ
+  // ------------------------------------------------------------------
+
+  /**
+   * 数値（または数字文字列）を安全に変換する。NaN や非数値は 0 扱い。
+   */
+  function toNum(v) {
+    var n = Number(v);
+    return (isFinite(n)) ? n : 0;
+  }
+
+  /**
+   * 数値の桁配列を返す（右詰め）。例: 8 → [8] / 46 → [4,6] / 0 → [0]
+   * @param {number|string} value
+   * @returns {Array<number>}
+   */
+  function answerDigits(value) {
+    var n = Math.abs(toNum(value));
+    var s = String(Math.round(n));
+    if (s === "0") return [0];
+    return s.split("").map(function (c) { return parseInt(c, 10); });
+  }
+
+  /**
+   * 桁数（0 は1桁扱い）
+   */
+  function digitCount(value) {
+    return answerDigits(value).length;
+  }
+
+  /**
+   * 桁配列を指定桁数に揃える（右詰め・不足は左から 0 で埋める）
+   */
+  function padDigits(digits, width) {
+    var out = new Array(Math.max(0, width)).fill(0);
+    for (var i = 0; i < digits.length && i < out.length; i++) {
+      out[out.length - 1 - i] = digits[digits.length - 1 - i];
+    }
+    return out;
+  }
+
+  /**
+   * spec 内の "{name}" 形式を vars の値で置換する（数値化も行う）。
+   * 例: {op:"add", a:"{a}", b:"{b}"} + vars{a:23,b:7} → {op:"add", a:23, b:7}
+   * @param {Object} spec
+   * @param {Object} vars
+   * @returns {Object} 解決済みの spec（不正値は 0 に落ちる）
+   */
+  function fillSpecVars(spec, vars) {
+    spec = spec || {};
+    vars = vars || {};
+    var out = {};
+    for (var k in spec) {
+      if (!Object.prototype.hasOwnProperty.call(spec, k)) continue;
+      var v = spec[k];
+      if (typeof v === "string") {
+        var replaced = v.replace(/\{([A-Za-z0-9_]+)\}/g, function (_, name) {
+          var raw = vars[name];
+          return (typeof raw === "undefined" || raw === null) ? "0" : String(raw);
+        });
+        // 数値展位（a/b/q/quotient/rem など）は数値に落とす
+        if (k === "a" || k === "b" || k === "q" || k === "quotient" || k === "rem") {
+          out[k] = toNum(replaced);
+        } else {
+          out[k] = replaced;
+        }
+      } else {
+        out[k] = v;
+      }
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------
+  // 筆算の構造モデル（描画の唯一の情報源）
+  // ------------------------------------------------------------------
+
+  /**
+   * 加算の繰り上がりを「表示用の桁配列（左=上位・右=1の位）」で求める。
+   * 例: addCarry(27, 5) → [0, 1, 0]（十の位のマスに 1 が立つ）
+   *
+   * 内部計算を1の位から行うため、内部配列 carry[i] は i=0 が1の位。
+   * 返り値も同じ順序（i=0 が1の位＝右端）で返し、padDigits / alignMarkRow と揃える。
+   *
+   * @param {number} a
+   * @param {number} b
+   * @returns {Array<number>} i=0 が1の位（右端）
+   */
+  function addCarry(a, b) {
+    a = Math.abs(toNum(a));
+    b = Math.abs(toNum(b));
+    var len = String(Math.max(1, a, b) * 2).length + 1;
+    var carry = new Array(len).fill(0);
+    var ja = a, jb = b, c = 0, i = 0;
+    while (ja > 0 || jb > 0 || c > 0) {
+      var t = (ja % 10) + (jb % 10) + c;
+      c = (t >= 10) ? 1 : 0;
+      // 教科書では「繰り上がり先（次の桁）」のマスに 1 を書く。
+      // 最終桁で繰り上がった場合は、その上の桁（i+1）に書く。
+      if (c === 1) carry[i + 1] = 1;
+      ja = Math.floor(ja / 10);
+      jb = Math.floor(jb / 10);
+      i++;
+      if (i >= len) break;
+    }
+    return carry;
+  }
+
+  /**
+   * 減算の繰り下がり。教科書では数字でなく中黒で表すため、ここでは 1 を保持し、
+   * 描画側で "・" に変換する。
+   * 例: borrowDown(30, 7) → [0, 1, 0]（十の位のマスに中黒）
+   *
+   * addCarry と同じく i=0 が1の位（右端）の順序で返す。
+   * @param {number} a
+   * @param {number} b
+   * @returns {Array<number>} i=0 が1の位（右端）
+   */
+  function borrowDown(a, b) {
+    a = Math.abs(toNum(a));
+    b = Math.abs(toNum(b));
+    var len = String(Math.max(a, b)).length + 1;
+    var br = new Array(len).fill(0);
+    var ja = a, jb = b, c = 0, i = 0;
+    while (ja > 0 || jb > 0 || c > 0) {
+      var t = (ja % 10) - (jb % 10) - c;
+      if (t < 0) {
+        c = 1;
+        // 教科書では「繰り下がりをした桁（元の数の上）」に中黒を書く。
+        br[i + 1] = 1;
+      } else { c = 0; }
+      ja = Math.floor(ja / 10);
+      jb = Math.floor(jb / 10);
+      i++;
+      if (i >= len) break;
+    }
+    return br;
+  }
+
+  /**
+   * 乗算の部分積（b を桁ごとに掛けて、桁シフト付きで返す）
+   * 例: mulParts(23, 4) → [{value: 92, shift: 0}]
+   *     mulParts(23, 14) → [{value: 46, shift: 0}, {value: 23, shift: 1}]
+   * @param {number} a
+   * @param {number} b
+   * @returns {Array<{value:number,shift:number,factorDigit:number}>}
+   */
+  function mulParts(a, b) {
+    a = Math.abs(toNum(a));
+    b = Math.abs(toNum(b));
+    var parts = [];
+    var jb = b, shift = 0;
+    while (jb > 0) {
+      var digit = jb % 10;
+      if (digit !== 0) {
+        parts.push({ value: a * digit, shift: shift, factorDigit: digit });
+      }
+      jb = Math.floor(jb / 10);
+      shift++;
+    }
+    if (parts.length === 0) parts.push({ value: 0, shift: 0, factorDigit: 0 });
+    return parts;
+  }
+
+  /**
+   * 繰り上がり/繰り下がり行を、表示桁数 w に正確にそろえる。
+   *
+   * addCarry / borrowDown は i=0 が1の位（右端）の配列を返す。
+   * 右端が必ず1の位に一致するため、w より短い場合は左側を0で埋めるだけでよい。
+   * （padDigits を使うと、繰り上がりで桁数が1つ増えた配列を丸めて位置がずれる）
+   *
+   * @param {Array<number>} arr i=0 が1の位の繰り上がり配列
+   * @param {number} w 表示桁数
+   * @returns {Array<number>} 長さ w の配列（右端が1の位）
+   */
+  function alignMarkRow(arr, w) {
+    var out = new Array(Math.max(0, w)).fill(0);
+    var n = Math.min(arr.length, w);
+    for (var i = 0; i < n; i++) {
+      out[w - 1 - i] = arr[i];
+    }
+    return out;
+  }
+
+  /**
+   * 筆算の行・桁をすべて解決した構造化モデルを作る。
+   * 描画（render）はこのモデルだけを見て出力するため、
+   * 「通常表示 / ヒント表示 / 解説表示」の差分は opts.stage だけで決まる。
+   *
+   * @param {Object} spec { op, a, b, q/quotient, rem }
+   * @param {Object} [opts] { vars, stage: "normal"|"hint"|"solution" }
+   * @returns {{op:string, rows:Array, cols:number, width:number, height:number,
+   *            stage:string, answer:number, a:number, b:number, rem:number}}
+   */
+  function resolve(spec, opts) {
+    opts = opts || {};
+    spec = fillSpecVars(spec, opts.vars);
+    var op = OPS.indexOf(spec.op) >= 0 ? spec.op : "add";
+    var stage = opts.stage || spec.stage || "normal"; // normal | hint | solution
+    var a = toNum(spec.a);
+    var b = toNum(spec.b);
+    var sign = OP_SIGN[op];
+
+    var rows = [];
+    var answer = 0;
+    var rem = 0;
+    var w = 0;
+
+    if (op === "add") {
+      answer = a + b;
+      w = Math.max(digitCount(a), digitCount(b), digitCount(answer), 3);
+      if (stage !== "normal") {
+        rows.push({ type: "carry", digits: alignMarkRow(addCarry(a, b), w) });
+      }
+      rows.push({ type: "operand", digits: padDigits(answerDigits(a), w), sign: "" });
+      rows.push({ type: "operand", digits: padDigits(answerDigits(b), w), sign: sign });
+      rows.push({ type: "rule" });
+      rows.push({ type: "answer", digits: padDigits(answerDigits(answer), w), filled: stage === "solution" });
+
+    } else if (op === "sub") {
+      answer = a - b;
+      w = Math.max(digitCount(a), digitCount(b), digitCount(Math.abs(answer)), 3);
+      if (stage !== "normal") {
+        rows.push({ type: "borrow", digits: alignMarkRow(borrowDown(a, b), w) });
+      }
+      rows.push({ type: "operand", digits: padDigits(answerDigits(a), w), sign: "" });
+      rows.push({ type: "operand", digits: padDigits(answerDigits(b), w), sign: sign });
+      rows.push({ type: "rule" });
+      rows.push({ type: "answer", digits: padDigits(answerDigits(answer), w), filled: stage === "solution" });
+
+    } else if (op === "mul") {
+      answer = a * b;
+      var parts = mulParts(a, b);
+      var maxPartW = 0;
+      parts.forEach(function (p) {
+        var pw = digitCount(p.value) + p.shift;
+        if (pw > maxPartW) maxPartW = pw;
+      });
+      w = Math.max(digitCount(a), digitCount(b), digitCount(answer), maxPartW, 3);
+      rows.push({ type: "operand", digits: padDigits(answerDigits(a), w), sign: "" });
+      rows.push({ type: "operand", digits: padDigits(answerDigits(b), w), sign: sign });
+      rows.push({ type: "rule" });
+      // 部分積（ヒント以上で表示。最終桁以外は桁送りする）
+      if (stage !== "normal") {
+        parts.forEach(function (p, idx) {
+          rows.push({
+            type: "part",
+            digits: padDigits(answerDigits(p.value), w - p.shift),
+            shift: p.shift,
+            sign: (idx === parts.length - 1) ? "" : "+"
+          });
+        });
+        rows.push({ type: "rule" });
+      }
+      rows.push({ type: "answer", digits: padDigits(answerDigits(answer), w), filled: stage === "solution" });
+
+    } else {
+      // div: 商は上に "_" 罫線つき。残りの行は 被除数 / ÷b / あまり
+      var q = toNum((typeof spec.q !== "undefined")
+        ? spec.q
+        : ((typeof spec.quotient !== "undefined") ? spec.quotient : (b !== 0 ? Math.floor(a / b) : 0)));
+      rem = toNum((typeof spec.rem !== "undefined")
+        ? spec.rem
+        : (b !== 0 ? a - b * Math.floor(a / b) : 0));
+      answer = q;
+      w = Math.max(digitCount(a), digitCount(q), digitCount(b), 3);
+      // 商は答えそのものなので、通常表示では空のマス（罫線だけ）にする。
+      // ヒント以上で数字を出し、解説では強調して示す。
+      var showQuotient = (stage !== "normal");
+      rows.push({
+        type: "quotient",
+        digits: showQuotient ? padDigits(answerDigits(q), w) : new Array(w).fill(null),
+        rule: true,
+        filled: stage === "solution"
+      });
+      rows.push({ type: "dividend", digits: padDigits(answerDigits(a), w) });
+      rows.push({ type: "divisor", digits: padDigits(answerDigits(b), w), sign: sign });
+      if (rem > 0 || stage !== "normal") {
+        rows.push({ type: "remainder", digits: [Math.abs(rem)], label: "あまり" });
+      }
+    }
+
+    // 全体の幅から SVG 寸法を決める
+    var cols = 0;
+    rows.forEach(function (r) {
+      if (r.digits && r.digits.length > cols) cols = r.digits.length;
+    });
+    if (cols === 0) cols = 1;
+
+    return {
+      op: op,
+      rows: rows,
+      cols: cols,
+      width: LAYOUT.opWidth + cols * LAYOUT.cellW + LAYOUT.padRight,
+      height: LAYOUT.padTop + rows.length * LAYOUT.rowH,
+      stage: stage,
+      answer: answer,
+      a: a,
+      b: b,
+      rem: rem
+    };
+  }
+
+
+
+  // ------------------------------------------------------------------
+  // 描画
+  // ------------------------------------------------------------------
+
+  /**
+   * 1つの桁セルを描画（数字）
+   */
+  function digitCell(x, y, digit, filled) {
+    // null = 空マス（÷の商など、未入力の桁）。薄い破線だけ引いて枠を示す。
+    if (digit === null || typeof digit === "undefined") {
+      return '<line x1="' + (x + 2) + '" y1="' + (y + LAYOUT.rowH - 7) +
+        '" x2="' + (x + LAYOUT.cellW - 4) + '" y2="' + (y + LAYOUT.rowH - 7) +
+        '" stroke="' + COLORS.subRule + '" stroke-width="1.5" stroke-dasharray="3 3"/>';
+    }
+    var fontSize = LAYOUT.fontSize;
+    var color = filled ? COLORS.mark : COLORS.digit;
+    var cx = x + LAYOUT.cellW / 2 - 2;
+    var baseline = y + LAYOUT.rowH / 2 + fontSize * 0.35;
+    return '<text x="' + cx + '" y="' + baseline + '" font-size="' + fontSize +
+      '" fill="' + color + '" text-anchor="middle" font-family="' + FONT +
+      '" font-weight="' + (filled ? 700 : 500) + '">' + String(digit) + '</text>';
+  }
+
+  /**
+   * 筆算を1つの <svg> として描画する。
+   * @param {Object} spec
+   * @param {Object} [opts] { stage: "normal"|"hint"|"solution", vars }
+   * @returns {string} SVG文字列
+   */
+  function render(spec, opts) {
+    opts = opts || {};
+    var m = resolve(spec, opts);
+    var L = LAYOUT;
+    var out = [];
+    out.push('<svg class="hissan-svg hissan-' + m.op + '" viewBox="0 0 ' + m.width + ' ' + m.height +
+      '" width="' + m.width + '" height="' + m.height +
+      '" role="img" aria-label="筆算" xmlns="http://www.w3.org/2000/svg">');
+
+    var y = L.padTop;
+    for (var i = 0; i < m.rows.length; i++) {
+      var row = m.rows[i];
+
+      if (row.type === "rule") {
+        var ry = y + L.rowH * 0.74;
+        out.push('<line x1="' + (L.opWidth * 0.35) + '" y1="' + ry + '" x2="' + (m.width - L.padRight) + '" y2="' + ry +
+          '" stroke="' + COLORS.rule + '" stroke-width="2.5" stroke-linecap="round"/>');
+        y += L.rowH;
+        continue;
+      }
+
+      if (row.type === "carry" || row.type === "borrow") {
+        // 繰り上がり行 / 繰り下がり行。繰り降りは教科書どおり数字でなく中黒 "・"。
+        for (var ci = 0; ci < row.digits.length; ci++) {
+          if (row.digits[ci] !== 1) continue;
+          var cx = L.opWidth + ci * L.cellW + L.cellW / 2 - 2;
+          var label = (row.type === "borrow") ? "・" : "1";
+          var c = (row.type === "borrow") ? COLORS.digit : COLORS.carry;
+          out.push('<text x="' + cx + '" y="' + (y + L.rowH - 9) + '" font-size="' + L.smallFont +
+            '" fill="' + c + '" text-anchor="middle" font-family="' + FONT + '">' + label + '</text>');
+        }
+        y += L.rowH;
+        continue;
+      }
+
+      if (row.type === "remainder") {
+        out.push('<text x="' + L.opWidth + '" y="' + (y + L.rowH * 0.7) + '" font-size="' + L.smallFont +
+          '" fill="' + COLORS.digit + '" text-anchor="start" font-family="' + FONT +
+          '">あまり ' + row.digits[0] + '</text>');
+        y += L.rowH;
+        continue;
+      }
+
+      // 商行の "_" 罫線（÷の筆算では商の下に線を引くのが教科書表記）
+      if (row.rule) {
+        var qy = y + L.rowH * 0.8;
+        out.push('<line x1="' + (L.opWidth * 0.35) + '" y1="' + qy + '" x2="' + (m.width - L.padRight) + '" y2="' + qy +
+          '" stroke="' + COLORS.rule + '" stroke-width="2"/>');
+      }
+
+      if (row.sign) {
+        out.push('<text x="' + (L.opWidth * 0.45) + '" y="' + (y + L.rowH * 0.72) + '" font-size="' + L.signFont +
+          '" fill="' + COLORS.sign + '" text-anchor="middle" font-family="sans-serif">' + row.sign + '</text>');
+      }
+
+      for (var di = 0; di < row.digits.length; di++) {
+        out.push(digitCell(L.opWidth + di * L.cellW, y, row.digits[di], !!row.filled));
+      }
+
+      y += L.rowH;
+    }
+
+    out.push('</svg>');
+    return out.join("");
+  }
+
+  // ------------------------------------------------------------------
+  // question_source 組み立て
+  // ------------------------------------------------------------------
+
+  /**
+   * 出題に必要な表示一式を組み立てる（question_source から呼ぶ）
+   * @param {Object} spec hissanSpec
+   * @param {Object} vars 生成変数
+   * @returns {{hissanHTML:string, hissanHintHTML:string, hissanSolutionHTML:string,
+   *            op:string, answerText:string, model:Object}}
+   */
+  function buildDisplay(spec, vars) {
+    spec = spec || {};
+    vars = vars || {};
+    var m = resolve(spec, { vars: vars, stage: "normal" });
+    return {
+      hissanHTML: render(spec, { vars: vars, stage: "normal" }),
+      hissanHintHTML: render(spec, { vars: vars, stage: "hint" }),
+      hissanSolutionHTML: render(spec, { vars: vars, stage: "solution" }),
+      op: m.op,
+      // 答えはSVGに埋め込まず、正規化可能なテキストとして保持する
+      answerText: String(m.answer),
+      model: m
+    };
+  }
+
+  // ------------------------------------------------------------------
+  // 回答の比較
+  // ------------------------------------------------------------------
+
+  /**
+   * 筆算回答の比較。桁数ゆれ(07/7)・全角数字を吸収する。
+   * Step1（読み取り専用）では回答しないが、Step2（入力）で使うために用意しておく。
+   * @param {string|number} userValue
+   * @param {string|number} correctValue
+   * @returns {boolean}
+   */
+  function equalsAnswer(userValue, correctValue) {
+    function norm(v) {
+      var s = String((v === null || v === undefined) ? "" : v);
+      s = s.replace(/[０-９]/g, function (c) {
+        return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+      });
+      s = s.replace(/[^0-9\-]/g, "");
+      var neg = (s.charAt(0) === "-");
+      if (neg) s = s.slice(1);
+      s = s.replace(/^0+/, "");
+      if (s === "") s = "0";
+      return (neg ? "-" : "") + s;
+    }
+    return norm(userValue) === norm(correctValue);
+  }
+
+  var HissanSVG = {
+    OPS: OPS,
+    LAYOUT: LAYOUT,
+    COLORS: COLORS,
+    resolve: resolve,
+    fillSpecVars: fillSpecVars,
+    render: render,
+    buildDisplay: buildDisplay,
+    answerDigits: answerDigits,
+    addCarry: addCarry,
+    borrowDown: borrowDown,
+    mulParts: mulParts,
+    equalsAnswer: equalsAnswer
+  };
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = { HissanSVG: HissanSVG };
+  } else {
+    window.HissanSVG = HissanSVG;
+  }
+})();
+

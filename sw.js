@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.8.0)
-const CACHE_NAME = 'arith-study-v2.8.0-g2figure';
+// PWA Service Worker (V2.9.0)
+const CACHE_NAME = 'arith-study-v2.9.0-hissan';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -21,6 +21,7 @@ const urlsToCache = [
   '/js/templates_figures_g3.js',
   '/js/clock_svg.js',
   '/js/templates_clock.js',
+  '/js/hissan_svg.js',
   '/js/question_source.js',
   '/js/learning_engine.js',
   '/js/learning_score_engine.js',

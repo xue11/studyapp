@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.8.0  
+**バージョン**: V2.9.0  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -268,3 +268,98 @@ streakBonus: 3連続正解=+5pt / 5連続以上=+10pt（重複加算なし）
 | `wordProblems` | ✅ 有効 |
 | `figureProblems` | ❌ 無効 |
 | `claudeApi` | ❌ 無効 |
+
+---
+
+## 10. V2.9.0 筆算支援（`HissanSVG`）
+
+### 10.1 概要
+
+加減乗除の**筆算（ひっ算）**を教科書の書き方に従ってSVGで描画する共通部品。
+2〜4年生の計算単元（加算・減算・乗算・除算）に段階導入する。
+
+### 10.2 ファイル構成
+
+| ファイル | 役割 |
+|----------|------|
+| `js/hissan_svg.js` | 新規。筆算レイアウト計算とSVG描画（`ClockSVG` と同じ責務分離） |
+| `js/templates_math.js` | 対象7テンプレに `hissanSpec` を1行付与 |
+| `js/question_source.js` | `hissanSpec` を持つテンプレに筆算HTMLを付与 |
+| `js/ui.js` | 学習/テスト画面・ヒント/解説モーダルに表示 |
+| `css/app.css` | `.hissan-stage` スタイル |
+| `tests/test_hissan.js` | 新規。9セクション83アサーション |
+| `test_hissan.html` | 新規。ブラウザでの目視確認ページ |
+
+### 10.3 公開API
+
+```
+HissanSVG.OPS                    対応演算 ["add","sub","mul","div"]
+HissanSVG.LAYOUT / COLORS        レイアウト寸法・配色
+HissanSVG.fillSpecVars(spec, vars)  spec 内の "{a}" を生成変数で置換
+HissanSVG.resolve(spec, opts)      行・桁の構造化モデル（描画の唯一の情報源）
+HissanSVG.render(spec, opts)       筆算SVG文字列
+HissanSVG.buildDisplay(spec, vars) question_source から呼ぶ組み立て
+HissanSVG.answerDigits(value)      数値→桁配列
+HissanSVG.addCarry / borrowDown / mulParts  繰り上がり・繰り下がり・部分積
+HissanSVG.equalsAnswer(a, b)       回答比較（先頭0/全角を吸収）
+```
+
+### 10.4 4演算の行構成
+
+| op | 行 | 特殊表記 |
+|----|-----|----------|
+| `add` | a / +b / 罫線 / 答え | 繰り上がりは行頭に小さな `1`（青） |
+| `sub` | a / −b / 罫線 / 答え | 繰り下がりは**数字でなく中黒 `・`**（教科書表記） |
+| `mul` | a / ×b / 罫線 / 部分積 / 罫線 / 答え | 部分積は1桁右寄せ（桁送り） |
+| `div` | 商（`_` 罫線つき）/ 被除数 / ÷b / あまり | 通常表示では商のマスは空 |
+
+### 10.5 段階表示
+
+| タイミング | 変数 | 内容 |
+|------------|------|------|
+| 通常（出題時） | `hissanHTML` | 被加数/被減数 ＋ **答えの行が空** |
+| ヒント（2回目誤答） | `hissanHintHTML` | ＋ 繰り上がり行 / 繰り下がり行 / 部分積 |
+| 解説（正解 or 3回目誤答） | `hissanSolutionHTML` | ＋ 答えが埋まった完成版（強調色） |
+
+**答えはSVGへ埋め込まず**、`answerText` として questionInstance に保持する。
+
+### 10.6 導入テンプレ（7本）
+
+| templateId | 学年 | 演算 | 単元 |
+|-------------|------|------|------|
+| `g2_basic_add_01` | 2 | add | add_2digit_no_carry |
+| `g2_basic_sub_01` | 2 | sub | sub_2digit_no_borrow |
+| `g2_std_add_carry_01` | 2 | add | add_2digit_carry |
+| `g2_std_sub_borrow_01` | 2 | sub | sub_2digit_borrow |
+| `g3_std_mul21_01` | 3 | mul | mul_2digit_1digit |
+| `g4_basic_mul22_01` | 4 | mul | mul_2digit_2digit |
+| `g4_std_div31_01` | 4 | div | div_3digit_1digit_remainder |
+
+**`answerType` は変更しない**（`number_input` のまま）。筆算の有無は `template.hissanSpec` の有無で判定するため、
+既存の数値入力フローに影響しない（回答は `_renderNumpad` にフォールスルーする）。
+
+### 10.7 併せて修正した既存バグ（変数生成の制約違反）
+
+`RuleBasedQuestionSource._generateVariables` の「変数ごとに最大20回リトライ」は、
+制約が**原理的に不可能**な組み合わせ（例: `(a%10)+(b%10)>=10` のとき `a%10==0` が出ると
+`b%10` の最大値が9なので何を引き直しても成立しない）では必ず失敗し、
+**違反値をそのまま採用していた**。
+
+実測では `add_2digit_carry` 単元で **11.7%**、`sub_2digit_borrow` 単元で **8.7%** の問題が
+「繰り上がりあり/繰り下がりあり」の単元なのに、繰り上がりの無い問題になっていた。
+
+修正は**2段構え**（既存146テンプレの生成分布を一切変えない）:
+
+1. まず従来ロジックで1回生成する（従来成功していたテンプレは 100% ここで成功し分布も同一）
+2. 制約違反時のみ**ルール全体をまとめて引き直す**（最大50回）→ 不可能な組み合わせが自然に見除かれる
+3. 50回でも満たせない場合は従来と同じ「最後の値を返す」でフォールバック
+
+**修正後**: 41件の制約テンプレすべて **0違反**、既存21テスト green。
+
+### 10.8 今後の予定
+
+| リリース | 内容 |
+|----------|------|
+| V2.10.0 | `hissan_input`：桁マス専用入力（最終答え行のみ採点） |
+| V2.11.0 | 繰り上がりマス・途中積まで入力を拡張 |
+

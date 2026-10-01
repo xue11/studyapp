@@ -37,6 +37,13 @@ if (typeof require !== "undefined") {
       globalThis.FigureSVG = figMod.FigureSVG;
     }
   } catch (e) {}
+  // V2.9.0: 筆算SVG部品 (hissanSpec の組み立てに使う)
+  try {
+    const hissanMod = require("./hissan_svg.js");
+    if (hissanMod && hissanMod.HissanSVG && typeof globalThis !== "undefined" && !globalThis.HissanSVG) {
+      globalThis.HissanSVG = hissanMod.HissanSVG;
+    }
+  } catch (e) {}
   try { require("./templates_figures_g3.js"); } catch (e) {}
 }
 
@@ -381,6 +388,27 @@ class RuleBasedQuestionSource {
           ? clock.answerLabel(disp.answer, disp.format)
           : String(disp.answer);
         instance.answer = String(disp.answer);
+      }
+    }
+
+    // V2.9.0: 筆算テンプレート (hissanSpec) → 筆算図 + 段階表示の3点を付与
+    // answerType は変更しない（既存问答フローはそのまま数値入力のまま維持する）。
+    // 判定は answerType ではなく hissanSpec の有無で行うことで、
+    // 既存の number_input テンプレと衝突しない。
+    if (template.hissanSpec) {
+      const hissan = (typeof globalThis !== "undefined" && globalThis.HissanSVG)
+        ? globalThis.HissanSVG
+        : ((typeof window !== "undefined" && window.HissanSVG) ? window.HissanSVG : null);
+      if (hissan && typeof hissan.buildDisplay === "function") {
+        const disp = hissan.buildDisplay(template.hissanSpec, vars);
+        if (typeof disp.hissanHTML === "string" && disp.hissanHTML.indexOf("<svg") >= 0 && disp.hissanHTML.indexOf("NaN") < 0) {
+          instance.hissanHTML = disp.hissanHTML;
+          instance.hissanHintHTML = disp.hissanHintHTML;
+          instance.hissanSolutionHTML = disp.hissanSolutionHTML;
+          instance.hissanOp = disp.op;
+          instance.hissanSpec = template.hissanSpec;
+          instance.hissanAnswerText = disp.answerText;
+        }
       }
     }
 

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>筆算 (HissanSVG) テスト — V2.9.0</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    body { padding: 16px; font-family: system-ui, sans-serif; }
+    h1 { font-size: 1.3rem; }
+    .panel { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 16px; background: #fff; }
+    .panel h2 { font-size: 1rem; margin: 0 0 8px; }
+    .row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+    .case { border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px; }
+    .case-title { font-size: 0.8rem; color: #475569; margin-bottom: 4px; }
+    .stage { display: flex; justify-content: center; margin: 8px 0; }
+    .stage .hissan-svg { max-width: 100%; height: auto; }
+    select, button { font-size: 0.9rem; padding: 4px 8px; margin-right: 6px; }
+    #log { font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; background: #0f172a; color: #e2e8f0; padding: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>筆算 (HissanSVG) テスト — V2.9.0</h1>
+  <p>4演算の筆算を、通常 / ヒント / 解説の3段階で確認します。</p>
+
+  <div class="panel">
+    <h2>手動入力の確認</h2>
+    <select id="op">
+      <option value="add">加算 (add)</option>
+      <option value="sub">減算 (sub)</option>
+      <option value="mul">乗算 (mul)</option>
+      <option value="div">除算 (div)</option>
+    </select>
+    <input id="a" type="number" value="38" style="width:70px">
+    <input id="b" type="number" value="25" style="width:70px">
+    <button onclick="render()">再描画</button>
+    <div class="row" id="out" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="panel">
+    <h2>対象テンプレからの自動生成</h2>
+    <button onclick="renderTemplates()">7テンプレの筆算を生成</button>
+    <div class="row" id="tplout" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="panel">
+    <h2>制約チェック（繰り上がり/繰り下がり）</h2>
+    <button onclick="checkConstraints()">200問生成して検証</button>
+    <div id="log" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- 依存スクリプト (index.html と同じ読込順) -->
+  <script src="js/config.js"></script>
+  <script src="js/registries.js"></script>
+  <script src="js/schema.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/figure_svg.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/templates_math.js"></script>
+  <script src="js/templates_units_p1.js"></script>
+  <script src="js/templates_units_p2.js"></script>
+  <script src="js/templates_g2_extra.js"></script>
+  <script src="js/templates_figures_g1.js"></script>
+  <script src="js/templates_figures_g2.js"></script>
+  <script src="js/clock_svg.js"></script>
+  <script src="js/templates_clock.js"></script>
+  <script src="js/hissan_svg.js"></script>
+  <script src="js/question_source.js"></script>
+
+  <script>
+    (function () {
+      "use strict";
+      var TARGETS = [
+        "g2_basic_add_01", "g2_basic_sub_01", "g2_std_add_carry_01", "g2_std_sub_borrow_01",
+        "g3_std_mul21_01", "g4_basic_mul22_01", "g4_std_div31_01"
+      ];
+      var LABELS = { normal: "通常", hint: "ヒント", solution: "解説" };
+
+      function log(msg) {
+        document.getElementById("log").textContent += msg + "\n";
+      }
+
+      function render() {
+        var op = document.getElementById("op").value;
+        var a = parseInt(document.getElementById("a").value, 10) || 0;
+        var b = parseInt(document.getElementById("b").value, 10) || 0;
+        var spec = { op: op, a: a, b: b };
+        if (op === "div") { spec.q = b !== 0 ? Math.floor(a / b) : 0; spec.rem = b !== 0 ? a - b * Math.floor(a / b) : 0; }
+        var d = window.HissanSVG.buildDisplay(spec, {});
+        var out = document.getElementById("out");
+        out.innerHTML = "";
+        ["hissanHTML", "hissanHintHTML", "hissanSolutionHTML"].forEach(function (key) {
+          var box = document.createElement("div");
+          box.className = "case";
+          box.innerHTML = '<div class="case-title">' + LABELS[key.replace("hissan", "").replace("HTML", "")] +
+            ' / 答え: ' + d.answerText + '</div><div class="stage">' + d[key] + '</div>';
+          out.appendChild(box);
+        });
+      }
+
+      function renderTemplates() {
+        var out = document.getElementById("tplout");
+        out.innerHTML = "";
+        TARGETS.forEach(function (id) {
+          var q = window.RuleBasedQuestionSource.generateQuestion(id, []);
+          if (!q || !q.hissanHTML) return;
+          var box = document.createElement("div");
+          box.className = "case";
+          box.innerHTML = '<div class="case-title">' + id + '<br>' + q.questionText + '</div>' +
+            '<div class="stage">' + q.hissanHTML + '</div>' +
+            '<div class="stage" style="border-top:1px solid #e2e8f0;padding-top:6px;">' + q.hissanHintHTML + '</div>';
+          out.appendChild(box);
+        });
+      }
+
+      function checkConstraints() {
+        var el = document.getElementById("log");
+        el.textContent = "";
+        [["g2_std_add_carry_01", "繰り上がり", function (v) { return (v.a % 10) + (v.b % 10) >= 10; }],
+         ["g2_std_sub_borrow_01", "繰り下がり", function (v) { return (v.a % 10) < (v.b % 10); }],
+         ["g2_basic_add_01", "繰り上がりなし", function (v) { return (v.a % 10) + (v.b % 10) <= 9; }],
+         ["g2_basic_sub_01", "繰り下がりなし", function (v) { return (v.a % 10) >= (v.b % 10); }]
+        ].forEach(function (c) {
+          var tpl = window.TemplateRegistry.get(c[0]);
+          var bad = 0;
+          for (var i = 0; i < 200; i++) {
+            var v = window.RuleBasedQuestionSource._generateVariables(tpl.generate);
+            if (!c[2](v)) bad++;
+          }
+          log((bad === 0 ? "OK  " : "NG  ") + c[0] + " (" + c[1] + "): 200問中 違反 " + bad + " 問");
+        });
+      }
+
+      window.render = render;
+      window.renderTemplates = renderTemplates;
+      window.checkConstraints = checkConstraints;
+      render();
+    })();
+  </script>
+</body>
+</html>

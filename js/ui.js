@@ -545,7 +545,7 @@ class AppUI {
 
       <div class="question-display">
         <div class="question-text">${q.questionText}</div>
-        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : (q.figureHTML ? q.figureHTML : "")}
+        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : (q.hissanHTML ? `<div class="hissan-stage">${q.hissanHTML}</div>` : (q.figureHTML ? q.figureHTML : ""))}
         <div class="answer-input-display" id="answer-display">
           ${q.clockHTML
             ? this._clockSelectionDisplay(q)
@@ -1019,6 +1019,7 @@ class AppUI {
         this._showModal("💡 ヒント", `
           <div style="text-align:left; font-size:0.95rem;">
             ${q.hintSteps.map((h, i) => `<div style="background:#fffbeb; padding:8px; border-radius:6px; margin-bottom:6px;"><b>ヒント${i+1}:</b> ${h}</div>`).join("")}
+            ${q.hissanHintHTML ? `<div class="hissan-stage" style="justify-content:flex-start;">${q.hissanHintHTML}</div>` : ""}
           </div>
         `, [
           { text: "ヒントを使って答える", action: "app.closeModal()" }
@@ -1079,6 +1080,7 @@ class AppUI {
 
       let bodyHtml = `
         <div style="font-size:1.1rem; font-weight:bold; margin-bottom:8px;">正解: ${q.clockAnswerLabel || q.answer} ${ptsBadge}</div>
+        ${q.hissanSolutionHTML ? `<div class="hissan-stage" style="justify-content:flex-start; margin:0 0 10px;">${q.hissanSolutionHTML}</div>` : ""}
         <div style="background:#eff6ff; padding:10px; border-radius:8px; text-align:left; font-size:0.9rem; margin-bottom:12px;">
           <b>📖 解説:</b><br>${q.explanation}
         </div>
@@ -1230,7 +1232,7 @@ class AppUI {
 
       <div class="question-display">
         <div class="question-text">${q.questionText}</div>
-        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : (q.figureHTML ? q.figureHTML : "")}
+        ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : (q.hissanHTML ? `<div class="hissan-stage">${q.hissanHTML}</div>` : (q.figureHTML ? q.figureHTML : ""))}
         <div class="answer-input-display" id="answer-display">
           ${q.clockHTML
             ? this._clockSelectionDisplay(q)

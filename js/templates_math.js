@@ -222,6 +222,7 @@ const MATH_TEMPLATES = [
       b: { type: "integer", range: [11, 44], constraints: ["(a % 10) + (b % 10) <= 9"] },
       answer: { formula: "a + b" }
     },
+    hissanSpec: { op: "add", a: "{a}", b: "{b}" },
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: ["一の位どうし、十の位どうしをそれぞれ足してみよう。", "{a % 10} + {b % 10} と {Math.floor(a/10)} + {Math.floor(b/10)} を計算しよう。"],
     explanationTemplate: "一の位は {a % 10} + {b % 10} = {(a%10)+(b%10)}、十の位は {Math.floor(a/10)} + {Math.floor(b/10)} = {Math.floor((a+b)/10)} だから {answer} だね。",
@@ -248,6 +249,7 @@ const MATH_TEMPLATES = [
       b: { type: "integer", range: [11, 34], constraints: ["(a % 10) >= (b % 10)"] },
       answer: { formula: "a - b" }
     },
+    hissanSpec: { op: "sub", a: "{a}", b: "{b}" },
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: ["一の位どうし、十の位どうしをひいてみよう。", "{a % 10} - {b % 10} はいくつかな？"],
     explanationTemplate: "一の位は {a % 10} - {b % 10} = {(a%10)-(b%10)}、十の位は {Math.floor(a/10)} - {Math.floor(b/10)} = {Math.floor((a-b)/10)} だから {answer} だね。",
@@ -302,6 +304,7 @@ const MATH_TEMPLATES = [
       b: { type: "integer", range: [15, 38], constraints: ["(a % 10) + (b % 10) >= 10"] },
       answer: { formula: "a + b" }
     },
+    hissanSpec: { op: "add", a: "{a}", b: "{b}", showCarry: true },
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: ["一の位を足すと 10以上になるから、十の位に 1 くり上げよう。", "十の位は {Math.floor(a/10)} + {Math.floor(b/10)} + 1 だね。"],
     explanationTemplate: "一の位のくり上がりを十の位に足して、答えは {answer} だね。",
@@ -328,6 +331,7 @@ const MATH_TEMPLATES = [
       b: { type: "integer", range: [16, 39], constraints: ["(a % 10) < (b % 10)"] },
       answer: { formula: "a - b" }
     },
+    hissanSpec: { op: "sub", a: "{a}", b: "{b}" },
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: ["一の位でひけないので、十の位から 1 くり下げよう。", "10 + {a % 10} から {b % 10} をひいてみよう。"],
     explanationTemplate: "十の位からくり下げて計算すると、答えは {answer} だね。",
@@ -492,6 +496,7 @@ const MATH_TEMPLATES = [
       b: { type: "integer", range: [3, 9] },
       answer: { formula: "a * b" }
     },
+    hissanSpec: { op: "mul", a: "{a}", b: "{b}" },
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: ["{a} を {Math.floor(a/10)*10} と {a%10} に分けてかけ算しよう。", "{a%10} × {b} と {Math.floor(a/10)*10} × {b} を足そう。"],
     explanationTemplate: "{a%10} × {b} = {(a%10)*b}、{Math.floor(a/10)*10} × {b} = {Math.floor(a/10)*10*b}。合わせて {answer} だね。",
@@ -606,6 +611,7 @@ const MATH_TEMPLATES = [
       b: { type: "integer", range: [12, 25] },
       answer: { formula: "a * b" }
     },
+    hissanSpec: { op: "mul", a: "{a}", b: "{b}" },
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: ["筆算を思い浮かべよう。{a} × {b%10} と {a} × {Math.floor(b/10)*10} を計算しよう。", "2つの結果を足し合わせよう。"],
     explanationTemplate: "{a} × {b%10} = {a*(b%10)}、{a} × {Math.floor(b/10)*10} = {a*Math.floor(b/10)*10}。合計して {answer} だね。",
@@ -659,6 +665,7 @@ const MATH_TEMPLATES = [
       a: { formula: "b * q + rem" },
       answer: { formula: "q" }
     },
+    hissanSpec: { op: "div", a: "{a}", b: "{b}", q: "{q}", rem: "{rem}" },
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: ["上の位（百の位・十の位）から順番に割り算していこう。", "商の十の位を立ててから一の位を計算しよう。"],
     explanationTemplate: "{a} ÷ {b} = {answer} （あまり {rem}）だね。",

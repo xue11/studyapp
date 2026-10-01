@@ -812,6 +812,25 @@ body {
   color: var(--text, #1e293b);
 }
 
+/* ===== V2.9.0: 筆算問題 (HissanSVG) ===== */
+/* 筆算図を中央寄せで大きく見せるステージ。
+   筆算は桁位置が性命なので、スケーリングしても行が崩れないこと。 */
+.hissan-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px 0;
+  overflow-x: auto;
+}
+.hissan-stage .hissan-svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  transform: scale(1.15);
+  transform-origin: center;
+  margin: 8px 0;
+}
+
 /* ===== V2.7.0: 図形問題 (FigureSVG) ===== */
 /* 図を 1 つ大きく見せるステージ（figure_tap / 図形問題の設問表示） */
 .figure-stage {
