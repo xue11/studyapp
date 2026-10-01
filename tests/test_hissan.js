@@ -1,5 +1,5 @@
 /**
- * V2.9.1: 筆算支援 (HissanSVG) テスト
+ * V2.9.2: 筆算支援 (HissanSVG) テスト
  *
  * 検証する契約:
  *   1. 公開APIの存在
@@ -12,6 +12,7 @@
  *   8. 対象7テンプレの生成制約が実際に守られている（Step0 修正の回帰防止）
  *   9. equalsAnswer の正規化
  *  10. 先頭桁に 0 を描画しない（V2.9.1 修正の回帰防止: 2〜5桁 × 4演算）
+ *  11. 答えは解説段階でのみ描画される（V2.9.2 修正の回帰防止: SVG上の数字まで検証）
  */
 const path = require("path");
 const R = path.join(__dirname, "..", "js");
@@ -37,7 +38,37 @@ function rowText(m) {
   return m.rows.map(r => r.type + ":" + (r.digits || []).join("")).join(" ");
 }
 
-console.log("=== V2.9.1 筆算 (HissanSVG) テスト ===");
+// 桁配列を目視しやすい文字列へ（null = 空マス "_" / BLANK = 桁なし "."）
+function digitsText(row) {
+  return (row.digits || []).map(d => d === null ? "_" : (d === "" ? "." : d)).join("|");
+}
+
+// SVG内の「数字1文字」のテキスト要素を取り出す（答え漏洩の検証用）
+// 数字の y 座標から、どの行に描かれたかを逆算する
+function svgDigitCells(html) {
+  const L = HissanSVG.LAYOUT;
+  const re = /<text x="([-\d.]+)" y="([-\d.]+)" font-size="([\d.]+)" fill="([^"]+)"[^>]*>([^<]*)<\/text>/g;
+  const list = [];
+  let mm;
+  while ((mm = re.exec(html)) !== null) {
+    if (!/^[0-9]$/.test(mm[5])) continue; // 記号・中黒・「あまり N」は除外
+    const row = Math.round((Number(mm[2]) - L.padTop - L.fontSize * 0.35 - L.rowH / 2) / L.rowH);
+    list.push({ row, digit: mm[5], small: Number(mm[3]) < L.fontSize });
+  }
+  return list;
+}
+
+// 指定した行（answer / quotient）に描かれた数字を、大きい文字だけ拾って連結する
+function drawnInRow(spec, stage, rowType, vars) {
+  const opts = vars ? { stage, vars } : { stage };
+  const m = HissanSVG.resolve(spec, opts);
+  const idx = m.rows.findIndex(r => r.type === rowType);
+  if (idx < 0) return null;
+  return svgDigitCells(HissanSVG.render(spec, opts))
+    .filter(c => !c.small && c.row === idx).map(c => c.digit).join("");
+}
+
+console.log("=== V2.9.2 筆算 (HissanSVG) テスト ===");
 
 // --- 1. 公開API ---
 console.log("\n[1] 公開API");
@@ -97,17 +128,33 @@ const partRows = HissanSVG.resolve({ op: "mul", a: 23, b: 14 }, { stage: "hint" 
 ok(partRows.length === 2 && partRows[0].sign === "" && partRows[1].sign === "+",
   "部分積の + は下の行（最上位桁の部分積）に付く（23x14）");
 const partRows1 = HissanSVG.resolve({ op: "mul", a: 23, b: 4 }, { stage: "hint" }).rows.filter(r => r.type === "part");
-ok(partRows1.length === 1 && partRows1[0].sign === "", "部分積が1つ（1桁をかける）なら + を付けない");
+// V2.9.2: かける数が1桁（桁送りなし）のときは部分積＝答えそのものなので、部分積行を作らない
+ok(partRows1.length === 0, "1桁をかけるときは部分積行を作らない（23×4 の 92 は答えそのもの）");
+const partRows1sol = HissanSVG.resolve({ op: "mul", a: 23, b: 4 }, { stage: "solution" }).rows.filter(r => r.type === "part");
+ok(partRows1sol.length === 0, "解説でも同じ数字を2行に並べない（23×4 は答え行だけ）");
+ok(HissanSVG.resolve({ op: "mul", a: 23, b: 4 }, { stage: "solution" }).rows.find(r => r.type === "answer").digits.join("") === "92",
+  "23×4 の答え 92 は答え行に描かれる");
+// かける数が10の倍数（部分積1つでも桁送りあり）は中間の値なので部分積を表示する
+const partRows10 = HissanSVG.resolve({ op: "mul", a: 23, b: 10 }, { stage: "hint" }).rows.filter(r => r.type === "part");
+ok(partRows10.length === 1 && partRows10[0].shift === 1,
+  "23×10 は桁送り付きの部分積を表示する（23 は答え 230 ではない）");
 
 // --- 5. 除算の答え漏洩防止 ---
 console.log("\n[5] 除算の商・あまりと答えの漏洩防止");
-const divNormal = HissanSVG.resolve({ op: "div", a: 142, b: 7, q: 20, rem: 2 }, { stage: "normal" });
+const DIV142 = { op: "div", a: 142, b: 7, q: 20, rem: 2 };
+const divNormal = HissanSVG.resolve(DIV142, { stage: "normal" });
 ok(divNormal.rows[0].digits.every(d => d === null), "通常表示では商のマスが空（答えを漏らさない）");
-const divHint = HissanSVG.resolve({ op: "div", a: 142, b: 7, q: 20, rem: 2 }, { stage: "hint" });
-ok(divHint.rows[0].digits.filter(d => d !== null).join("") === "20", "ヒント表示では商が 20（3桁幅に右詰め）");
-const divSol = HissanSVG.resolve({ op: "div", a: 142, b: 7, q: 20, rem: 2 }, { stage: "solution" });
+ok(divNormal.rows.every(r => r.type !== "remainder"), "通常表示ではあまり行を出さない");
+const divHint = HissanSVG.resolve(DIV142, { stage: "hint" });
+// V2.9.2: ヒントで見せるのは「先頭（最上位）の1桁」だけ。20 なら 2 のみで、0 は空マス。
+ok(digitsText(divHint.rows[0]) === ".|2|_", "ヒント表示の商は先頭1桁だけ（142÷7 → 「2 _」）");
+ok(drawnInRow(DIV142, "hint", "quotient") === "2", "ヒントのSVGに描かれる商の数字は 2 だけ（答え 20 を出さない）");
+ok(divHint.rows.every(r => r.type !== "remainder"), "ヒント表示ではあまり行を出さない（答えの一部を出さない）");
+const divSol = HissanSVG.resolve(DIV142, { stage: "solution" });
 ok(divSol.rows[0].filled === true, "解説表示では商が強調される");
-ok(divHint.rows.some(r => r.type === "remainder" && r.digits[0] === 2), "あまり 2 が表示される");
+ok(digitsText(divSol.rows[0]) === ".|2|0", "解説表示では商が全桁 20（3桁幅に右詰め）");
+ok(divSol.rows.some(r => r.type === "remainder" && r.digits[0] === 2), "解説表示ではあまり 2 を表示する");
+ok(drawnInRow(DIV142, "solution", "quotient") === "20", "解説のSVGには商 20 が描かれる");
 
 // --- 6. 段階表示 ---
 console.log("\n[6] 段階表示 (normal / hint / solution)");
@@ -121,8 +168,9 @@ console.log("\n[6] 段階表示 (normal / hint / solution)");
 });
 const bd = HissanSVG.buildDisplay({ op: "add", a: "{a}", b: "{b}" }, { a: 38, b: 25 });
 ok(bd.answerText === "63", "答えは answerText として保持（SVG埋め込みではない）");
-ok(HissanSVG.resolve({ op: "add", a: 38, b: 25 }, { stage: "normal" }).rows.find(r => r.type === "answer").filled === false,
-  "通常表示の答え行は未入力");
+const normalAnswer = HissanSVG.resolve({ op: "add", a: 38, b: 25 }, { stage: "normal" }).rows.find(r => r.type === "answer");
+ok(normalAnswer.filled === false, "通常表示の答え行は未入力（強調なし）");
+ok(normalAnswer.digits.every(d => d === null), "通常表示の答え行は空マス（答えの数字を持たない）");
 
 // --- 7. 対象7テンプレへの統合 ---
 console.log("\n[7] 対象7テンプレへの統合");
@@ -196,13 +244,16 @@ ok(operandA({ op: "add", a: 39, b: 30 }).digits.join("|") === "3|9",
   "39+30 の 39 は [3,9]（桁数が合うので空きマスなし）");
 ok(operandA({ op: "add", a: 456, b: 789 }).digits.join("|") === "|4|5|6",
   "456+789 の 456 は 空きマス+[4,5,6]（0 ではなく空きマスで右詰め）");
-ok(HissanSVG.resolve({ op: "div", a: 306, b: 6, q: 51, rem: 0 }, { stage: "hint" }).rows[0].digits.join("|") === "|5|1",
-  "306÷6 の商 51 は 空きマス+[5,1]");
-// 消すのは「無い桁」だけ。値の途中・末尾の 0 は残す
+ok(digitsText(HissanSVG.resolve({ op: "div", a: 306, b: 6, q: 51, rem: 0 }, { stage: "hint" }).rows[0]) === ".|5|_",
+  "306÷6 のヒントの商は 空きマス+[5,空マス]（先頭1桁だけ）");
+ok(digitsText(HissanSVG.resolve({ op: "div", a: 306, b: 6, q: 51, rem: 0 }, { stage: "solution" }).rows[0]) === ".|5|1",
+  "306÷6 の解説の商は 空きマス+[5,1]");
 ok(operandA({ op: "add", a: 105, b: 20 }).digits.join("") === "105",
   "105 の内部の 0 は残す（消すのは先頭の無い桁だけ）");
-ok(HissanSVG.resolve({ op: "sub", a: 100, b: 100 }, {}).rows.find(r => r.type === "answer").digits.join("") === "0",
-  "答えが 0 のときは 0 を描く（消しすぎない）");
+ok(digitsText(HissanSVG.resolve({ op: "sub", a: 100, b: 100 }, { stage: "solution" }).rows.find(r => r.type === "answer")) === ".|.|0",
+  "答えが 0 のときは 0 を描く（3桁幅に右詰め・消しすぎない）");
+ok(HissanSVG.resolve({ op: "sub", a: 100, b: 100 }, { stage: "normal" }).rows.find(r => r.type === "answer").digits.every(d => d === null),
+  "答えが 0 のときも通常表示では空マス（数字を出さない）");
 
 // 桁数クラス別のランダム検証（200問 × 4演算）
 const DIGIT_CLASSES = [
@@ -259,6 +310,85 @@ ok(HissanSVG.render({ op: "add", a: 105, b: 20 }, { stage: "solution" }).indexOf
   "SVG は値の途中の 0 を描画する（105+20）");
 ok(HissanSVG.render({ op: "add", a: 456, b: 789 }, { stage: "solution" }).indexOf("NaN") < 0,
   "先頭0対応後も SVG に NaN がない");
+
+// --- 11. 答えは解説段階でのみ描画される（V2.9.2 修正の回帰防止）---
+console.log("\n[11] 答えの漏洩防止（答えを描くのは解説段階だけ）");
+
+// 4演算 × 3段階について、SVGに実際に描かれた「数字1文字」の並びまで検証する。
+// （モデルだけの検証では、render が答え行を描いてしまう回帰を見逃すため）
+const LEAK_CASES = [
+  { label: "38+25", spec: { op: "add", a: 38, b: 25 }, row: "answer", answer: "63" },
+  { label: "456+789", spec: { op: "add", a: 456, b: 789 }, row: "answer", answer: "1245" },
+  { label: "52-27", spec: { op: "sub", a: 52, b: 27 }, row: "answer", answer: "25" },
+  { label: "1000-1", spec: { op: "sub", a: 1000, b: 1 }, row: "answer", answer: "999" },
+  { label: "23x14", spec: { op: "mul", a: 23, b: 14 }, row: "answer", answer: "322" },
+  { label: "12x3456", spec: { op: "mul", a: 12, b: 3456 }, row: "answer", answer: "41472" },
+  { label: "142/7", spec: { op: "div", a: 142, b: 7, q: 20, rem: 2 }, row: "quotient", answer: "20" },
+  { label: "306/6", spec: { op: "div", a: 306, b: 6, q: 51, rem: 0 }, row: "quotient", answer: "51" }
+];
+
+LEAK_CASES.forEach(c => {
+  ok(drawnInRow(c.spec, "normal", c.row) === "",
+    `${c.label}: 出題時は答え(${c.answer})の数字を1つも描かない`);
+  ok(drawnInRow(c.spec, "solution", c.row) === c.answer,
+    `${c.label}: 解説では答え(${c.answer})を描く（検証が空回りしていない）`);
+});
+
+// ヒント段階: 加減乗は答えを1桁も描かない / わり算は先頭1桁だけ描く
+LEAK_CASES.filter(c => c.row === "answer").forEach(c => {
+  ok(drawnInRow(c.spec, "hint", "answer") === "", `${c.label}: ヒントでも答えの数字は描かない`);
+  ok(HissanSVG.resolve(c.spec, { stage: "hint" }).rows.find(r => r.type === "answer")
+    .digits.every(d => d === null), `${c.label}: ヒントの答え行は空マスのまま`);
+});
+LEAK_CASES.filter(c => c.row === "quotient").forEach(c => {
+  const head = c.answer.charAt(0);
+  ok(drawnInRow(c.spec, "hint", "quotient") === head, `${c.label}: ヒントの商は先頭1桁(${head})だけ`);
+});
+
+// 出題時は「書く場所」＝答えの桁数ぶんの空マスが用意されている（マス数は答えの桁数以上）
+LEAK_CASES.forEach(c => {
+  const row = HissanSVG.resolve(c.spec, { stage: "normal" }).rows.find(r => r.type === c.row);
+  ok(row.digits.length >= c.answer.length && row.digits.every(d => d === null),
+    `${c.label}: 出題時の${c.row}行は ${c.answer.length} 桁ぶんの空マス（すべて null）`);
+});
+
+// わり算のヒントは「先頭1桁＋残りは空マス」で、桁数（＝マスの並び）が解説と一致する
+ok(digitsText(HissanSVG.resolve(DIV142, { stage: "hint" }).rows[0]) === ".|2|_",
+  "ヒントの商は 20 ではなく「2 _」（答えそのものを出さない）");
+
+// 部分積が答えそのものになる乗算（1桁をかける）でも、ヒントに答えを描かないこと
+const MUL23x4 = { op: "mul", a: 23, b: 4 };
+ok(drawnInRow(MUL23x4, "hint", "answer") === "", "23×4: ヒントの答え行は空マス");
+ok(svgDigitCells(HissanSVG.render(MUL23x4, { stage: "hint" })).every(c => c.small || c.digit !== "9"),
+  "23×4: ヒントのSVGに部分積(=答え 92)を描かない");
+ok(drawnInRow(MUL23x4, "solution", "answer") === "92", "23×4: 解説では答え 92 を描く");
+
+// 対象7テンプレの実際の生成問題でも、出題時（hissanHTML）に答えの数字が描かれないこと
+// ／ヒントの部分積が答えの数字列そのものになっていないこと
+TARGETS.forEach(id => {
+  let leaked = 0;
+  let partLeak = 0;
+  for (let i = 0; i < 20; i++) {
+    const q = RuleBasedQuestionSource.generateQuestion(id, []);
+    const vars = q.variables || {};
+    const model = HissanSVG.resolve(q.hissanSpec, { vars: vars, stage: "normal" });
+    const rowType = (model.op === "div") ? "quotient" : "answer";
+    if (drawnInRow(q.hissanSpec, "normal", rowType, vars) !== "") leaked++;
+
+    // ヒント段階: 部分積の行が答えの数字列そのものになっていないか
+    // （かける数が1桁の乗算では部分積＝答えになり得る）
+    const hintModel = HissanSVG.resolve(q.hissanSpec, { vars: vars, stage: "hint" });
+    const hintAns = String(hintModel.answer);
+    const hintCells = svgDigitCells(HissanSVG.render(q.hissanSpec, { vars: vars, stage: "hint" }));
+    hintModel.rows.forEach((r, ri) => {
+      if (r.type !== "part") return;
+      const txt = hintCells.filter(c => !c.small && c.row === ri).map(c => c.digit).join("");
+      if (txt === hintAns) partLeak++;
+    });
+  }
+  ok(leaked === 0, `${id}: 出題時に答えの数字を描かない（20問 / 漏洩 ${leaked}）`);
+  ok(partLeak === 0, `${id}: ヒントの部分積に答えそのものを出さない（20問 / 違反 ${partLeak}）`);
+});
 
 // --- 結果 ---
 console.log(fail === 0 ? "\n[PASS] 筆算テスト 全て成功" : `\n[FAIL] ${fail} 件の失敗`);

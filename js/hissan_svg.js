@@ -1,5 +1,5 @@
 /**
- * HissanSVG — 筆算（ひっ算）の共通SVG部品 (V2.9.1)
+ * HissanSVG — 筆算（ひっ算）の共通SVG部品 (V2.9.2)
  *
  * 加減乗除の「筆算」を、教科書の書き方に従ってSVGで描画する共通部品。
  * 2〜4年生の 計算/筆算 単元で共通して使う。
@@ -17,6 +17,10 @@
  *        空きマスは BLANK(= "") で表し、digitCell が何も描画しないことで実現する）
  *  - 段階表示: 通常の出題時は「答えの行が空」の図、ヒント時は「繰り上がり/部分積まで出た」図、
  *    解説時は「答えが埋まった完成版」の図を出し分けられる
+ *  - V2.9.2: 答え（加減乗の答え行・除算の商とあまり）を描くのは「解説」段階だけに限定する。
+ *    通常の出題時は空マス（破線の枠）、ヒント時は途中まで（繰り上がり行／繰り下がり行／
+ *    部分積／商の先頭1桁）を出し、答えそのものは見せない。
+ *    この段階制御は resolve が一手に担い、render は model をそのまま描くだけにする。
  *  - 答えはSVGへ埋め込まず、正規化可能な値（answerText）として別途保持する
  *
  * 公開API:
@@ -115,6 +119,56 @@
     var out = new Array(Math.max(0, width)).fill(BLANK);
     for (var i = 0; i < digits.length && i < out.length; i++) {
       out[out.length - 1 - i] = digits[digits.length - 1 - i];
+    }
+    return out;
+  }
+
+  /**
+   * 答え行（加減乗の答え／除算の商）の桁配列を、段階に応じて作る。 (V2.9.2)
+   *
+   * - solution: 実際の答えの桁を返す（render が強調色で描く）
+   * - normal / hint: すべて null（空マス）を返す。digitCell は null を
+   *   「薄い破線の枠」として描くため、答えの数字は画面に出ない。
+   *
+   * 0 や BLANK ではなく null を使うのは、答え行は桁数が確定していて
+   * 「ここに書く」という場所を示す必要があるため（BLANK だと何も描かれない）。
+   *
+   * @param {number} value 答えの数値
+   * @param {number} w 表示桁数
+   * @param {string} stage "normal" | "hint" | "solution"
+   * @returns {Array<number|null>} 長さ w の桁配列
+   */
+  function answerRowDigits(value, w, stage) {
+    if (stage === "solution") return padDigits(answerDigits(value), w);
+    return new Array(Math.max(0, w)).fill(null);
+  }
+
+  /**
+   * 先頭（最上位）の1桁だけを残し、それより下の桁を空マス (null) にする。 (V2.9.2)
+   *
+   * わり算のヒントで商を全桁見せると、商＝答えそのものになってしまうため、
+   * 「どの位から商が立ち始めるか」だけを示す。先頭の BLANK（桁が無いマス）は
+   * そのまま残し、数字が現れた桁より下だけを空マスにする。
+   *
+   * 例: ["", 2, 0] → ["", 2, null]   （142 ÷ 7 の商 20 → 「2 _」）
+   *
+   * @param {Array<number|string>} digits 表示桁数にそろえた桁配列
+   * @returns {Array<number|null>} 同じ長さの桁配列
+   */
+  function firstDigitOnly(digits) {
+    var out = [];
+    var shown = false;
+    for (var i = 0; i < digits.length; i++) {
+      var d = digits[i];
+      var hasDigit = (d !== BLANK && d !== null && typeof d !== "undefined");
+      if (!shown && hasDigit) {
+        out.push(d);   // 最上位の1桁はそのまま見せる
+        shown = true;
+      } else if (shown) {
+        out.push(null); // 2桁目以降は空マス
+      } else {
+        out.push(d);    // 先頭の「桁が無いマス」はそのまま
+      }
     }
     return out;
   }
@@ -269,6 +323,17 @@
    * 描画（render）はこのモデルだけを見て出力するため、
    * 「通常表示 / ヒント表示 / 解説表示」の差分は opts.stage だけで決まる。
    *
+   * stage ごとの出し分け (V2.9.2):
+   *
+   * | 段階 | 加減乗 | 除算 |
+   * |------|--------|------|
+   * | normal   | 答え行は空マス / 繰り上がり・部分積なし | 商は空マス / あまり行なし |
+   * | hint     | 答え行は空マス / 繰り上がり・繰り下がり・部分積を表示 | 商は先頭1桁だけ / あまり行なし |
+   * | solution | 答え行に数値（強調色） | 商の全桁（強調色）＋ あまり行 |
+   *
+   * 答え（加減乗の答え・除算の商とあまり）を数値で描くのは solution だけ。
+   * これにより、出題時・ヒント時に答えそのものが画面へ漏れない。
+   *
    * @param {Object} spec { op, a, b, q/quotient, rem }
    * @param {Object} [opts] { vars, stage: "normal"|"hint"|"solution" }
    * @returns {{op:string, rows:Array, cols:number, width:number, height:number,
@@ -299,7 +364,8 @@
       rows.push({ type: "operand", digits: padDigits(answerDigits(a), w), sign: "" });
       rows.push({ type: "operand", digits: padDigits(answerDigits(b), w), sign: sign });
       rows.push({ type: "rule" });
-      rows.push({ type: "answer", digits: padDigits(answerDigits(answer), w), filled: stage === "solution" });
+      // V2.9.2: 答えの数字は解説表示でのみ描く（通常の出題時は空マス）
+      rows.push({ type: "answer", digits: answerRowDigits(answer, w, stage), filled: stage === "solution" });
 
     } else if (op === "sub") {
       answer = a - b;
@@ -310,7 +376,8 @@
       rows.push({ type: "operand", digits: padDigits(answerDigits(a), w), sign: "" });
       rows.push({ type: "operand", digits: padDigits(answerDigits(b), w), sign: sign });
       rows.push({ type: "rule" });
-      rows.push({ type: "answer", digits: padDigits(answerDigits(answer), w), filled: stage === "solution" });
+      // V2.9.2: 答えの数字は解説表示でのみ描く（通常の出題時は空マス）
+      rows.push({ type: "answer", digits: answerRowDigits(answer, w, stage), filled: stage === "solution" });
 
     } else if (op === "mul") {
       answer = a * b;
@@ -327,7 +394,12 @@
       rows.push({ type: "operand", digits: padDigits(answerDigits(b), w), sign: sign });
       rows.push({ type: "rule" });
       // 部分積（ヒント以上で表示。最終桁以外は桁送りする）
-      if (stage !== "normal") {
+      // V2.9.2: かける数が1桁で桁送りも無い場合、部分積は答えそのものになる
+      //   （例: 23 × 4 の 92、20 × 6 の 120）。そのまま出すとヒントで答えを見せてしまい、
+      //   解説でも同じ数字が2行に並ぶため、この場合は部分積行を作らない。
+      //   かける数が10の倍数（23 × 10 → 23 を1桁送り）の場合は中間の値なので表示する。
+      var showParts = (stage !== "normal") && !(parts.length === 1 && parts[0].shift === 0);
+      if (showParts) {
         parts.forEach(function (p, idx) {
           rows.push({
             type: "part",
@@ -342,7 +414,8 @@
         });
         rows.push({ type: "rule" });
       }
-      rows.push({ type: "answer", digits: padDigits(answerDigits(answer), w), filled: stage === "solution" });
+      // V2.9.2: 答えの数字は解説表示でのみ描く（通常・ヒントでは空マス）
+      rows.push({ type: "answer", digits: answerRowDigits(answer, w, stage), filled: stage === "solution" });
 
     } else {
       // div: 商は上に "_" 罫線つき。残りの行は 被除数 / ÷b / あまり
@@ -354,18 +427,28 @@
         : (b !== 0 ? a - b * Math.floor(a / b) : 0));
       answer = q;
       w = Math.max(digitCount(a), digitCount(q), digitCount(b));
-      // 商は答えそのものなので、通常表示では空のマス（罫線だけ）にする。
-      // ヒント以上で数字を出し、解説では強調して示す。
-      var showQuotient = (stage !== "normal");
+      // V2.9.2: 商は答えそのものなので、段階に応じて見せ方を変える。
+      //   通常   : 空マス（罫線だけ）
+      //   ヒント : 先頭（最上位）の1桁だけ。例) 142÷7 → 商「2 _」（残りは自分で求める）
+      //   解説   : 全桁を強調表示
+      var quotientDigits;
+      if (stage === "solution") {
+        quotientDigits = padDigits(answerDigits(q), w);
+      } else if (stage === "hint") {
+        quotientDigits = firstDigitOnly(padDigits(answerDigits(q), w));
+      } else {
+        quotientDigits = new Array(w).fill(null);
+      }
       rows.push({
         type: "quotient",
-        digits: showQuotient ? padDigits(answerDigits(q), w) : new Array(w).fill(null),
+        digits: quotientDigits,
         rule: true,
         filled: stage === "solution"
       });
       rows.push({ type: "dividend", digits: padDigits(answerDigits(a), w) });
       rows.push({ type: "divisor", digits: padDigits(answerDigits(b), w), sign: sign });
-      if (rem > 0 || stage !== "normal") {
+      // V2.9.2: あまりも答えの一部なので、数値を出すのは解説表示だけにする
+      if (stage === "solution") {
         rows.push({ type: "remainder", digits: [Math.abs(rem)], label: "あまり" });
       }
     }
