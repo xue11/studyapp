@@ -1,5 +1,5 @@
 /**
- * HissanSVG — 筆算（ひっ算）の共通SVG部品 (V2.9.0)
+ * HissanSVG — 筆算（ひっ算）の共通SVG部品 (V2.9.1)
  *
  * 加減乗除の「筆算」を、教科書の書き方に従ってSVGで描画する共通部品。
  * 2〜4年生の 計算/筆算 単元で共通して使う。
@@ -12,6 +12,9 @@
  *      div : 商（上に "_" 罫線つき）/ 被除数 / ÷b / あまり
  *  - 桁は均等割りのセルに配置し、桁送りは「右詰め」で表現する
  *      （例: 23 × 4 の部分積 92 は 1桁右にオフセットして描く）
+ *  - 行ごとに桁数が足りない場合は右詰めでそろえ、左側の余りは「空きマス」にする
+ *      （0 で埋めると 039 + 030 = 069 のように値と無関係な先頭 0 が表示されるため。
+ *        空きマスは BLANK(= "") で表し、digitCell が何も描画しないことで実現する）
  *  - 段階表示: 通常の出題時は「答えの行が空」の図、ヒント時は「繰り上がり/部分積まで出た」図、
  *    解説時は「答えが埋まった完成版」の図を出し分けられる
  *  - 答えはSVGへ埋め込まず、正規化可能な値（answerText）として別途保持する
@@ -58,6 +61,11 @@
 
   var FONT = "'Hiragino Sans','Noto Sans JP',sans-serif";
 
+  // 上位桁の「空きマス」（その桁に数字を書かない）を表す番兵値。
+  // 0 は実際に描画される桁なので、区別するために空文字を使う。
+  // digitCell は この値を受け取ると何も描画しない。
+  var BLANK = "";
+
   // ------------------------------------------------------------------
   // ユーティリティ
   // ------------------------------------------------------------------
@@ -90,10 +98,21 @@
   }
 
   /**
-   * 桁配列を指定桁数に揃える（右詰め・不足は左から 0 で埋める）
+   * 桁配列を指定桁数に揃える（右詰め）。
+   *
+   * 不足する左側は「数字のないマス」を表す BLANK (= "") で埋める。0 で埋めると
+   * 039 + 030 = 069 のように値と無関係な先頭 0 が表示されてしまうため、
+   * 「実際に書かれている桁」と「まだ書かれていない桁」を区別する。
+   * 描画側 (digitCell) は BLANK を何も描かないことで実現する。
+   *
+   * 例: padDigits([3, 9], 4) → ["", "", 3, 9]
+   *
+   * @param {Array<number>} digits 右詰めする桁配列
+   * @param {number} width 表示桁数
+   * @returns {Array<number|string>} 長さ width の配列（右端が1の位）
    */
   function padDigits(digits, width) {
-    var out = new Array(Math.max(0, width)).fill(0);
+    var out = new Array(Math.max(0, width)).fill(BLANK);
     for (var i = 0; i < digits.length && i < out.length; i++) {
       out[out.length - 1 - i] = digits[digits.length - 1 - i];
     }
@@ -229,6 +248,8 @@
    * addCarry / borrowDown は i=0 が1の位（右端）の配列を返す。
    * 右端が必ず1の位に一致するため、w より短い場合は左側を0で埋めるだけでよい。
    * （padDigits を使うと、繰り上がりで桁数が1つ増えた配列を丸めて位置がずれる）
+   * ここでの 0 は「マークを付けない桁」を意味し、描画側 (render) が
+   * 1 のマスだけを描くため 0 が画面に出ることはない。
    *
    * @param {Array<number>} arr i=0 が1の位の繰り上がり配列
    * @param {number} w 表示桁数
@@ -269,7 +290,9 @@
 
     if (op === "add") {
       answer = a + b;
-      w = Math.max(digitCount(a), digitCount(b), digitCount(answer), 3);
+      // 表示桁数は「実際に現れる最大の桁」で決める（最低桁数の底上げはしない）。
+      // 底上げすると 39 + 30 が 039 + 030 = 069 のように先頭 0 が並んでしまう。
+      w = Math.max(digitCount(a), digitCount(b), digitCount(answer));
       if (stage !== "normal") {
         rows.push({ type: "carry", digits: alignMarkRow(addCarry(a, b), w) });
       }
@@ -280,7 +303,7 @@
 
     } else if (op === "sub") {
       answer = a - b;
-      w = Math.max(digitCount(a), digitCount(b), digitCount(Math.abs(answer)), 3);
+      w = Math.max(digitCount(a), digitCount(b), digitCount(Math.abs(answer)));
       if (stage !== "normal") {
         rows.push({ type: "borrow", digits: alignMarkRow(borrowDown(a, b), w) });
       }
@@ -297,7 +320,9 @@
         var pw = digitCount(p.value) + p.shift;
         if (pw > maxPartW) maxPartW = pw;
       });
-      w = Math.max(digitCount(a), digitCount(b), digitCount(answer), maxPartW, 3);
+      // maxPartW は「部分積 + 桁送り」の最大幅。これを w に含めることで、
+      // w - p.shift が部分積の桁数以上になり、左の桁が切り落とされない。
+      w = Math.max(digitCount(a), digitCount(b), digitCount(answer), maxPartW);
       rows.push({ type: "operand", digits: padDigits(answerDigits(a), w), sign: "" });
       rows.push({ type: "operand", digits: padDigits(answerDigits(b), w), sign: sign });
       rows.push({ type: "rule" });
@@ -308,7 +333,11 @@
             type: "part",
             digits: padDigits(answerDigits(p.value), w - p.shift),
             shift: p.shift,
-            sign: (idx === parts.length - 1) ? "" : "+"
+            // 部分積は下位桁 (idx=0) から上位桁（最後の要素）へ並ぶ。
+            // 教科書では「後から書く行」＝最後の部分積の左に "+" を付けるため、
+            // 最上位桁の部分積（idx === parts.length - 1）だけに "+" を描く。
+            // 部分積が1つだけ（かける数が1桁）のときは "+" を付けない。
+            sign: (parts.length > 1 && idx === parts.length - 1) ? "+" : ""
           });
         });
         rows.push({ type: "rule" });
@@ -324,7 +353,7 @@
         ? spec.rem
         : (b !== 0 ? a - b * Math.floor(a / b) : 0));
       answer = q;
-      w = Math.max(digitCount(a), digitCount(q), digitCount(b), 3);
+      w = Math.max(digitCount(a), digitCount(q), digitCount(b));
       // 商は答えそのものなので、通常表示では空のマス（罫線だけ）にする。
       // ヒント以上で数字を出し、解説では強調して示す。
       var showQuotient = (stage !== "normal");
@@ -372,6 +401,9 @@
    * 1つの桁セルを描画（数字）
    */
   function digitCell(x, y, digit, filled) {
+    // "" = 上位桁の空き（その桁に数字が無い）。何も描かない。
+    //      0 と区別することで 034 のような先頭 0 を描画しない。
+    if (digit === BLANK) return "";
     // null = 空マス（÷の商など、未入力の桁）。薄い破線だけ引いて枠を示す。
     if (digit === null || typeof digit === "undefined") {
       return '<line x1="' + (x + 2) + '" y1="' + (y + LAYOUT.rowH - 7) +

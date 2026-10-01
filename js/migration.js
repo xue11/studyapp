@@ -27,7 +27,7 @@ function currentAppVersion() {
       if (cfg && cfg.APP_META && cfg.APP_META.appVersion) return cfg.APP_META.appVersion;
     }
   } catch (e) { /* not available */ }
-  return "V2.9.0";
+  return "V2.9.1";
 }
 
 function migrateAppState(data) {
