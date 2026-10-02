@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.3)
-const CACHE_NAME = 'arith-study-v2.9.3-hissan';
+// PWA Service Worker (V2.9.4)
+const CACHE_NAME = 'arith-study-v2.9.4-hissan';
 const urlsToCache = [
   '/',
   '/index.html',

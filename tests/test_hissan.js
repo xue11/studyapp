@@ -1,5 +1,5 @@
 /**
- * V2.9.3: 筆算支援 (HissanSVG) テスト
+ * V2.9.4: 筆算支援 (HissanSVG) テスト
  *
  * 検証する契約:
  *   1. 公開APIの存在
@@ -14,6 +14,8 @@
  *  10. 先頭桁に 0 を描画しない（V2.9.1 修正の回帰防止: 2〜5桁 × 4演算）
  *  11. 答えは解説段階でのみ描画される（V2.9.2 修正の回帰防止: SVG上の数字まで検証）
  *  12. 演算記号が左右に余白を保つ（V2.9.3 修正の回帰防止: + − × ÷ × 全段階）
+ *  13. 部分積が1つだけの乗算（23×10 / 45×20 / 45×30 等）では
+ *      ヒントで部分積を表示しない（V2.9.4 修正の回帰防止: 桁送り込みで答え漏洩）
  */
 const path = require("path");
 const R = path.join(__dirname, "..", "js");
@@ -69,7 +71,7 @@ function drawnInRow(spec, stage, rowType, vars) {
     .filter(c => !c.small && c.row === idx).map(c => c.digit).join("");
 }
 
-console.log("=== V2.9.3 筆算 (HissanSVG) テスト ===");
+console.log("=== V2.9.4 筆算 (HissanSVG) テスト ===");
 
 // --- 1. 公開API ---
 console.log("\n[1] 公開API");
@@ -137,8 +139,8 @@ ok(HissanSVG.resolve({ op: "mul", a: 23, b: 4 }, { stage: "solution" }).rows.fin
   "23×4 の答え 92 は答え行に描かれる");
 // かける数が10の倍数（部分積1つでも桁送りあり）は中間の値なので部分積を表示する
 const partRows10 = HissanSVG.resolve({ op: "mul", a: 23, b: 10 }, { stage: "hint" }).rows.filter(r => r.type === "part");
-ok(partRows10.length === 1 && partRows10[0].shift === 1,
-  "23×10 は桁送り付きの部分積を表示する（23 は答え 230 ではない）");
+ok(partRows10.length === 0,
+  "23×10: 部分積1件（23を1桁送り→表示値230=答え）はヒントで表示しない（V2.9.4）");
 
 // --- 5. 除算の答え漏洩防止 ---
 console.log("\n[5] 除算の商・あまりと答えの漏洩防止");
@@ -497,6 +499,39 @@ Object.keys(SIGN_SPECS).forEach(key => {
   const expectSigns = HissanSVG.resolve(spec, { stage: "hint" }).rows.filter(r => r.sign).map(r => r.sign);
   ok(got.join("") === expectSigns.join("") && expectSigns.length > 0,
     `${key}/hint: 記号の並びが [${expectSigns.join("")}] で一致`);
+});
+
+// --- 12b. V2.9.4: 部分積が1つだけの乗算はヒントで部分積を出さない ---
+// （23×10 → 23を1桁送りで描くと「23_」/ 45×20 → 90を1桁送りで描くと「90_」= 答えそのもの。
+//   桁送りを 0 として評価した表示値が答えと一致するため、ヒント漏洩になる）
+console.log("\n[12b] 部分積1件の乗算ヒント（答え漏洩の回帰防止）");
+// 桁送りを 0 として評価した部分積の表示値（例: 45×20 の部分積 90(shift1) → "900"）
+function partDisplayValue(row) {
+  const digits = (row.digits || []).filter(d => d !== "" && d !== null && typeof d !== "undefined").join("");
+  return digits + "0".repeat(row.shift || 0);
+}
+const SINGLE_PART_CASES = [
+  { a: 23, b: 10, answer: 230 },   // 部分積 23(shift1) → 表示値 "230" = 答え
+  { a: 45, b: 20, answer: 900 },   // 部分積 90(shift1) → 表示値 "900" = 答え
+  { a: 45, b: 30, answer: 1350 },  // 部分積 135(shift1) → 表示値 "1350" = 答え
+  { a: 23, b: 4, answer: 92 },     // 部分積 92(shift0) → 表示値 "92" = 答え（V2.9.2 の既存ケース）
+  { a: 100, b: 10, answer: 1000 }, // 部分積 100(shift1) → 表示値 "1000" = 答え
+  { a: 23, b: 14, answer: 322 },   // 部分積2件（92 / 23）→ 中間の値なので表示してよい対照ケース
+];
+SINGLE_PART_CASES.forEach(c => {
+  const m = HissanSVG.resolve({ op: "mul", a: c.a, b: c.b }, { stage: "hint" });
+  const parts = m.rows.filter(r => r.type === "part");
+  if (c.b === 14) {
+    ok(parts.length === 2, `${c.a}×${c.b}: 部分積は2件のまま表示する (n=${parts.length})`);
+    return;
+  }
+  ok(parts.length === 0, `${c.a}×${c.b}: ヒントで部分積を表示しない（表示値が答え ${c.answer} になるため） (n=${parts.length})`);
+  // 念のため: 桁送り込みの表示値が答えと一致すること（= 出していたら漏洩だったこと）を確認
+  const rawParts = HissanSVG.mulParts(c.a, c.b);
+  ok(rawParts.length === 1 && String(c.answer) === partDisplayValue({
+    digits: HissanSVG.answerDigits(rawParts[0].value),
+    shift: rawParts[0].shift
+  }), `${c.a}×${c.b}: 部分積1件の表示値が答え ${c.answer} と一致する（漏洩条件の裏付け）`);
 });
 
 // --- 結果 ---

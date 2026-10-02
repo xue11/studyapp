@@ -149,7 +149,7 @@ const res = analyze(css);
   for (const r of res.rules) {
     if (r.atRule) continue;                            // at-rule は本体がルール列
     if (r.depth > 0) continue;                         // @media 内は宣言のみ
-    const body = r.body;
+    const body = r.body.replace(/\/\*[\s\S]*?\*\//g, " ");
     if (body.indexOf("{") >= 0) { bad.push({ selector: r.selector, line: r.line, reason: "nested-brace" }); continue; }
     for (const chunk of body.split(";")) {
       const t = chunk.trim();
