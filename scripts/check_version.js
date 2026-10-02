@@ -1,12 +1,19 @@
 /**
- * バージョン整合チェックスクリプト (V2.6.12)
- * リリース時にバージョン表記のズレを検出する。
+ * バージョン整合チェックスクリプト (V2.9.5)
+ *
+ * リリース時に「バージョン表記のズレ」と「dist/ の未更新」を検出する。
  * 実行方法: npm run check:version  (または node scripts/check_version.js)
  * 不一致がある場合は内容を表示して終了コード 1 で終了する。
+ *
+ * 検証内容:
+ *   1. 各ファイルのバージョン表記が js/config.js の APP_META と一致するか
+ *   2. dist/ の内容がソースと一致しているか（古いままデプロイされる事故の防止）
+ *   3. dist/ に配信不要なファイル（テスト用ページ・設計書など）が混ざっていないか
  */
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -98,7 +105,60 @@ if (schemaJsVersion !== null) {
 const testHtmlSchema = matchOrNull(testHtmlSrc, /APP_META\.schemaVersion\s*!==\s*"([\d.]+)"/);
 expect("test_phase1.html schemaVersion", testHtmlSchema, schemaVersion, "test_phase1.html");
 
-// --- 3. 結果出力 ---
+// --- 3. dist/ とソースの一致確認 (V2.9.5 追加) ---
+// dist/ は Firebase Hosting が配信する実体。ここが古いままデプロイされると
+// 「テストを通したコード」ではなく「古いコード」が利用者に届く。
+// (V2.9.4 で dist/js/hissan_svg.js が V2.9.3 のまま配信されていた事故の再発防止)
+const DIST_DIR = path.join(ROOT, "dist");
+const sha = (buf) => crypto.createHash("sha256").update(buf).digest("hex").slice(0, 16);
+
+function listRelativeFiles(dir, base) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const abs = path.join(dir, entry.name);
+    const rel = path.posix.join(base, entry.name);
+    if (entry.isDirectory()) out.push(...listRelativeFiles(abs, rel));
+    else out.push(rel);
+  }
+  return out;
+}
+
+if (!fs.existsSync(DIST_DIR)) {
+  console.log("  -- dist/ が未ビルドのため、dist 整合チェックはスキップ（npm run build で生成）");
+} else {
+  const distFiles = listRelativeFiles(DIST_DIR, "");
+  let checked = 0;
+  const mismatches = [];
+  const notSource = [];
+
+  for (const rel of distFiles) {
+    const srcAbs = path.join(ROOT, rel);
+    const distAbs = path.join(DIST_DIR, rel);
+    if (!fs.existsSync(srcAbs)) {
+      notSource.push(rel);
+      continue;
+    }
+    checked++;
+    if (sha(fs.readFileSync(srcAbs)) !== sha(fs.readFileSync(distAbs))) mismatches.push(rel);
+  }
+
+  if (mismatches.length > 0) {
+    errors.push(`  - dist/ がソースと一致しません（npm run build で再生成してください）: ${mismatches.join(", ")}`);
+  } else {
+    report.push(`  OK dist/ とソースの内容一致: ${checked} ファイル`);
+  }
+  if (notSource.length > 0) {
+    errors.push(`  - dist/ にソースへ存在しないファイルがあります: ${notSource.join(", ")}`);
+  }
+
+  // 配信不要なものが dist に混ざっていないか（テスト用ページ・設計書など）
+  const leak = distFiles.filter((rel) => /(^|\/)(test_.*\.html|app_overview\.md|memo\.txt|package(-lock)?\.json)$/.test(rel));
+  if (leak.length > 0) {
+    errors.push(`  - dist/ に配信不要なファイルが含まれています: ${leak.join(", ")}`);
+  }
+}
+
+// --- 4. 結果出力 ---
 console.log(report.join("\n"));
 if (errors.length > 0) {
   console.error(`\n[FAIL] バージョン不一致 ${errors.length} 件:`);

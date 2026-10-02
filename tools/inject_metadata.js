@@ -1,5 +1,20 @@
+/**
+ * 【手動実行専用 / tools】word_problem テンプレへ story メタ情報を注入する過去の一括修正スクリプト。
+ *
+ * 注意: このスクリプトの正規表現は understandingCheck のネストを跨げないため、
+ *       誤った位置にメタ情報を挿入する既知の問題がある（使用非推奨）。
+ * 誤実行によるソース汚染を防ぐため、--apply を明示しない限り何もせず終了する。
+ */
+if (!process.argv.includes('--apply')) {
+  console.error('[中止] このスクリプトは js/templates_math.js を書き換えます（既知の不具合あり・非推奨）。');
+  console.error('       実行する場合は  node tools/inject_metadata.js --apply  と明示してください。');
+  process.exit(1);
+}
+
 const fs = require('fs');
-let content = fs.readFileSync('js/templates_math.js', 'utf8');
+const path = require('path');
+const TARGET = path.join(__dirname, '..', 'js', 'templates_math.js');
+let content = fs.readFileSync(TARGET, 'utf8');
 
 // We will use a regex to find each word problem and append story metadata.
 const regex = /(templateId:\s*"([^"]+)",[\s\S]*?problemType:\s*"word_problem"[\s\S]*?understandingCheck:\s*\{[\s\S]*?\}\s*\n\s*\})/g;
@@ -31,6 +46,6 @@ content = content.replace(regex, (match, p1, id) => {
   return match.replace(/\}\s*$/, metadata + "\n  }");
 });
 
-fs.writeFileSync('js/templates_math.js', content, 'utf8');
+fs.writeFileSync(TARGET, content, 'utf8');
 console.log("Updated templates_math.js");
 

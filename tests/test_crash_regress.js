@@ -2,13 +2,13 @@
 // 修正後でも t.templateId で落ちないこと、また欠落unitはスキップされることを確認する
 globalThis.StorageManager = class { constructor() {} };
 
-const { UnitRegistry, TemplateRegistry } = require("./js/registries.js");
-const { UnitSelector } = require("./js/unit_selector.js");
-const { AppUI } = require("./js/ui.js");
-require("./js/templates_math.js");
-require("./js/templates_units_p1.js");
-require("./js/templates_units_p2.js");
-const { RuleBasedQuestionSource } = require("./js/question_source.js");
+const { UnitRegistry, TemplateRegistry } = require("../js/registries.js");
+const { UnitSelector } = require("../js/unit_selector.js");
+const { AppUI } = require("../js/ui.js");
+require("../js/templates_math.js");
+require("../js/templates_units_p1.js");
+require("../js/templates_units_p2.js");
+const { RuleBasedQuestionSource } = require("../js/question_source.js");
 
 const assert = require("assert");
 

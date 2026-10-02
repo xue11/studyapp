@@ -5,3 +5,6 @@ dist/
 node_modules/
 .DS_Store
 Thumbs.db
+
+# 開発中に手動で書いたメモ（issue スクラッチ）。リポジトリには含めない。
+memo.txt

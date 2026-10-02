@@ -1,6 +1,9 @@
 {
   "scripts": {
-    "check:version": "node scripts/check_version.js"
+    "test": "node scripts/run_tests.js",
+    "build": "node scripts/build_dist.js",
+    "check:version": "node scripts/check_version.js",
+    "verify": "node scripts/run_tests.js && node scripts/build_dist.js && node scripts/check_version.js"
   },
   "dependencies": {
     "firebase-tools": "^15.29.0"
