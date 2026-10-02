@@ -61,14 +61,19 @@ function testCommutativeDuplicateDetection() {
   assert.strictEqual(resNew.valid, true, "a=3,b=1 must NOT be duplicate");
 
   // 可換ペアなし(減算)では {a:5,b:2} と {a:2,b:5} は重複扱いされない
-  const subPrev = [{ templateId: "g1_basic_sub_01", variables: { a: 5, b: 2, answer: 3 } }];
+  //
+  // V2.9.5: 従来の fixture は answer "-3"（2-5）を使っていたが、
+  // 数値テンキーでは負の答えは入力不能のため Validator が ANSWER_ERROR で弾くようになり、
+  // 重複判定の検証に到達できなくなった。
+  // 同じ論点を保つため、正の答え（5-2=3）で重複判定だけを検証する。
+  const subPrev = [{ templateId: "g1_basic_sub_01", variables: { a: 2, b: 5, answer: 3 } }];
   const subInst = {
     questionInstanceId: "q_test_sub_001",
     templateId: "g1_basic_sub_01",
     grade: 1, difficultyLevel: 1, unitId: "sub_1digit_no_borrow", conceptId: "sub_basic",
     problemType: "calculation", answerType: "number_input",
-    variables: { a: 2, b: 5, answer: -3 },
-    questionText: "2 - 5 = ?", answer: "-3", hintSteps: ["h1", "h2"],
+    variables: { a: 5, b: 2, answer: 3 },
+    questionText: "5 - 2 = ?", answer: "3", hintSteps: ["h1", "h2"],
     explanation: "e", commutativePairs: null
   };
   const resSub = QuestionValidator.validate(subInst, subPrev);

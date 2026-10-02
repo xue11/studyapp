@@ -102,6 +102,19 @@ if (schemaJsVersion !== null) {
   console.log("  -- js/schema.js に schemaVersion 定数がないためスキップ");
 }
 
+// V2.9.5 追加: js/schema.js の appMeta.appVersion も単一情報源と一致させる。
+// 実際は V2.7.0 のまま陳腐化していた（check:version が appVersion を見ていなかったため）。
+// appMeta は `appMeta = {` または `appMeta: {` のどちらの書き方でも現れる。
+const schemaJsAppVersion = matchOrNull(
+  schemaJsSrc,
+  /appMeta\s*[:=]\s*\{[\s\S]*?appVersion:\s*"(V[\d.]+)"/
+);
+if (schemaJsAppVersion !== null) {
+  expect("js/schema.js appMeta.appVersion", schemaJsAppVersion, appVersion, "js/schema.js");
+} else {
+  console.log("  -- js/schema.js に appMeta.appVersion がないためスキップ");
+}
+
 const testHtmlSchema = matchOrNull(testHtmlSrc, /APP_META\.schemaVersion\s*!==\s*"([\d.]+)"/);
 expect("test_phase1.html schemaVersion", testHtmlSchema, schemaVersion, "test_phase1.html");
 

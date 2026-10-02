@@ -117,6 +117,27 @@ class QuestionValidator {
       });
     }
 
+    // 4-1. V2.9.5: 数値入力問題の答えは 0 以上であること
+    //
+    // 回答は画面上の数字テンキー（「−」キーなし）で行うため、負の答えは入力不可能で
+    // 必ず3回不正解になり、復習キューと弱点単元のデータが汚染される。
+    // テンプレ側の generate 制約漏れを自動検出するため、Validator で体系的に弾く。
+    //
+    // 入力がテンキーになる回答形式:
+    //   number_input  … 常にテンキー
+    //   figure_display … 図を表示するが回答は数値（テンキーへフォールスルー）
+    if (questionInstance.answerType === "number_input" ||
+        questionInstance.answerType === "figure_display") {
+      const numericAnswer = Number(questionInstance.answer);
+      if (!Number.isNaN(numericAnswer) && numericAnswer < 0) {
+        errors.push({
+          code: VALIDATION_ERROR_CODES.ANSWER_ERROR,
+          message: `Answer must be non-negative for numeric keypad input (got ${questionInstance.answer}).`,
+          variables: vars
+        });
+      }
+    }
+
     // 5. ヒントチェック（2段階以上、答えの直接表示回避）
     if (!Array.isArray(questionInstance.hintSteps) || questionInstance.hintSteps.length < 2) {
       errors.push({

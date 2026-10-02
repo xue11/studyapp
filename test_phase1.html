@@ -106,7 +106,7 @@
 
       try {
         // Test 1: Config
-        if (APP_META.schemaVersion !== "2.5.6" || APP_META.appVersion !== "V2.9.4") throw new Error("Config version mismatch");
+        if (APP_META.schemaVersion !== "2.5.6" || APP_META.appVersion !== "V2.9.5") throw new Error("Config version mismatch");
         logs.push("✅ Config & Meta: appVersion = " + APP_META.appVersion + ", schemaVersion = " + APP_META.schemaVersion);
 
         // Test 2: Units
@@ -124,11 +124,36 @@
         if (!validRes.valid) throw new Error(validRes.error);
         logs.push("✅ Schema & Validator: 初期状態の整合性検証に合格");
 
-        // Test 4: Storage
+        // Test 4: Storage（保存 → 読み込み → 保存前データの復元）
+        //
+        // V2.9.5: 「保存」の動作も確認したいが、本番と同じ localStorage キー
+        // (math_study_app_v2510_state) を共有しているため、テスト書き込みで
+        // 学習データを消してはいけない。保存前の状態を控えておき、最後に必ず復元する。
         const storage = new StorageManager();
+        const backup = storage.loadState();
+        const backupState = backup && backup.state ? backup.state : null;
+        const backupRaw = (function () {
+          try { return localStorage.getItem("math_study_app_v2510_state"); } catch (e) { return null; }
+        })();
+
+        const saveRes = storage.saveState(createInitialAppState());
+        if (!saveRes.success) throw new Error(saveRes.error);
         const loadRes = storage.loadState();
         if (!loadRes.success) throw new Error(loadRes.error);
-        logs.push("✅ StorageManager: localStorage への安全な保存・読み込みに成功");
+
+        // 保存前の状態へ必ず戻す
+        try {
+          if (backupRaw !== null) {
+            localStorage.setItem("math_study_app_v2510_state", backupRaw);
+          } else {
+            localStorage.removeItem("math_study_app_v2510_state");
+          }
+        } catch (e) {
+          if (backupState) storage.saveState(backupState);
+          throw new Error("元データへ戻せませんでした: " + e.message);
+        }
+
+        logs.push("✅ StorageManager: 保存 → 読み込み → 元データ復元 に成功");
 
         resultsDiv.innerHTML = logs.map(l => `<div style="margin: 4px 0; color: #16a34a; font-weight: 500;">${l}</div>`).join("");
       } catch (e) {
@@ -173,11 +198,15 @@
     }
 
     // 4. Profile サンプル
+    //
+    // V2.9.5 修正: 従来はここで本番用の localStorage に初期状態をそのまま書き込んでいたため、
+    // この確認ページを開くだけで学習履歴・ポイント・バッジ・復習キューが全消去されていた
+    // （StorageManager のキーは本番と同じ math_study_app_v2510_state）。
+    // この関数の目的は「プロファイル構造のサンプルを画面表示するだけ」なので、
+    // 永続化は一切行わない。
     function regenerateProfile() {
       const state = createInitialAppState();
       const p = state.profiles[0];
-      const storage = new StorageManager();
-      storage.saveState(state);
       document.getElementById("profile-json").textContent = JSON.stringify(p, null, 2);
     }
 

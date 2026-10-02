@@ -1820,11 +1820,19 @@ const MATH_TEMPLATES = [
       a_dec: { type: "integer", range: [1, 9] },
       b_int: { type: "integer", range: [1, 4] },
       b_dec: { type: "integer", range: [1, 9] },
-      answer: { formula: "Math.round((a_int + a_dec * 0.1 - b_int - b_dec * 0.1) * 10) / 10" },
+      // V2.9.5 修正: 「残り」を求める問題なのに a < b の組み合わせでは答えが負になり
+      // （例: ジュースが 2.3L あります。4.3L 飲みました。→ -2.0）。
+      // 回答は数値テンキー入力で「−」キーが無いため負の答えは入力不可能で、
+      // 必ず3回不正解 → 復習キュー汚染・弱点単元化につながる。
+      // constraints により a > b が保証される（= 答えが 0 より大きい）。
+      answer: {
+        formula: "Math.round((a_int + a_dec * 0.1 - b_int - b_dec * 0.1) * 10) / 10",
+        constraints: ["answer > 0"]
+      },
       a: { formula: "a_int + a_dec * 0.1" },
       b: { formula: "b_int + b_dec * 0.1" }
     },
-    answer: { expression: "answer", normalization: "integer" },
+    answer: { expression: "answer", normalization: "decimal" },
     hintSteps: ["{a} - {b} を 計算しよう。", "小数点の 位置に 気をつけよう。"],
     explanationTemplate: "{a} - {b} ＝ {answer} だね。",
     understandingCheck: {
