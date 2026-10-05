@@ -49,6 +49,40 @@ class AppUI {
     return this.state.profiles.find(p => p.identity.id === this.state.activeProfileId) || this.state.profiles[0];
   }
 
+  /**
+   * 今日の日付キー (YYYY-MM-DD, JST基準) を返す (V2.9.7 P1-2)
+   * UTC基準の toISOString() は JST 0〜9時に「昨日」扱いになるため使用しない。
+   */
+  _todayKey() {
+    if (typeof DateUtils !== "undefined" && DateUtils) return DateUtils.localDateKey();
+    return new Date().toISOString().split("T")[0];
+  }
+
+  /**
+   * 状態を保存し、失敗時はユーザーへ通知する (V2.9.7 P1-1)
+   * 従来 this.storage.saveState(this.state) の戻り値を無視していた7箇所を
+   * このヘルパー経由に統一し、Quota超過・プライベートモード等の保存失敗を
+   * ユーザーが気づけるようにする。
+   * @returns {boolean} 保存に成功したら true
+   */
+  _saveOrAlert() {
+    let res = null;
+    try {
+      res = this.storage.saveState(this.state);
+    } catch (err) {
+      res = { success: false, error: (err && err.message) || "Save error" };
+    }
+    if (!res || !res.success) {
+      if (typeof Sound !== "undefined" && Sound && Sound.playIncorrect) Sound.playIncorrect();
+      const detail = (res && res.error) ? ("<br><small>" + res.error + "</small>") : "";
+      this._showModal("ほぞんに しっぱいしました", "データを ほぞんできませんでした。<br>ブラウザの容量を 確認してね。" + detail, [
+        { text: "もどる", action: "app.closeModal()" }
+      ]);
+      return false;
+    }
+    return true;
+  }
+
   navigate(screenName, params = {}) {
     this.currentScreen = screenName;
     this.currentInput = "";
@@ -155,7 +189,7 @@ class AppUI {
   _renderHomeScreen(profile) {
     const currentGrade = profile.skill.subject.currentGrade;
     const gp = profile.skill.subject.gradeProgress[`grade${currentGrade}`];
-    const today = new Date().toISOString().split("T")[0];
+    const today = this._todayKey();
 
     // 復習通知の確認 (控えめな表示: 第4.3章)
     const activeDueReviews = (profile.reviewQueue || []).filter(r => 
@@ -204,7 +238,7 @@ class AppUI {
         </div>
         ${(() => {
           const goal = (typeof APP_CONFIG !== "undefined" && APP_CONFIG.common && APP_CONFIG.common.dailyGoal) || 5;
-          const done = Math.min(goal, profile.history?.filter(h => (h.completedAt || "").slice(0, 10) === new Date().toISOString().split("T")[0]).length || 0);
+          const done = Math.min(goal, profile.history?.filter(h => (h.completedAt || "").slice(0, 10) === this._todayKey()).length || 0);
           const pct = goal > 0 ? Math.round((done / goal) * 100) : 0;
           return `
           <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-top:6px;">
@@ -283,7 +317,7 @@ class AppUI {
     if (!this.state.profiles) this.state.profiles = [];
     this.state.profiles.push(newProf);
     this.state.activeProfileId = newProf.identity.id;
-    this.storage.saveState(this.state);
+    if (!this._saveOrAlert()) return;
     Sound.playFanfare();
     this.navigate("home");
   }
@@ -1318,6 +1352,16 @@ class AppUI {
         storageManager: this.storage
       });
 
+      // V2.9.7 (P1-1): 保存失敗時は結果画面へ遷移せず、再試行を促す
+      if (!evalRes.success) {
+        Sound.playIncorrect();
+        this._showModal("ほぞんに しっぱいしました", "テストの けっかを ほぞんできませんでした。<br>もういちど「回答を確定」を おしてね。<br>何度も失敗するときは ブラウザの容量を 確認してね。", [
+          { text: "もどる", action: "app.closeModal()" }
+        ]);
+        this.session.currentIndex = this.session.totalCount - 1;
+        return;
+      }
+
       this.state = evalRes.nextState;
       if (evalRes.testRecord.passed) {
         Sound.playFanfare();
@@ -1627,7 +1671,7 @@ class AppUI {
     if (!profile || !el) return;
     const nick = (el.value || "").trim().slice(0, 12);
     profile.identity.nickname = nick;
-    this.storage.saveState(this.state);
+    if (!this._saveOrAlert()) return;
     Sound.playClick();
     alert(nick ? `ニックネームを「${nick}」に変更しました！` : "ニックネームをやめたよ。デフォルトのなまえに戻ります。");
     this.navigate("settings");
@@ -1644,7 +1688,7 @@ class AppUI {
       profile.skill.subject.gradeProgress[gKey] = createGradeProgress(newGrade);
     }
 
-    this.storage.saveState(this.state);
+    if (!this._saveOrAlert()) return;
     Sound.playClick();
     alert(`学年を「小学${newGrade}年生」に変更しました！`);
     this.navigate("home");
@@ -1656,7 +1700,7 @@ class AppUI {
     if (!profile) return;
     if (!profile.settings) profile.settings = {};
     profile.settings.figureEnabled = !!enabled;
-    this.storage.saveState(this.state);
+    if (!this._saveOrAlert()) return;
     Sound.playClick();
     this.navigate("settings");
   }
@@ -1667,7 +1711,7 @@ class AppUI {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `math_app_backup_${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `math_app_backup_${this._todayKey()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -1721,7 +1765,7 @@ class AppUI {
 
   selectProfile(id) {
     this.state.activeProfileId = id;
-    this.storage.saveState(this.state);
+    if (!this._saveOrAlert()) return;
     Sound.playClick();
     this.navigate("home");
   }
@@ -1828,7 +1872,7 @@ class AppUI {
       if (pin === this.parentState.setupPin && ParentDashboard.validatePin(pin)) {
         if (!profile.settings) profile.settings = {};
         profile.settings.parentPin = pin;
-        this.storage.saveState(this.state);
+        if (!this._saveOrAlert()) return;
         Sound.playFanfare();
         this.parentState.step = "dashboard";
         this.currentInput = "";
@@ -1863,7 +1907,7 @@ class AppUI {
   confirmResetParentPin() {
     const profile = this.getActiveProfile();
     if (profile.settings) profile.settings.parentPin = "";
-    this.storage.saveState(this.state);
+    if (!this._saveOrAlert()) return;
     this.closeModal();
     this.parentState = { step: "setup1", setupPin: "" };
     this.currentInput = "";

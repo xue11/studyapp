@@ -17,6 +17,35 @@ const getMigrateAppState = () => typeof migrateAppState !== "undefined" ? migrat
 
 const STORAGE_KEY = "math_study_app_v2510_state";
 
+// V2.9.7 (P1-3): profile.history の上限キャップ (Quota超過防止)
+// config.common.historyLimit を優先し、読めない環境では1000件固定。
+const _getHistoryLimit = () => {
+  try {
+    if (typeof APP_CONFIG !== "undefined" && APP_CONFIG.common && APP_CONFIG.common.historyLimit) {
+      return APP_CONFIG.common.historyLimit;
+    }
+  } catch (e) { /* ignore */ }
+  return 1000;
+};
+
+/**
+ * 全プロフィールの history を上限件数に収める (古い順に破棄)
+ * @param {Object} state
+ * @returns {Object} state (破棄が発生した場合のみ書き換え)
+ */
+function capProfileHistory(state) {
+  try {
+    const limit = _getHistoryLimit();
+    const profiles = state && Array.isArray(state.profiles) ? state.profiles : [];
+    for (const p of profiles) {
+      if (p && Array.isArray(p.history) && p.history.length > limit) {
+        p.history.splice(0, p.history.length - limit);
+      }
+    }
+  } catch (e) { /* キャップ失敗でロード自体は止めない */ }
+  return state;
+}
+
 class StorageManager {
   constructor(storage = null) {
     // ブラウザの localStorage またはモック/カスタムストレージ
@@ -73,6 +102,9 @@ class StorageManager {
         return { success: false, state: fallback, error: validation.error };
       }
 
+      // V2.9.7 (P1-3): 読み込み時に history 上限キャップを適用
+      capProfileHistory(parsed);
+
       return { success: true, state: parsed, isNew: false };
     } catch (err) {
       console.error("StorageManager.loadState parse error. Returning initial state.", err);
@@ -119,6 +151,9 @@ class StorageManager {
       if (!validation.valid) {
         return { success: false, error: `Validation failed: ${validation.error}` };
       }
+
+      // V2.9.7 (P1-3): インポート元の history も上限キャップ
+      capProfileHistory(parsed);
 
       // 6. 保存
       const saveRes = this.saveState(parsed);

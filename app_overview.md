@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.6  
+**バージョン**: V2.9.7  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -581,6 +581,45 @@ Storage テストも「保存 → 読み込み → 保存前の生データを�
 **確認済みの残課題**（P3・機能は壊れていないが文言が不整合）:
 設問文が「どれ？」と聞いているのに選択肢が出ないテンプレが5件ある（例: `g2_adv_kuku_fill_01`）。
 numpad で数値を入力すれば正解になるため解答不能ではない。文言修正は後回しとする。
+
+### 10.14 V2.9.7 保存失敗の通知・JST日付統一・履歴上限（外部レビュー P1 対応）
+
+別モデル（Gemini）のコードレビューで挙がった P1 指摘 3 件をまとめて修正した。
+
+**P1-1: `saveState()` の戻り値が無視されていた**
+`storage.saveState()` は Quota 超過・プライベートモード等で `{ success: false }` を返すが、
+`ui.js` の 7 箇所（オンボーディング完了・ニックネーム保存・学年変更・図形問題 ON/OFF・
+プロフィール選択・PIN 設定・PIN リセット）が戻り値を無視しており、保存失敗を
+ユーザーが知らずにデータ損失する可能性があった。
+
+- 修正: `ui.js` に `_saveOrAlert()` ヘルパーを追加し、7 箇所をこのヘルパー経由に統一。
+  失敗時は誤操作音＋モーダルで「ほぞんに しっぱいしました」と通知（`session_coordinator.js`
+  の `saveRes.success` チェックと同じパターン）。
+- `test_engine.js:283` と `ui.js` の `submitTestAnswer()` 完了分岐は前回コミットで対応済み。
+
+**P1-2: 日付キーが UTC 基準だった（`toISOString().split("T")[0]`）**
+JST 0〜9 時に学習すると UTC では「昨日」になり、連続学習日数（dailyStreak）が
+リセットされる・今日の目標カウントが合わない等の不具合が起きていた。
+
+- 修正: 新規 `js/date_utils.js`（`DateUtils.localDateKey / addDays / diffDays / datePartOf`、
+  JST 固定・Node/ブラウザ両対応）を作成し、`index.html` で最上流に読込登録、
+  `sw.js` の `urlsToCache` に追加。
+- 置換対象: `learning_engine` / `session_coordinator` / `test_engine` / `review_engine` /
+  `unit_selector` / `parent_dashboard` / `ui.js` の当日判定・日付加算を全て
+  `DateUtils.localDateKey()` / `addDays()` に統一（環境が読めない場合のみ従来 UTC にフォールバック）。
+
+**P1-3: `profile.history` が無制限で増加（放置で P0 昇格リスク）**
+1問完了ごとに履歴 1 レコードが積み上がるだけで切り詰めがなく、長期利用で
+localStorage の QuotaExceeded → 保存失敗 → 学習データ損失に直結していた。
+
+- 修正: `config.common.historyLimit = 1000` を新設。
+  - `session_coordinator.js`: push 後に上限超過分を古い順に破棄
+  - `storage.js`: `loadState()` と `importStateJSON()` の両方で `capProfileHistory()` を適用
+    （既存ユーザーの過大データもロード時に丸める）
+
+バージョン表記は `config.js` / `migration.js` / `schema.js` / `sw.js`（CACHE_NAME =
+`arith-study-v2.9.7-jst-history-cap`）/ `index.html` title / `test_phase1.js` /
+`test_phase1.html` / 本ドキュメントを V2.9.7 に統一。
 
 
 ### 10.14 今後の予定

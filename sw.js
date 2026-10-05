@@ -1,9 +1,10 @@
-// PWA Service Worker (V2.9.6)
-const CACHE_NAME = 'arith-study-v2.9.6-clock-reset';
+// PWA Service Worker (V2.9.7)
+const CACHE_NAME = 'arith-study-v2.9.7-jst-history-cap';
 const urlsToCache = [
   '/',
   '/index.html',
   '/css/app.css',
+  '/js/date_utils.js',
   '/js/config.js',
   '/js/registries.js',
   '/js/diversity_selector.js',

@@ -6,7 +6,13 @@
  * - Coverage Phase (< 14日): ローテーションバッグを優先
  * - Weakness Phase (>= 14日): 40% ローテーション + 60% 弱点重み付け
  * - 未学習unit (attempts = 0) は accuracy = null のため弱点重み付け対象外
+ * - V2.9.7 (P1-2): 日付キーは DateUtils.localDateKey() (JST基準) に統一
  */
+
+let DateUtilsForUS = typeof window !== "undefined" ? window.DateUtils : null;
+if (typeof require !== "undefined") {
+  try { DateUtilsForUS = require("./date_utils.js").DateUtils; } catch (e) {}
+}
 
 class UnitSelector {
   /**
@@ -17,7 +23,8 @@ class UnitSelector {
    * @returns {{ type: "review"|"normal", unitId: string, reviewItem?: Object, phase: string }}
    */
   static selectNextUnit(profile, config = null, localDateString = null) {
-    const today = localDateString || new Date().toISOString().split("T")[0];
+    const today = (localDateString ||
+      (DateUtilsForUS ? DateUtilsForUS.localDateKey() : new Date().toISOString().split("T")[0]));
     const currentGrade = profile.skill.subject.currentGrade;
     const gradeKey = `grade${currentGrade}`;
     const gradeProgress = profile.skill.subject.gradeProgress[gradeKey];

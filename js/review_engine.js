@@ -11,6 +11,21 @@
 
 class ReviewEngine {
   /**
+   * V2.9.7 (P1-2): 日付キーは DateUtils.localDateKey() (JST基準) に統一。
+   * @param {string} [localDateStringOverride] テスト等で上書きする日付キー
+   */
+  static _todayKey(localDateStringOverride = null) {
+    if (localDateStringOverride) return localDateStringOverride;
+    try {
+      if (typeof window !== "undefined" && window.DateUtils) return window.DateUtils.localDateKey();
+    } catch (e) { /* ignore */ }
+    try {
+      if (typeof require !== "undefined") return require("./date_utils.js").DateUtils.localDateKey();
+    } catch (e) { /* ignore */ }
+    return new Date().toISOString().split("T")[0];
+  }
+
+  /**
    * 復習キューに対象unitを登録または再活性化する
    * @param {Object} profile 
    * @param {Object} itemParams { subjectId, grade, unitId, conceptId, templateId, sourceQuestionId }
@@ -22,7 +37,7 @@ class ReviewEngine {
       throw new Error("ReviewEngine.registerForReview: invalid arguments.");
     }
 
-    const today = localDateString || new Date().toISOString().split("T")[0];
+    const today = this._todayKey(localDateString);
     const subjectId = itemParams.subjectId || "math";
     const grade = itemParams.grade || profile.skill.subject.currentGrade;
     const unitId = itemParams.unitId;
@@ -88,7 +103,7 @@ class ReviewEngine {
    * @returns {Object} updatedReviewItem
    */
   static processReviewResult(reviewItem, isCorrect, config = null, localDateString = null) {
-    const today = localDateString || new Date().toISOString().split("T")[0];
+    const today = this._todayKey(localDateString);
     const intervals = config?.math?.reviewEngine?.intervalDays || [1, 3, 7, 14];
     const maxInterval = config?.math?.reviewEngine?.maxIntervalDays || 14;
     const gradSuccessCount = config?.math?.reviewEngine?.graduationSuccessCount || 3;
@@ -128,6 +143,13 @@ class ReviewEngine {
   }
 
   static _addDays(dateStr, days) {
+    // V2.9.7 (P1-2): DateUtils.addDays (JST日付ベース) に統一
+    try {
+      if (typeof window !== "undefined" && window.DateUtils) return window.DateUtils.addDays(dateStr, days);
+    } catch (e) { /* ignore */ }
+    try {
+      if (typeof require !== "undefined") return require("./date_utils.js").DateUtils.addDays(dateStr, days);
+    } catch (e) { /* ignore */ }
     const d = new Date(dateStr);
     d.setDate(d.getDate() + days);
     return d.toISOString().split("T")[0];

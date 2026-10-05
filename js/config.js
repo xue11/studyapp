@@ -5,7 +5,7 @@
 
 const APP_META = {
   appName: "小学生向け算数学習アプリ",
-  appVersion: "V2.9.6",
+  appVersion: "V2.9.7",
   schemaVersion: "2.5.6",
   generationMode: "rule_based"
 };
@@ -57,7 +57,8 @@ const APP_CONFIG = {
       levelThresholds: [80, 150, 250, 400]
     },
     dailyGoal: 5,        // V2.5.15: デイリー目標の完了問数 (通常学習のみカウント)
-    graphDays: 14        // V2.5.15: 保護者ダッシュボードの学習推移グラフ表示日数
+    graphDays: 14,       // V2.5.15: 保護者ダッシュボードの学習推移グラフ表示日数
+    historyLimit: 1000   // V2.9.7 (P1-3): profile.history の最大件数 (Quota超過防止・古い順に破棄)
   },
   features: {
     tests: true,

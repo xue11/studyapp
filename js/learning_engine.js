@@ -7,7 +7,20 @@
  * - accuracy: attempts === 0 は null、それ以外は correct / attempts
  * - masteryScore: 初回=learningScore、2回目以降=old*0.7 + score*0.3
  * - learningStartDate: 当該gradeで初回通常学習完了時に設定
+ * - V2.9.7 (P1-2): 日付キーは DateUtils.localDateKey() (JST基準) に統一。
+ *   UTC基準の toISOString().split("T")[0] は JST 0〜9時に「昨日」扱いになるため廃止。
  */
+
+// V2.9.7 (P1-2): 日付キーは JST基準 (DateUtils) に統一
+let DateUtilsForLearning = (typeof window !== "undefined" && window.DateUtils) ? window.DateUtils : null;
+if (!DateUtilsForLearning && typeof require !== "undefined") {
+  try { DateUtilsForLearning = require("./date_utils.js").DateUtils; } catch (e) {}
+}
+function _todayKeyLE(localDateString) {
+  if (localDateString) return localDateString;
+  if (DateUtilsForLearning) return DateUtilsForLearning.localDateKey();
+  return new Date().toISOString().split("T")[0];
+}
 
 class LearningEngine {
   /**
@@ -54,7 +67,7 @@ class LearningEngine {
    */
   static ensureLearningStartDate(gradeProgress, localDateString = null) {
     if (gradeProgress && gradeProgress.learningStartDate === null) {
-      const today = localDateString || new Date().toISOString().split("T")[0];
+      const today = _todayKeyLE(localDateString);
       gradeProgress.learningStartDate = today;
     }
   }
@@ -70,12 +83,14 @@ class LearningEngine {
    */
   static updateDailyStreak(profile, localDateString = null) {
     if (!profile || !profile.streaks) return null;
-    const today = localDateString || new Date().toISOString().split("T")[0];
+    const today = _todayKeyLE(localDateString);
     const streaks = profile.streaks;
     const last = streaks.lastStudyDate || "";
 
     if (last !== today) {
-      const yesterday = this._dateOffset(today, -1);
+      const yesterday = DateUtilsForLearning
+        ? DateUtilsForLearning.addDays(today, -1)
+        : this._dateOffset(today, -1);
       streaks.dailyStreak = (last === yesterday) ? (streaks.dailyStreak || 0) + 1 : 1;
       streaks.lastStudyDate = today;
       if (streaks.dailyStreak > (streaks.bestDailyStreak || 0)) {
@@ -93,17 +108,19 @@ class LearningEngine {
    */
   static countTodayQuestions(history, localDateString = null) {
     if (!Array.isArray(history)) return 0;
-    const today = localDateString || new Date().toISOString().split("T")[0];
+    const today = _todayKeyLE(localDateString);
     return history.filter(h => (h.completedAt || "").slice(0, 10) === today).length;
   }
 
   /**
-   * YYYY-MM-DD の日付キーを日数分ずらす (UTC ベース)
+   * YYYY-MM-DD の日付キーを日数分ずらす
+   * V2.9.7: DateUtils.addDays (JST日付ベース) に委譲。DST境界でも1日単位で正確。
    * @param {string} dateKey (YYYY-MM-DD)
    * @param {number} offsetDays
    * @returns {string} (YYYY-MM-DD)
    */
   static _dateOffset(dateKey, offsetDays) {
+    if (DateUtilsForLearning) return DateUtilsForLearning.addDays(dateKey, offsetDays);
     const t = new Date(dateKey + "T00:00:00Z").getTime() + offsetDays * 86400000;
     return new Date(t).toISOString().slice(0, 10);
   }

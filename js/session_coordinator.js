@@ -29,6 +29,17 @@ if (typeof require !== "undefined") {
   StorageModule = require("./storage.js");
 }
 
+// V2.9.7 (P1-2): 日付キーは DateUtils.localDateKey() (JST基準) に統一
+let DateUtilsModule = typeof window !== "undefined" ? window.DateUtils : null;
+if (typeof require !== "undefined") {
+  try { DateUtilsModule = require("./date_utils.js").DateUtils; } catch (e) {}
+}
+const _todayKeySC = (localDateString) => {
+  if (localDateString) return localDateString;
+  if (DateUtilsModule) return DateUtilsModule.localDateKey();
+  return new Date().toISOString().split("T")[0];
+};
+
 class SessionCoordinator {
   /**
    * 1問の回答完了処理を原子的に実行し、Stateを保存する (第34章)
@@ -52,7 +63,7 @@ class SessionCoordinator {
     try {
       // 0. 深いコピーで nextState を作成（中間状態の破損を防止）
       const nextState = JSON.parse(JSON.stringify(appState));
-      const today = localDateString || new Date().toISOString().split("T")[0];
+      const today = _todayKeySC(localDateString);
 
       const profile = nextState.profiles.find(p => p.identity.id === nextState.activeProfileId);
       if (!profile) {
@@ -161,6 +172,12 @@ class SessionCoordinator {
         pointsEarned: pointsEarned
       };
       profile.history.push(historyRecord);
+      // V2.9.7 (P1-3): history は上限付き。無制限増加は localStorage の
+      // QuotaExceeded を招くため、上限を超えたら古い記録から破棄する。
+      const historyLimit = (config && config.common && config.common.historyLimit) || 1000;
+      if (profile.history.length > historyLimit) {
+        profile.history.splice(0, profile.history.length - historyLimit);
+      }
 
       // 11 & 13. 達成レベル・キャラクター成長判定
       profile.points.achievementLevel = CharacterEngineModule.calculateAchievementLevel(profile.points.total, config);

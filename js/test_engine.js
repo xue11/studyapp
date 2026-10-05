@@ -18,6 +18,8 @@ let ReviewEngineForTest = typeof window !== "undefined" ? window.ReviewEngine : 
 let PointEngineForTest = typeof window !== "undefined" ? window.PointEngine : null;
 let StorageModuleForTest = typeof window !== "undefined" ? window : null;
 let UnitSelectorForTest = typeof window !== "undefined" ? (window.UnitSelector || null) : null;
+// V2.9.7 (P1-2): 日付キーは DateUtils.localDateKey() (JST基準) に統一
+let DateUtilsForTest = typeof window !== "undefined" ? window.DateUtils : null;
 
 if (typeof require !== "undefined") {
   try { TemplateRegistryForTest = require("./registries.js").TemplateRegistry; } catch (e) {}
@@ -27,6 +29,7 @@ if (typeof require !== "undefined") {
   try { PointEngineForTest = require("./gamification_engine.js").PointEngine; } catch (e) {}
   try { StorageModuleForTest = require("./storage.js"); } catch (e) {}
   try { UnitSelectorForTest = require("./unit_selector.js").UnitSelector; } catch (e) {}
+  try { DateUtilsForTest = require("./date_utils.js").DateUtils; } catch (e) {}
 }
 
 class TestEngine {
@@ -159,7 +162,8 @@ class TestEngine {
   }) {
     const nextState = JSON.parse(JSON.stringify(appState));
     const profile = nextState.profiles.find(p => p.identity.id === nextState.activeProfileId);
-    const today = localDateString || new Date().toISOString().split("T")[0];
+    const today = (localDateString ||
+      (DateUtilsForTest ? DateUtilsForTest.localDateKey() : new Date().toISOString().split("T")[0]));
     const currentGrade = profile.skill.subject.currentGrade;
     const gradeProgress = profile.skill.subject.gradeProgress[`grade${currentGrade}`];
     const level = gradeProgress.difficultyLevel;
@@ -281,7 +285,15 @@ class TestEngine {
 
     // 保存
     if (storageManager) {
-      storageManager.saveState(nextState);
+      const saveRes = storageManager.saveState(nextState);
+      if (!saveRes.success) {
+        return {
+          success: false,
+          error: `Failed to persist test result: ${saveRes.error}`,
+          nextState: null,
+          testRecord: null
+        };
+      }
     }
 
     return {

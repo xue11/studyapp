@@ -15,6 +15,15 @@ if (typeof require !== "undefined") {
   try { BadgeRegistryRef = require("./registries.js").BadgeRegistry; } catch (e) {}
 }
 
+// V2.9.7 (P1-2): 日付キーは DateUtils.localDateKey() (JST基準) に統一
+let DateUtilsForPD = typeof window !== "undefined" ? window.DateUtils : null;
+if (typeof require !== "undefined") {
+  try { DateUtilsForPD = require("./date_utils.js").DateUtils; } catch (e) {}
+}
+const _todayKeyPD = () => DateUtilsForPD
+  ? DateUtilsForPD.localDateKey()
+  : new Date().toISOString().split("T")[0];
+
 class ParentDashboard {
   /**
    * grade の unitId -> 単元名 マップ構築 (Lv1..Lv3 を横断)
@@ -63,7 +72,7 @@ class ParentDashboard {
     const badges = Array.isArray(profile.badges) ? profile.badges : [];
 
     // V2.5.15: 学習推移グラフ用 日別統計 (all / learning / test の3モード)
-    const todayKey = new Date().toISOString().split("T")[0];
+    const todayKey = _todayKeyPD();
     const graphDays = (config && config.common && config.common.graphDays) || 14;
     const dailyStats = {
       all: this.buildDailyStats(history, tests, todayKey, graphDays, "all"),
@@ -224,7 +233,10 @@ class ParentDashboard {
 
     const dateKeys = [];
     for (let i = days - 1; i >= 0; i--) {
-      dateKeys.push(new Date(new Date(today + "T00:00:00Z").getTime() - i * 86400000).toISOString().slice(0, 10));
+      // V2.9.7 (P1-2): JST日付ベースの加算に統一
+      dateKeys.push(DateUtilsForPD
+        ? DateUtilsForPD.addDays(today, -i)
+        : new Date(new Date(today + "T00:00:00Z").getTime() - i * 86400000).toISOString().slice(0, 10));
     }
 
     return dateKeys.map(date => {
