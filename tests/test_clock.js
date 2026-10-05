@@ -317,6 +317,53 @@ check('TestEngine._checkAnswer("5","4","number_input") = false (数値判定は�
   TestEngine._checkAnswer("5", "4", "number_input") === false);
 
 // ---------------------------------------------------------------
+
+// ---------------------------------------------------------------
+console.log("8. 前の設問の時計回答が残らないこと (V2.9.6 回帰)");
+// ---------------------------------------------------------------
+check("_clearClockInputs が定義済み", typeof AppUI.prototype._clearClockInputs === "function");
+ui.session = { questions: [{ ...qHM, questionInstanceId: "Q2" }], currentIndex: 0, clockFocus: undefined, clockFocusQ: undefined };
+const q2 = { ...qHM, questionInstanceId: "Q2" };
+const staleDisplay = withFields({ "clock-field-h": "3", "clock-field-m": "40" }, () => ui._clockSelectionDisplay(q2));
+check("残留DOMがあると前の回答 3:40 が表示される(バグ再現)", staleDisplay.indexOf("answer-placeholder") < 0);
+(function () {
+const store = { "clock-field-h": "3", "clock-field-m": "40", "clock-field-s": "25", "clock-field-count": "10" };
+const orig = global.document.getElementById;
+global.document.getElementById = (id) => {
+if (Object.prototype.hasOwnProperty.call(store, id)) {
+return { get value() { return store[id]; }, set value(v) { store[id] = String(v); } };
+}
+return null;
+};
+try {
+ui._clearClockInputs();
+check("クリア後は時欄が空", store["clock-field-h"] === "");
+check("クリア後は分欄が空", store["clock-field-m"] === "");
+check("クリア後は秒欄が空", store["clock-field-s"] === "");
+check("クリア後はCOUNT欄が空", store["clock-field-count"] === "");
+} finally {
+global.document.getElementById = orig;
+}
+})();
+const clearedDisplay = withFields({ "clock-field-h": "", "clock-field-m": "" }, () => ui._clockSelectionDisplay(q2));
+check("クリア後はプレースホルダー表示", clearedDisplay.indexOf("answer-placeholder") >= 0);
+const clearedRead = withFields({ "clock-field-h": "", "clock-field-m": "" }, () => ui._readClockAnswer(q2));
+check("クリア後は _readClockAnswer が null", clearedRead === null);
+const currentRead = withFields({ "clock-field-h": "7", "clock-field-m": "05" }, () => ui._readClockAnswer(qHM));
+check("現在の設問の値は読める", !!currentRead && currentRead.answer === "7:05");
+(function () {
+let calls = 0;
+const origClear = ui._clearClockInputs;
+const origGet = global.document.getElementById;
+ui._clearClockInputs = () => { calls++; };
+ui.state = { profiles: [{ identity: { id: "p1", nickname: "" }, skill: {}, stats: {} }], activeProfileId: "p1" };
+ui.currentScreen = "unit_select";
+global.document.getElementById = (id) => (id === "app-container" ? { innerHTML: "" } : null);
+try { ui.render({}); } catch (e) {}
+global.document.getElementById = origGet;
+ui._clearClockInputs = origClear;
+check("render() が描画前にクリアを呼ぶ", calls === 1);
+})();
 console.log(`\n=== Result: ${pass} passed, ${fail} failed ===`);
 if (fail > 0) process.exit(1);
 

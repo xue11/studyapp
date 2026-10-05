@@ -15,7 +15,7 @@ console.log("=== Running Phase 1 Verification Tests ===\n");
 function testConfig() {
   console.log("1. Testing Config & App Meta...");
   assert.strictEqual(APP_META.schemaVersion, "2.5.6", "schemaVersion must be 2.5.6");
-  assert.strictEqual(APP_META.appVersion, "V2.9.5", "appVersion must be V2.9.5");
+  assert.strictEqual(APP_META.appVersion, "V2.9.6", "appVersion must be V2.9.6");
   assert.strictEqual(APP_CONFIG.math.levelEngine.levelUpMastery, 0.75);
   assert.strictEqual(APP_CONFIG.math.levelEngine.levelDownMastery, 0.35);
   assert.strictEqual(APP_CONFIG.math.unitSelection.coveragePeriodDays, 14);
@@ -109,7 +109,7 @@ function testMigration() {
 
   const migrated = migrateAppState(oldLegacyData);
   assert.strictEqual(migrated.schemaVersion, "2.5.6");
-  assert.strictEqual(migrated.appMeta.appVersion, "V2.9.5");
+  assert.strictEqual(migrated.appMeta.appVersion, "V2.9.6");
 
   const p = migrated.profiles[0];
   assert.strictEqual(p.skill.subject.gradeProgress.grade3.difficultyLevel, 2);

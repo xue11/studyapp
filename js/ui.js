@@ -61,7 +61,14 @@ class AppUI {
     if (!container) return;
 
     const profile = this.getActiveProfile();
-
+    // V2.9.6: 時計問題の回答値は JS 状態ではなく DOM の <input> に保持される。
+    // render() は HTML 文字列を組み立ててから最後に DOM を差し替えるため、
+    // 組み立て中の _clockSelectionDisplay() -> _readClockAnswer() が
+    // 前の設問の時計入力欄を読んでしまい、回答欄に前の答えが残って見える
+    // (そのまま送信される可能性もある) 問題を起こしていた。
+    // 数値入力 (this.currentInput) と図形選択 (session.selectedFigureChoices) は
+    // JS 状態なので各遷移でクリア済みであり影響を受けない。
+    this._clearClockInputs();
     let html = "";
     // ヘッダー (オンボーディングとプロフィール画面以外で表示)
     if (this.currentScreen !== "onboarding" && this.currentScreen !== "profile_select") {
@@ -819,6 +826,24 @@ class AppUI {
     return { answer: String(ans), values: vals };
   }
 
+  /**
+   * 時計問題の入力欄 (DOM) を空にする (V2.9.6)
+   *
+   * 時計問題の回答は JS 状態ではなく DOM の <input> に保持されるため、
+   * nextLearningQuestion() などでクリアできません。
+   * render() は HTML 文字列を組み立ててから最後に DOM を差し替えるため、
+   * 組み立て中の _clockSelectionDisplay() -> _readClockAnswer() が
+   * 前の設問の値を読んでしまう(回答欄に前の答えが残って見える /
+   * そのまま送信される) 問題を起こします。描画前に確実に空へ落とします。
+   * @returns {void}
+   */
+  _clearClockInputs() {
+    ["h", "m", "s", "count"].forEach((k) => {
+      const node = document.getElementById("clock-field-" + k);
+      if (node) node.value = "";
+    });
+  }
+
   /** 入力中の「時こく」を回答表示エリアへ反映する */
   _clockSelectionDisplay(q) {
     const read = this._readClockAnswer(q);
@@ -1128,6 +1153,8 @@ class AppUI {
     this.session.currentHintUsed = false;
     this.currentInput = "";
     this.session.selectedFigureChoices = [];
+    // V2.9.6: 時計のフォーカス所属設問もリセット (前の設問と混同しないため)
+    this.session.clockFocusQ = null;
 
     if (this.session.currentIndex >= this.session.totalCount) {
       // 10問完了 -> 結果画面へ
@@ -1277,6 +1304,8 @@ class AppUI {
     this.session.userAnswers.push(rawAns);
     this.currentInput = "";
     this.session.selectedFigureChoices = [];
+    // V2.9.6: 時計のフォーカス所属設問もリセット (前の設問と混同しないため)
+    this.session.clockFocusQ = null;
     this.session.currentIndex++;
 
     if (this.session.currentIndex >= this.session.totalCount) {
