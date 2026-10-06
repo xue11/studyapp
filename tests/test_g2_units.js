@@ -84,6 +84,36 @@ function testMassGeneration() {
   console.log(`  [PASS] Generated & validated ${total} questions (100% pass)`);
 }
 
+function testBoxNetFaceCounts() {
+  console.log("3.5 Testing box-net questions use valid face counts...");
+  const originalRandom = Math.random;
+  try {
+    for (let type = 1; type <= 3; type++) {
+      for (let facePair = 2; facePair <= 6; facePair += 2) {
+        const randomValues = [(type - 0.5) / 3, ((facePair / 2) - 0.5) / 3];
+        Math.random = () => randomValues.length > 0 ? randomValues.shift() : 0.1;
+        const q = RuleBasedQuestionSource.generateQuestion("g2_basic_box_03", []);
+        const pairs = 6 / facePair;
+        assert.strictEqual(q.variables.type_idx, type);
+        assert.strictEqual(q.variables.facePair, facePair);
+        assert.strictEqual(q.variables.pairs, pairs);
+        assert.strictEqual(q.variables.facePair * q.variables.pairs, 6, "A cuboid must have six faces");
+        assert.strictEqual(q.answer, String(type === 3 ? pairs : 6));
+        if (type === 2) {
+          assert.ok(q.questionText.includes(`${facePair}まい ずつ ${pairs}しゅるい`), q.questionText);
+        } else if (type === 3) {
+          assert.ok(q.questionText.includes("6まい"), q.questionText);
+          assert.ok(q.questionText.includes(`${facePair}まい ずつ`), q.questionText);
+        }
+        assert.ok(QuestionValidator.validate(q, []).valid, "Generated question must pass validation");
+      }
+    }
+  } finally {
+    Math.random = originalRandom;
+  }
+  console.log("  [PASS] All box-net variants describe six faces and have correct answers");
+}
+
 // 4.5 かけ算単元の追加サブトピック (何倍・九九の表ときまり)
 function testKukuSubTopics() {
   console.log("4.5 Testing kuku sub-topic templates (何倍 / 九九の表ときまり)...");
@@ -190,6 +220,7 @@ function testRisuCoverageMap() {
 testUnitsRegistered();
 testTemplatesExist();
 testMassGeneration();
+testBoxNetFaceCounts();
 testKukuSubTopics();
 testExistingUnitStrengthening();
 testRotationBagSync();

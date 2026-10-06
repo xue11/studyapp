@@ -352,8 +352,8 @@
       format: "{q_text}",
       generate: {
         type_idx: { type: "integer", range: [1, 3] },
-        facePair: { type: "choice", values: [2, 3, 4, 6] },
-        pairs: { type: "choice", values: [2, 3, 4] },
+        facePair: { type: "choice", values: [2, 4, 6] },
+        pairs: { formula: "6 / facePair" },
         q_text: {
           formula: "type_idx === 1 ? 'はこの形を ひらいた 形（てんかいず）に すると、面は ぜんぶで いくつ ある？' : (type_idx === 2 ? 'はこの形を ひらいた 形（てんかいず）に します。同じ 大きさの 面が ' + facePair + 'まい ずつ ' + pairs + 'しゅるい あります。面は ぜんぶで いくつ ある？' : 'はこの形の 面は ぜんぶで ' + facePair * pairs + 'まい です。同じ 大きさの 面が ' + facePair + 'まい ずつ あるとき、面は なんしゅるいに わかれる？')"
         },
