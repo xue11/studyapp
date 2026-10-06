@@ -20,6 +20,19 @@ const NEW_UNITS = {
   2: ["calc_idea_basic", "estimation_basic"]
 };
 
+const BREADTH_TEMPLATES = [
+  { id: "g2_word_add_carry_01", level: 2, unit: "add_2digit_carry" },
+  { id: "g2_word_sub_borrow_01", level: 2, unit: "sub_2digit_borrow" },
+  { id: "g2_basic_bignum_04", level: 1, unit: "big_number_10000" },
+  { id: "g2_basic_length_03", level: 1, unit: "length_unit" },
+  { id: "g2_basic_time_04", level: 1, unit: "time_clock_basic" },
+  { id: "g2_basic_fraction_03", level: 1, unit: "fraction_intro" },
+  { id: "g2_word_kuku_array_01", level: 2, unit: "kuku_intro" },
+  { id: "g2_std_volume_compare_mixed_01", level: 2, unit: "volume_unit" },
+  { id: "g2_basic_box_04", level: 1, unit: "box_shape" },
+  { id: "g2_std_calcidea_03", level: 2, unit: "calc_idea_basic" }
+];
+
 // 1. UnitRegistry 登録確認
 function testUnitsRegistered() {
   console.log("1. Testing UnitRegistry registration for new units...");
@@ -112,6 +125,62 @@ function testBoxNetFaceCounts() {
     Math.random = originalRandom;
   }
   console.log("  [PASS] All box-net variants describe six faces and have correct answers");
+}
+
+function testBreadthTemplates() {
+  console.log("3.6 Testing the 10 new grade-2 breadth templates...");
+  const validNets = new Set(["　□<br>□□□<br>　□<br>　□", "　□<br>　□<br>□□□<br>　□"]);
+  for (const spec of BREADTH_TEMPLATES) {
+    const template = TemplateRegistry.get(spec.id);
+    assert.ok(template, `${spec.id} must be registered`);
+    assert.strictEqual(template.grade, 2, `${spec.id} must target grade 2`);
+    assert.strictEqual(template.difficultyLevel, spec.level, `${spec.id} difficulty`);
+    assert.strictEqual(template.unitId, spec.unit, `${spec.id} unit`);
+
+    for (let i = 0; i < 20; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(spec.id, []);
+      assert.ok(QuestionValidator.validate(q, []).valid, `${spec.id} must pass validation`);
+      assert.strictEqual(q.answerType, "number_input", `${spec.id} must use numeric input`);
+      assert.ok(Number.isInteger(Number(q.answer)), `${spec.id} answer must be an integer`);
+
+      const v = q.variables;
+      if (spec.id === "g2_word_add_carry_01") {
+        assert.ok((v.a % 10) + (v.b % 10) >= 10, "Addition word problem must carry");
+        assert.strictEqual(Number(q.answer), v.a + v.b);
+      } else if (spec.id === "g2_word_sub_borrow_01") {
+        assert.ok(v.b < v.a && (v.a % 10) < (v.b % 10), "Subtraction word problem must borrow");
+        assert.strictEqual(Number(q.answer), v.a - v.b);
+      } else if (spec.id === "g2_basic_bignum_04") {
+        assert.strictEqual(v.left + 100, Number(q.answer));
+        assert.strictEqual(v.right - 100, Number(q.answer));
+      } else if (spec.id === "g2_basic_length_03") {
+        assert.strictEqual(Number(q.answer), (v.a + v.c) * 10 + v.b + v.d);
+      } else if (spec.id === "g2_basic_time_04") {
+        assert.ok(v.endM < v.m, "Elapsed-time question must cross the hour");
+        assert.strictEqual(Number(q.answer), 60 - v.m + v.endM);
+      } else if (spec.id === "g2_basic_fraction_03") {
+        assert.ok(v.shaded < v.d, "Shaded fraction must be less than one whole");
+        assert.strictEqual((v.picture.match(/■/g) || []).length, v.shaded);
+        assert.strictEqual((v.picture.match(/□/g) || []).length, v.d - v.shaded);
+        assert.strictEqual(Number(q.answer), v.shaded);
+      } else if (spec.id === "g2_word_kuku_array_01") {
+        assert.strictEqual((v.picture.match(/●/g) || []).length, Number(q.answer));
+        assert.strictEqual(Number(q.answer), v.groups * v.perGroup);
+      } else if (spec.id === "g2_std_volume_compare_mixed_01") {
+        assert.notStrictEqual(v.left, v.right);
+        assert.strictEqual(Number(q.answer), Math.max(v.left, v.right));
+      } else if (spec.id === "g2_basic_box_04") {
+        const nets = [v.net1, v.net2, v.net3];
+        assert.strictEqual(new Set(nets).size, 3, "Net choices must be distinct");
+        assert.strictEqual(nets.filter(net => validNets.has(net)).length, 1, "Exactly one net must fold into a box");
+        assert.ok(validNets.has(nets[Number(q.answer) - 1]), "Correct net number must match answer");
+      } else if (spec.id === "g2_std_calcidea_03") {
+        assert.strictEqual(v.a % 10 + v.c, 10, "The selected addends must make a ten");
+        assert.strictEqual(Number(q.answer), v.a + v.b + v.c);
+      }
+    }
+  }
+  console.log("  [PASS] 10 templates × 20 generated questions meet content and answer checks");
 }
 
 // 4.5 かけ算単元の追加サブトピック (何倍・九九の表ときまり)
@@ -221,6 +290,7 @@ testUnitsRegistered();
 testTemplatesExist();
 testMassGeneration();
 testBoxNetFaceCounts();
+testBreadthTemplates();
 testKukuSubTopics();
 testExistingUnitStrengthening();
 testRotationBagSync();

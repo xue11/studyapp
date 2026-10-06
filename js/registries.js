@@ -59,7 +59,7 @@ class UnitRegistry {
           { id: "sub_2digit_borrow", name: "2けたのひき算（くり下がりあり）", concepts: ["sub_2digit_borrow"] },
           { id: "kuku_intro", name: "かけ算のいみと九九（2〜5のだん）", concepts: ["kuku_basic_groups"] },
           { id: "volume_unit", name: "かさの単位（L・dL・mL）", concepts: ["volume_convert_basic", "volume_compare_basic"] },
-          { id: "calc_idea_basic", name: "計算のくふう（まとめて計算）", concepts: ["calc_idea_make_100", "calc_idea_sub_together"] },
+          { id: "calc_idea_basic", name: "計算のくふう（まとめて計算）", concepts: ["calc_idea_make_10", "calc_idea_make_100", "calc_idea_sub_together"] },
           { id: "estimation_basic", name: "計算の見積もり（およその数）", concepts: ["estimation_round10_add", "estimation_round100_mul"] },
           // V2.8.0: 図形を「直接タップ」して答える問題。Lv1の識別中心から段階的に進む。
           { id: "shape_figure_tap", name: "図形（辺・頂点を さがそう）", concepts: ["tri_quad_tap_vertex", "tri_quad_tap_edge"] }
@@ -258,4 +258,3 @@ if (typeof module !== "undefined" && module.exports) {
   window.BadgeRegistry = BadgeRegistry;
   window.TemplateRegistry = TemplateRegistry;
 }
-

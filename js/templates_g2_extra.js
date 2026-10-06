@@ -1,5 +1,5 @@
 /**
- * Unit Templates (Grade 2) part 3 — RISUさんすうドリル 2年生単元の不足分を補完
+ * Unit Templates (Grade 2) part 3 — 2年生の不足単元と問題バリエーションを補完
  * V2.6.6 準拠
  *
  * 追加単元 (RISU 2年生 単元一覧との突合で不足していたもの):
@@ -570,6 +570,184 @@
           wrong2: { formula: "answer - b" }
         }
       }
+    },
+    {
+      templateId: "g2_word_add_carry_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "add_2digit_carry", conceptId: "add_2digit_carry",
+      problemType: "word_problem", answerType: "number_input",
+      format: "あかいカードを {a}まい、あおいカードを {b}まい もっています。カードは あわせて なんまい？",
+      generate: {
+        a: { type: "integer", range: [15, 49] },
+        b: { type: "integer", range: [15, 49], constraints: ["(a % 10) + (b % 10) >= 10"] },
+        answer: { formula: "a + b" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["一のくらいを たすと 10以上に なるか 見よう。", "{a % 10} + {b % 10} は くり上がりが あるね。十のくらいにも 1を たそう。"],
+      explanationTemplate: "一のくらいで くり上がるから、{a} + {b} = {answer} だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_word_sub_borrow_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "sub_2digit_borrow", conceptId: "sub_2digit_borrow",
+      problemType: "word_problem", answerType: "number_input",
+      format: "シールを {a}まい もっていました。{b}まい あげると、のこりは なんまい？",
+      generate: {
+        a: { type: "integer", range: [40, 89] },
+        b: { type: "integer", range: [11, 39], constraints: ["b < a && (a % 10) < (b % 10)"] },
+        answer: { formula: "a - b" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["一のくらいで ひけるか 見よう。", "十のくらいから 1つ くり下げて、{a % 10} に 10を たしてから ひこう。"],
+      explanationTemplate: "十のくらいから 1つ くり下げると、{a} - {b} = {answer} だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_basic_bignum_04",
+      grade: 2, difficultyLevel: 1,
+      unitId: "big_number_10000", conceptId: "big_number_read_write",
+      problemType: "calculation", answerType: "number_input",
+      format: "数直線で {left} と {right} のあいだは、100ずつの目もりです。まんなかの目もりの数は？",
+      generate: {
+        start: { type: "integer", range: [1, 8] },
+        tick: { type: "integer", range: [1, 8] },
+        left: { formula: "start * 1000 + (tick - 1) * 100" },
+        right: { formula: "start * 1000 + (tick + 1) * 100" },
+        answer: { formula: "start * 1000 + tick * 100" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["100ずつ ふえる 数直線だね。", "{left} の つぎが {answer}、その つぎが {right} だよ。"],
+      explanationTemplate: "{left}、{answer}、{right} のじゅんに 100ずつ ふえるね。まんなかは {answer} だよ。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_basic_length_03",
+      grade: 2, difficultyLevel: 1,
+      unitId: "length_unit", conceptId: "length_convert_basic",
+      problemType: "calculation", answerType: "number_input",
+      format: "{a}cm {b}mm のテープと、{c}cm {d}mm のテープを つなぎます。あわせて なんmm？",
+      generate: {
+        a: { type: "integer", range: [1, 4] },
+        b: { type: "integer", range: [1, 9] },
+        c: { type: "integer", range: [1, 4] },
+        d: { type: "integer", range: [1, 9] },
+        answer: { formula: "(a + c) * 10 + b + d" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["まず cm を mm に なおそう。1cm は 10mm だよ。", "{a}cm は {a * 10}mm、{c}cm は {c * 10}mm。mmどうしも あわせよう。"],
+      explanationTemplate: "{a * 10} + {b} + {c * 10} + {d} = {answer}mm だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_basic_time_04",
+      grade: 2, difficultyLevel: 1,
+      unitId: "time_clock_basic", conceptId: "time_duration_between",
+      problemType: "word_problem", answerType: "number_input",
+      format: "としょかんに {h}時 {m}分に入り、{h + 1}時 {endM}分に出ました。なん分 いたでしょう？",
+      generate: {
+        h: { type: "integer", range: [1, 11] },
+        m: { type: "choice", values: [10, 20, 30, 40, 50] },
+        endM: { type: "choice", values: [0, 10, 20, 30, 40, 50], constraints: ["endM < m"] },
+        answer: { formula: "60 - m + endM" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["{h}時から{h + 1}時までは 60分だよ。", "{h}時{m}分から{h + 1}時までの分と、そのあと{endM}分を あわせよう。"],
+      explanationTemplate: "60 - {m} + {endM} = {answer}分 いたね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_basic_fraction_03",
+      grade: 2, difficultyLevel: 1,
+      unitId: "fraction_intro", conceptId: "fraction_denominator",
+      problemType: "calculation", answerType: "number_input",
+      format: "図の ■ は色をぬったところです。全体を同じ大きさの {d}こに分けると、分数の分子はいくつ？<br>{picture}",
+      generate: {
+        d: { type: "integer", range: [2, 8] },
+        shadeIndex: { type: "integer", range: [1, 7] },
+        shaded: { formula: "((shadeIndex - 1) % (d - 1)) + 1" },
+        picture: { formula: "'■'.repeat(shaded) + '□'.repeat(d - shaded)" },
+        answer: { formula: "shaded" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["■ が いくつあるか かぞえよう。", "分子は、色をぬった部分の数だよ。"],
+      explanationTemplate: "■ は {shaded}こ あるから、分数の分子は {answer} だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_word_kuku_array_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+      problemType: "word_problem", answerType: "number_input",
+      format: "{groups}つのまとまりに、●が {perGroup}こずつあります。<br>{picture}<br>●は ぜんぶで なんこ？",
+      generate: {
+        groups: { type: "integer", range: [2, 5] },
+        perGroup: { type: "integer", range: [2, 5] },
+        picture: { formula: "('●'.repeat(perGroup) + '　＋　').repeat(groups - 1) + '●'.repeat(perGroup)" },
+        answer: { formula: "groups * perGroup" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["同じ数のまとまりが {groups}つ あるね。", "{perGroup} + {perGroup} を {groups}つ分。かけ算の式にしてみよう。"],
+      explanationTemplate: "{perGroup} × {groups} = {answer}こ だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_std_volume_compare_mixed_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "volume_unit", conceptId: "volume_compare_basic",
+      problemType: "calculation", answerType: "number_input",
+      format: "{leftL}L {leftDL}dL と {rightL}L {rightDL}dL では、どちらが多い？ 多いほうのかさを dL で答えよう。",
+      generate: {
+        leftL: { type: "integer", range: [1, 4] },
+        leftDL: { type: "integer", range: [0, 9] },
+        rightL: { type: "integer", range: [1, 4] },
+        rightDL: { type: "integer", range: [0, 9], constraints: ["leftL * 10 + leftDL !== rightL * 10 + rightDL"] },
+        left: { formula: "leftL * 10 + leftDL" },
+        right: { formula: "rightL * 10 + rightDL" },
+        answer: { formula: "Math.max(left, right)" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["1L は 10dL だから、まず L を dL に なおそう。", "{leftL}L {leftDL}dL は {left}dL、{rightL}L {rightDL}dL は {right}dL だね。"],
+      explanationTemplate: "{left}dL と {right}dL をくらべると、多いほうは {answer}dL だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_basic_box_04",
+      grade: 2, difficultyLevel: 1,
+      unitId: "box_shape", conceptId: "box_net_basic",
+      problemType: "calculation", answerType: "number_input",
+      format: "箱の形に組み立てられる展開図は どれ？ 1・2・3の番号で答えよう。<br>1　{net1}<br>2　{net2}<br>3　{net3}",
+      generate: {
+        correctPosition: { type: "integer", range: [1, 3] },
+        validNet: { type: "choice", values: ["　□<br>□□□<br>　□<br>　□", "　□<br>　□<br>□□□<br>　□"] },
+        invalidNetA: { type: "choice", values: ["□□□□<br>□<br>□", "□□□<br>□□□", "□□□□□□"] },
+        invalidNetB: { type: "choice", values: ["□□□□<br>□<br>□", "□□□<br>□□□", "□□□□□□"], constraints: ["invalidNetB !== invalidNetA"] },
+        net1: { formula: "correctPosition === 1 ? validNet : (correctPosition === 2 ? invalidNetA : invalidNetB)" },
+        net2: { formula: "correctPosition === 2 ? validNet : invalidNetA" },
+        net3: { formula: "correctPosition === 3 ? validNet : invalidNetB" },
+        answer: { formula: "correctPosition" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["展開図は、6つの面が辺どうしでつながっているよ。", "折りたたんだとき、同じ場所に面が重ならない形をえらぼう。"],
+      explanationTemplate: "{correctPosition}ばんは、面が重ならずに箱の形に組み立てられる展開図だよ。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_std_calcidea_03",
+      grade: 2, difficultyLevel: 2,
+      unitId: "calc_idea_basic", conceptId: "calc_idea_make_10",
+      problemType: "calculation", answerType: "number_input",
+      format: "{a} + {b} + {c} = ? （10のまとまりをつくって けいさんしよう）",
+      generate: {
+        a: { type: "integer", range: [11, 59], constraints: ["a % 10 !== 0"] },
+        b: { type: "integer", range: [11, 49] },
+        c: { formula: "10 - (a % 10)" },
+        answer: { formula: "a + b + c" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: ["{a} の一のくらいは {a % 10}。{c} をたすと 10のまとまりになるよ。", "{a} + {c} を先に計算してから、{b} をたそう。"],
+      explanationTemplate: "{a} + {c} = {a + c}。それに {b} をたして {answer} だね。",
+      understandingCheck: { enabled: false }
     }
   ];
 
