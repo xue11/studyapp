@@ -30,6 +30,24 @@ function currentAppVersion() {
   return "V2.9.7";
 }
 
+const GRADE_2_UNIT_ID_MIGRATIONS = {
+  add_2digit_no_carry: "addition_2digit",
+  add_2digit_carry: "addition_2digit",
+  sub_2digit_no_borrow: "subtraction_2digit",
+  sub_2digit_borrow: "subtraction_2digit",
+  add_sub_inverse: "calc_application",
+  calc_idea_basic: "calc_application",
+  estimation_basic: "calc_application",
+  add_3terms_2digit: "calc_application",
+  add_sub_2digit_2step: "calc_application",
+  kuku_intro: "multiplication_g2",
+  kuku_partial: "multiplication_g2",
+  box_shape: "geometry_g2",
+  shape_tri_quad: "geometry_g2",
+  shape_figure_tap: "geometry_g2",
+  shape_figure_measure: "geometry_g2"
+};
+
 function migrateAppState(data) {
   if (!data || typeof data !== "object") {
     throw new Error("Migration: Invalid data format.");
@@ -70,6 +88,8 @@ function migrateAppState(data) {
       // V2.6.4: 図形問題ON/OFFが無い既存プロファイルは既定ONで補完
       if (!p.settings) p.settings = {};
       if (typeof p.settings.figureEnabled !== "boolean") p.settings.figureEnabled = true;
+
+      migrateGrade2UnitData(p);
     }
   }
 
@@ -78,6 +98,97 @@ function migrateAppState(data) {
   }
 
   return state;
+}
+
+function migrateGrade2UnitData(profile) {
+  const gradeProgress = profile.skill?.subject?.gradeProgress?.grade2;
+  if (gradeProgress) {
+    if (gradeProgress.unitStats && typeof gradeProgress.unitStats === "object") {
+      const stats = gradeProgress.unitStats;
+      for (const [legacyId, canonicalId] of Object.entries(GRADE_2_UNIT_ID_MIGRATIONS)) {
+        if (!Object.prototype.hasOwnProperty.call(stats, legacyId)) continue;
+        const legacyStats = stats[legacyId] || {};
+        const canonicalStats = stats[canonicalId];
+        if (!canonicalStats) {
+          stats[canonicalId] = { ...legacyStats };
+        } else {
+          const oldAttempts = Number(legacyStats.attempts) || 0;
+          const currentAttempts = Number(canonicalStats.attempts) || 0;
+          const attempts = oldAttempts + currentAttempts;
+          const oldCorrect = Number(legacyStats.correct) || 0;
+          const currentCorrect = Number(canonicalStats.correct) || 0;
+          const totalCorrect = oldCorrect + currentCorrect;
+          const oldWeight = Math.max(oldAttempts, 1);
+          const currentWeight = Math.max(currentAttempts, 1);
+          const weight = oldWeight + currentWeight;
+          const masteryScore = (
+            (Number(legacyStats.masteryScore) || 0) * oldWeight +
+            (Number(canonicalStats.masteryScore) || 0) * currentWeight
+          ) / weight;
+          stats[canonicalId] = {
+            ...legacyStats,
+            ...canonicalStats,
+            attempts,
+            correct: totalCorrect,
+            accuracy: attempts > 0 ? totalCorrect / attempts : null,
+            masteryScore: Math.round(masteryScore * 1000) / 1000
+          };
+        }
+        delete stats[legacyId];
+      }
+    }
+
+    if (Array.isArray(gradeProgress.unitRotationBag)) {
+      const mappedBag = gradeProgress.unitRotationBag.map(unitId =>
+        GRADE_2_UNIT_ID_MIGRATIONS[unitId] || unitId
+      );
+      gradeProgress.unitRotationBag = [...new Set(mappedBag)];
+    }
+  }
+
+  if (!Array.isArray(profile.reviewQueue)) return;
+  const migratedReviews = [];
+  const reviewIndexes = new Map();
+  for (const item of profile.reviewQueue) {
+    if (item.grade !== 2) {
+      migratedReviews.push(item);
+      continue;
+    }
+
+    const canonicalUnitId = GRADE_2_UNIT_ID_MIGRATIONS[item.unitId] || item.unitId;
+    const isGroupedUnit = Object.values(GRADE_2_UNIT_ID_MIGRATIONS).includes(canonicalUnitId);
+    if (!isGroupedUnit) {
+      migratedReviews.push(item);
+      continue;
+    }
+    item.unitId = canonicalUnitId;
+    const key = `${item.subjectId || "math"}_${item.grade}_${item.unitId}`;
+    const existingIndex = reviewIndexes.get(key);
+    if (existingIndex === undefined) {
+      reviewIndexes.set(key, migratedReviews.length);
+      migratedReviews.push(item);
+      continue;
+    }
+
+    const existing = migratedReviews[existingIndex];
+    const activeEntries = [existing, item].filter(entry => entry.status === "active");
+    const preferred = activeEntries.length
+      ? activeEntries.reduce((a, b) => (a.dueAt || "").localeCompare(b.dueAt || "") <= 0 ? a : b)
+      : existing;
+    const dueDates = activeEntries.map(entry => entry.dueAt).filter(Boolean);
+    migratedReviews[existingIndex] = {
+      ...preferred,
+      failCount: Math.max(Number(existing.failCount) || 0, Number(item.failCount) || 0),
+      successCount: activeEntries.length
+        ? Math.min(...activeEntries.map(entry => Number(entry.successCount) || 0))
+        : Math.max(Number(existing.successCount) || 0, Number(item.successCount) || 0),
+      intervalDays: activeEntries.length
+        ? Math.min(...activeEntries.map(entry => Number(entry.intervalDays) || 1))
+        : Math.max(Number(existing.intervalDays) || 1, Number(item.intervalDays) || 1),
+      ...(dueDates.length ? { dueAt: dueDates.sort()[0] } : {})
+    };
+  }
+  profile.reviewQueue = migratedReviews;
 }
 
 function migrateTo254(state) {

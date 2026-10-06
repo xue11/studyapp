@@ -16,33 +16,34 @@ console.log("=== Running Grade 2 Extra Units Verification Tests ===\n");
 
 // 追加した6単元 (level -> unitId)
 const NEW_UNITS = {
-  1: ["big_number_10000", "time_clock_basic", "fraction_intro", "box_shape"],
-  2: ["calc_idea_basic", "estimation_basic"]
+  1: ["big_number_10000", "time_clock_basic", "fraction_intro", "geometry_g2", "multiplication_g2"],
+  2: ["addition_2digit", "subtraction_2digit", "calc_application"],
+  3: ["calc_application", "multiplication_g2", "geometry_g2"]
 };
 
 const BREADTH_TEMPLATES = [
-  { id: "g2_word_add_carry_01", level: 2, unit: "add_2digit_carry" },
-  { id: "g2_word_sub_borrow_01", level: 2, unit: "sub_2digit_borrow" },
+  { id: "g2_word_add_carry_01", level: 2, unit: "addition_2digit" },
+  { id: "g2_word_sub_borrow_01", level: 2, unit: "subtraction_2digit" },
   { id: "g2_basic_bignum_04", level: 1, unit: "big_number_10000" },
   { id: "g2_basic_length_03", level: 1, unit: "length_unit" },
   { id: "g2_basic_time_04", level: 1, unit: "time_clock_basic" },
   { id: "g2_basic_fraction_03", level: 1, unit: "fraction_intro" },
-  { id: "g2_word_kuku_array_01", level: 2, unit: "kuku_intro" },
+  { id: "g2_word_kuku_array_01", level: 1, unit: "multiplication_g2" },
   { id: "g2_std_volume_compare_mixed_01", level: 2, unit: "volume_unit" },
-  { id: "g2_basic_box_04", level: 1, unit: "box_shape" },
-  { id: "g2_std_calcidea_03", level: 2, unit: "calc_idea_basic" }
+  { id: "g2_basic_box_04", level: 1, unit: "geometry_g2" },
+  { id: "g2_std_calcidea_03", level: 2, unit: "calc_application" }
 ];
 
 const DEEPENING_TEMPLATES = [
-  { id: "g2_std_inverse_add_sub_01", level: 2, unit: "add_sub_inverse" },
+  { id: "g2_std_inverse_add_sub_01", level: 2, unit: "calc_application" },
   { id: "g2_std_length_add_diff_01", level: 2, unit: "length_unit" },
   { id: "g2_std_volume_add_diff_01", level: 2, unit: "volume_unit" },
   { id: "g2_std_time_elapsed_hour_01", level: 2, unit: "time_clock_basic" },
   { id: "g2_std_fraction_compare_picture_01", level: 2, unit: "fraction_intro" },
-  { id: "g2_adv_kuku_reverse_story_01", level: 3, unit: "kuku_partial" },
-  { id: "g2_adv_3terms_make100_01", level: 3, unit: "add_3terms_2digit" },
-  { id: "g2_adv_2step_story_02", level: 3, unit: "add_sub_2digit_2step" },
-  { id: "g2_adv_rectangle_perimeter_01", level: 3, unit: "shape_figure_measure" }
+  { id: "g2_adv_kuku_reverse_story_01", level: 3, unit: "multiplication_g2" },
+  { id: "g2_adv_3terms_make100_01", level: 3, unit: "calc_application" },
+  { id: "g2_adv_2step_story_02", level: 3, unit: "calc_application" },
+  { id: "g2_adv_rectangle_perimeter_01", level: 3, unit: "geometry_g2" }
 ];
 
 // 1. UnitRegistry 登録確認
@@ -87,14 +88,19 @@ function testMassGeneration() {
           assert.ok(q.answer !== "" && q.answer !== "undefined", `${t.templateId} answer empty`);
           assert.ok(q.hintSteps.length >= 2, `${t.templateId} needs >= 2 hint steps`);
           assert.ok(q.explanation.length > 3, `${t.templateId} explanation too short`);
-          // V2.6.7: 時計問題 (clock_input) は時計図の確認へ分岐
-          if (q.answerType === "clock_input") {
+          if (q.answerType === "figure_tap") {
+            assert.ok(Array.isArray(q.figureParts) && q.figureParts.length > 0, `${t.templateId} must render tappable figure parts`);
+          } else if (q.answerType === "figure_display") {
+            assert.ok(q.figureHTML && q.figureHTML.includes("<svg"), `${t.templateId} must render figure SVG`);
+          } else if (q.answerType === "clock_input") {
             assert.ok(q.clockHTML && q.clockHTML.indexOf("<svg") >= 0, `${t.templateId} must render clock SVG`);
             assert.ok(Array.isArray(q.clockFields) && q.clockFields.length >= 1, `${t.templateId} must have clockFields`);
             assert.ok(/^\d{1,2}(:\d{2}){0,2}$/.test(q.answer), `${t.templateId} clock answer format: ${q.answer}`);
-          } else {
-            assert.strictEqual(q.answerType, "number_input", `${t.templateId} must be number_input`);
+          } else if (q.answerType === "number_input") {
             assert.ok(!isNaN(Number(q.answer)), `${t.templateId} answer must be numeric: ${q.answer}`);
+          } else {
+            assert.ok(["choice", "multi_choice", "single_choice"].includes(q.answerType),
+              `${t.templateId} has supported answer type: ${q.answerType}`);
           }
           if (q.understandingCheck && q.understandingCheck.enabled) {
             const uc = q.understandingCheck;
@@ -269,8 +275,8 @@ function testKukuSubTopics() {
       prev.push(q);
     }
   }
-  assert.strictEqual(TemplateRegistry.get("g2_std_kuku_bai_01").unitId, "kuku_intro", "何倍 must belong to kuku_intro");
-  assert.strictEqual(TemplateRegistry.get("g2_adv_kuku_table_01").unitId, "kuku_partial", "九九の表 must belong to kuku_partial");
+  assert.strictEqual(TemplateRegistry.get("g2_std_kuku_bai_01").unitId, "multiplication_g2", "何倍 must belong to kuku_intro");
+  assert.strictEqual(TemplateRegistry.get("g2_adv_kuku_table_01").unitId, "multiplication_g2", "九九の表 must belong to kuku_partial");
   console.log("  [PASS] kuku sub-topics (何倍 / 九九の表) generated & validated x10");
 }
 
@@ -307,7 +313,7 @@ function testRotationBagSync() {
     difficultyLevel: 1,
     unitStats: {},
     // V2.6.5 以前の永続化済み bag (新単元が含まれない)
-    unitRotationBag: ["add_2digit_no_carry", "sub_2digit_no_borrow", "length_unit", "shape_tri_quad"]
+    unitRotationBag: ["addition_2digit", "subtraction_2digit", "length_unit", "geometry_g2"]
   };
   const units = UnitRegistry.getUnitsForLevel("math", 2, 1);
   const seen = new Set();
@@ -320,14 +326,14 @@ function testRotationBagSync() {
   const gpLv2 = {
     difficultyLevel: 2,
     unitStats: {},
-    unitRotationBag: ["add_2digit_carry", "sub_2digit_borrow", "kuku_intro", "volume_unit", "calc_idea_basic", "estimation_basic"]
+    unitRotationBag: ["addition_2digit", "subtraction_2digit", "multiplication_g2", "volume_unit", "calc_application"]
   };
   const unitsLv2 = UnitRegistry.getUnitsForLevel("math", 2, 2);
   const seenLv2 = new Set();
   for (let i = 0; i < unitsLv2.length; i++) {
     seenLv2.add(UnitSelector._drawFromRotationBag(gpLv2, unitsLv2));
   }
-  for (const unitId of ["add_sub_inverse", "length_unit", "time_clock_basic", "fraction_intro"]) {
+  for (const unitId of ["calc_application", "length_unit", "time_clock_basic", "fraction_intro"]) {
     assert.ok(seenLv2.has(unitId), `New Lv2 unit '${unitId}' must appear within one rotation`);
   }
   console.log(`  [PASS] New units injected into legacy Lv1/Lv2 bags within 1 rotation (Lv1=${units.length}, Lv2=${unitsLv2.length})`);
@@ -337,17 +343,17 @@ function testRotationBagSync() {
 function testRisuCoverageMap() {
   console.log("5. RISU grade-2 unit coverage summary...");
   const RISU_UNITS = [
-    { risu: "かけ算 (九九)", units: ["kuku_intro", "kuku_partial"] },
+    { risu: "かけ算 (九九)", units: ["multiplication_g2", "multiplication_g2"] },
     { risu: "かさ (mL・dL・L)", units: ["volume_unit"] },
-    { risu: "はこの形", units: ["box_shape"] },
+    { risu: "はこの形", units: ["geometry_g2"] },
     { risu: "分数（2年）", units: ["fraction_intro"] },
-    { risu: "図形 (表示品質は後回し)", units: ["shape_tri_quad"] },
+    { risu: "図形 (表示品質は後回し)", units: ["geometry_g2"] },
     { risu: "大きな数（2年）", units: ["big_number_10000"] },
-    { risu: "引き算の筆算", units: ["sub_2digit_no_borrow", "sub_2digit_borrow"] },
+    { risu: "引き算の筆算", units: ["subtraction_2digit", "subtraction_2digit"] },
     { risu: "時刻と時間", units: ["time_clock_basic"] },
-    { risu: "計算のくふう", units: ["calc_idea_basic"] },
-    { risu: "計算の見積もり", units: ["estimation_basic"] },
-    { risu: "足し算の筆算", units: ["add_2digit_no_carry", "add_2digit_carry"] },
+    { risu: "計算のくふう", units: ["calc_application"] },
+    { risu: "計算の見積もり", units: ["calc_application"] },
+    { risu: "足し算の筆算", units: ["addition_2digit", "addition_2digit"] },
     { risu: "長さ (mm・cm・m)", units: ["length_unit"] }
   ];
   let missing = 0;

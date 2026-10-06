@@ -39,7 +39,10 @@ class UnitSelector {
 
     // V2.6.2 (minimal B): skip review items whose unit no longer exists in any level
     // V2.6.4: if figureEnabled===false, also skip figure (shape_*) review items
-    const validReviews = activeReviews.filter(r => this._unitExistsInAnyLevel(currentGrade, r.unitId) && (this._isFigureEnabled(profile) || !this._isFigureUnit(r.unitId)));
+    const validReviews = activeReviews.filter(r =>
+      this._unitExistsInAnyLevel(currentGrade, r.unitId) &&
+      (this._isFigureEnabled(profile) || this._reviewHasEnabledTemplates(r))
+    );
 
     if (validReviews.length > 0) {
       // dueAt が古い順 -> failCount が多い順 -> registeredAt が古い順
@@ -60,7 +63,7 @@ class UnitSelector {
     // 2. Normal unit selection (Coverage vs Weakness Phase)
     // V2.6.4: if figureEnabled===false, exclude shape_* units
     let availableUnits = this._getUnitsForLevel("math", currentGrade, level);
-    availableUnits = this._filterFigureUnits(availableUnits, profile);
+    availableUnits = this._filterFigureUnits(availableUnits, profile, "math", currentGrade, level);
     if (!availableUnits || availableUnits.length === 0) {
       // Safety fallback: restore unfiltered list (grade1 Lv1 keeps 3 calc units, so normally not empty)
       availableUnits = this._getUnitsForLevel("math", currentGrade, level);
@@ -178,10 +181,33 @@ class UnitSelector {
     return this._figureUnitIds().has(unitId);
   }
 
-  static _filterFigureUnits(units, profile) {
+  static _unitHasNonFigureTemplates(unitId, grade, level = null) {
+    return this._templateList().some(template =>
+      template &&
+      template.unitId === unitId &&
+      template.grade === grade &&
+      (level === null || template.difficultyLevel === level) &&
+      template.problemType !== "figure"
+    );
+  }
+
+  static _reviewHasEnabledTemplates(reviewItem) {
+    if (reviewItem.templateId) {
+      const template = this._templateList().find(t => t && t.templateId === reviewItem.templateId);
+      if (template) return template.problemType !== "figure";
+    }
+    return !this._isFigureUnit(reviewItem.unitId) ||
+      this._unitHasNonFigureTemplates(reviewItem.unitId, reviewItem.grade);
+  }
+
+  static _filterFigureUnits(units, profile, subjectId = null, grade = null, level = null) {
     if (!Array.isArray(units)) return units;
     if (this._isFigureEnabled(profile)) return units;
-    return units.filter(u => !this._isFigureUnit(u && u.id));
+    return units.filter(u => {
+      if (!this._isFigureUnit(u && u.id)) return true;
+      if (!subjectId || grade === null || level === null) return false;
+      return this._unitHasNonFigureTemplates(u.id, grade, level);
+    });
   }
 
   static _drawFromRotationBag(gradeProgress, availableUnits) {
@@ -270,4 +296,3 @@ if (typeof module !== "undefined" && module.exports) {
 } else {
   window.UnitSelector = UnitSelector;
 }
-

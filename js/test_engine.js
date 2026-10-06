@@ -65,7 +65,9 @@ class TestEngine {
     // solid_net_figure のような新図形単元が除外されていなかった。
     let availableUnits = Array.isArray(rawUnits) ? rawUnits : [];
     if (profile && profile.settings && profile.settings.figureEnabled === false) {
-      availableUnits = availableUnits.filter(u => !this._isFigureUnitId(u && u.id));
+      availableUnits = UnitSelectorForTest && typeof UnitSelectorForTest._filterFigureUnits === "function"
+        ? UnitSelectorForTest._filterFigureUnits(availableUnits, profile, "math", currentGrade, level)
+        : availableUnits.filter(u => !this._isFigureUnitId(u && u.id));
       if (availableUnits.length === 0) availableUnits = rawUnits;
     }
     if (!availableUnits || availableUnits.length === 0) {
@@ -120,10 +122,14 @@ class TestEngine {
     const testQuestions = [];
     const qSource = QuestionSourceForTest || window.RuleBasedQuestionSource;
     const tReg = TemplateRegistryForTest || window.TemplateRegistry;
+    const figuresDisabled = profile && profile.settings && profile.settings.figureEnabled === false;
 
     for (let i = 0; i < count; i++) {
       const uId = selectedUnitIds[i];
-      const templates = tReg.getByUnit("math", currentGrade, level, uId);
+      const unitTemplates = tReg.getByUnit("math", currentGrade, level, uId);
+      const templates = figuresDisabled
+        ? unitTemplates.filter(t => t.problemType !== "figure")
+        : unitTemplates;
       if (!templates || templates.length === 0) {
         throw new Error(`TestEngine: Template for unit ${uId} not found.`);
       }
@@ -343,4 +349,3 @@ if (typeof module !== "undefined" && module.exports) {
 } else {
   window.TestEngine = TestEngine;
 }
-

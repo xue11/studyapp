@@ -100,10 +100,10 @@ global.DiversitySelector = {
   }
 };
 
-mockUI.startUnitPracticeSession("kuku_intro", 10, 2);
+mockUI.startUnitPracticeSession("multiplication_g2", 10, 2);
 check("単元特訓の出題時に DiversitySelector が呼ばれる", selectorCalls > 0);
 check("出題数が10問", mockUI.session.questions.length === 10);
-check("全問が kuku_intro 単元", mockUI.session.questions.every(q => q.unitId === "kuku_intro"));
+check("全問が kuku_intro 単元", mockUI.session.questions.every(q => q.unitId === "multiplication_g2"));
 
 const selectorCallsPractice = selectorCalls;
 mockUI.startLearningSession();
@@ -118,7 +118,7 @@ console.log("\n3. 多様性ルール (同一テンプレート・同一コンテ
 let sameTemplateAdjacent = 0;
 let sameContextAdjacent = 0;
 for (let run = 0; run < 20; run++) {
-  mockUI.startUnitPracticeSession("kuku_intro", 10, 2);
+  mockUI.startUnitPracticeSession("multiplication_g2", 10, 2);
   const qs = mockUI.session.questions;
   for (let i = 1; i < qs.length; i++) {
     if (qs[i].templateId === qs[i - 1].templateId) sameTemplateAdjacent++;
@@ -134,9 +134,9 @@ global.DiversitySelector = realSelector;
 // -------------------------------------------------------------
 console.log("\n4. 緩和フォールバック (テンプレート1本の単元)");
 
-mockUI.startUnitPracticeSession("add_2digit_carry", 10, 2);
+mockUI.startUnitPracticeSession("addition_2digit", 10, 2);
 check("テンプレート1本の単元でも10問生成できる", mockUI.session.questions.length === 10);
-check("全問が add_2digit_carry 単元", mockUI.session.questions.every(q => q.unitId === "add_2digit_carry"));
+check("全問が add_2digit_carry 単元", mockUI.session.questions.every(q => q.unitId === "addition_2digit"));
 
 // 4b. 全単元 × 全学年でのロバスト性 (DiversitySelector 接続後もクラッシュしないこと)
 let unitRuns = 0;
@@ -208,8 +208,8 @@ console.log("\n6. 復習キュー → 単元特訓導線");
 
 const profile = createNewProfile("p_test", "テスト太郎", 2);
 profile.reviewQueue = [{
-  reviewId: "rev_test_1", subjectId: "math", grade: 2, unitId: "add_2digit_carry",
-  conceptId: "add_2digit_carry", templateId: "", failCount: 1, successCount: 0,
+  reviewId: "rev_test_1", subjectId: "math", grade: 2, unitId: "addition_2digit",
+  conceptId: "addition_2digit", templateId: "", failCount: 1, successCount: 0,
   intervalDays: 1, dueAt: "2026-09-29", registeredAt: "2026-09-28", status: "active"
 }, {
   reviewId: "rev_test_2", subjectId: "math", grade: 3, unitId: "time_unit",
@@ -220,7 +220,7 @@ profile.reviewQueue = [{
 const reviewHtml = mockUI._renderReviewHistoryScreen(profile);
 check("復習キューに「5問とっくん」ボタンがある", reviewHtml.includes("⚡ 5問とっくん"));
 check("復習キューに「10問とっくん」ボタンがある", reviewHtml.includes("🚀 10問とっくん"));
-check("単元IDと学年がそのまま渡される", reviewHtml.includes("app.startUnitPracticeSession('add_2digit_carry', 10, 2)"));
+check("単元IDと学年がそのまま渡される", reviewHtml.includes("app.startUnitPracticeSession('addition_2digit', 10, 2)"));
 check("卒業済み項目はそのまま表示される", reviewHtml.includes("14日間隔クリア"));
 
 // -------------------------------------------------------------
@@ -228,12 +228,12 @@ check("卒業済み項目はそのまま表示される", reviewHtml.includes("1
 // -------------------------------------------------------------
 console.log("\n7. 保護者ダッシュボード 弱点単元 → 単元特訓導線");
 
-profile.skill.subject.gradeProgress["grade2"].unitStats["sub_2digit_no_borrow"] = {
+profile.skill.subject.gradeProgress["grade2"].unitStats["subtraction_2digit"] = {
   attempts: 10, correct: 3, accuracy: 0.30, masteryScore: 0.30
 };
 const dashHtml = mockUI._renderParentDashboard(profile);
-check("弱点単元に「5問とっくん」ボタンがある", dashHtml.includes("app.startUnitPracticeSession('sub_2digit_no_borrow', 5, 2)"));
-check("弱点単元に「10問とっくん」ボタンがある", dashHtml.includes("app.startUnitPracticeSession('sub_2digit_no_borrow', 10, 2)"));
+check("弱点単元に「5問とっくん」ボタンがある", dashHtml.includes("app.startUnitPracticeSession('subtraction_2digit', 5, 2)"));
+check("弱点単元に「10問とっくん」ボタンがある", dashHtml.includes("app.startUnitPracticeSession('subtraction_2digit', 10, 2)"));
 
 // -------------------------------------------------------------
 // 8. アセット登録 / バージョン整合

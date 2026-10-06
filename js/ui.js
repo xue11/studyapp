@@ -16,6 +16,12 @@ function formatElapsed(totalSeconds) {
   return m + ":" + (s < 10 ? "0" + s : s);
 }
 
+function filterFigureTemplates(templates, profile) {
+  if (!Array.isArray(templates)) return [];
+  if (!profile || !profile.settings || profile.settings.figureEnabled !== false) return templates;
+  return templates.filter(template => template && template.problemType !== "figure");
+}
+
 class AppUI {
   constructor() {
     this.storage = new StorageManager();
@@ -351,7 +357,10 @@ class AppUI {
       : [];
     const decks = {};
     for (const u of currentUnits) {
-      const tmpls = tReg.getByUnit("math", currentGrade, gp.difficultyLevel, u.id);
+      const tmpls = this._filterFigureTemplates(
+        tReg.getByUnit("math", currentGrade, gp.difficultyLevel, u.id),
+        profile
+      );
       decks[u.id] = this._shuffleArray([...tmpls]);
     }
 
@@ -508,14 +517,17 @@ class AppUI {
    * @returns {Array<Object>} テンプレート配列 (必ず1件以上)
    */
   _getTemplatesForSelection(tReg, currentGrade, currentLevel, sel) {
+    const profile = typeof this.getActiveProfile === "function" ? this.getActiveProfile() : null;
+    const filterTemplates = templates => filterFigureTemplates(templates || [], profile);
+
     // 1) 現在レベルのプール
-    let templates = tReg.getByUnit("math", currentGrade, currentLevel, sel.unitId);
+    let templates = filterTemplates(tReg.getByUnit("math", currentGrade, currentLevel, sel.unitId));
     if (!templates || typeof templates.length !== "number") templates = [];
 
     // 2) 同unitを全レベル横断で検索 (別レベル所属unitの復習)
     if (templates.length === 0) {
       for (let lv = 1; lv <= 3; lv++) {
-        templates = tReg.getByUnit("math", currentGrade, lv, sel.unitId);
+        templates = filterTemplates(tReg.getByUnit("math", currentGrade, lv, sel.unitId));
         if (templates && templates.length > 0) break;
       }
     }
@@ -523,20 +535,24 @@ class AppUI {
     // 3) 復習アイテムが保持する templateId を直接使用
     if (templates.length === 0 && sel.reviewItem?.templateId) {
       const direct = tReg.get(sel.reviewItem.templateId);
-      if (direct) templates = [direct];
+      if (direct) templates = filterTemplates([direct]);
     }
 
     // 4) 同学年の全テンプレート
     if (!templates || templates.length === 0) {
-      templates = Object.values(tReg.templates || {}).filter(t => t.grade === currentGrade);
+      templates = filterTemplates(Object.values(tReg.templates || {}).filter(t => t.grade === currentGrade));
     }
 
     // 5) 最終フォールバック: 全テンプレート (理論上到達しない保険)
     if (!templates || templates.length === 0) {
-      templates = Object.values(tReg.templates || {});
+      templates = filterTemplates(Object.values(tReg.templates || {}));
     }
 
     return templates || [];
+  }
+
+  _filterFigureTemplates(templates, profile) {
+    return filterFigureTemplates(templates, profile);
   }
 
   _startSessionTimer() {

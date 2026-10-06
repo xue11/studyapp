@@ -30,7 +30,52 @@ class UnitRegistry {
       2: {
         addition_subtraction: "たし算・ひき算",
         multiplication: "かけ算・九九",
-        geometry: "図形"
+        geometry: "図形",
+        calculation_application: "計算の活用"
+      }
+    }
+  };
+
+  static legacyUnitIdMap = {
+    math: {
+      2: {
+        add_2digit_no_carry: "addition_2digit",
+        add_2digit_carry: "addition_2digit",
+        sub_2digit_no_borrow: "subtraction_2digit",
+        sub_2digit_borrow: "subtraction_2digit",
+        add_sub_inverse: "calc_application",
+        calc_idea_basic: "calc_application",
+        estimation_basic: "calc_application",
+        add_3terms_2digit: "calc_application",
+        add_sub_2digit_2step: "calc_application",
+        kuku_intro: "multiplication_g2",
+        kuku_partial: "multiplication_g2",
+        box_shape: "geometry_g2",
+        shape_tri_quad: "geometry_g2",
+        shape_figure_tap: "geometry_g2",
+        shape_figure_measure: "geometry_g2"
+      }
+    }
+  };
+
+  static legacyUnitDisplayNames = {
+    math: {
+      2: {
+        add_2digit_no_carry: "2けたのたし算（くり上がりなし）",
+        add_2digit_carry: "2けたのたし算（くり上がりあり）",
+        sub_2digit_no_borrow: "2けたのひき算（くり下がりなし）",
+        sub_2digit_borrow: "2けたのひき算（くり下がりあり）",
+        add_sub_inverse: "たし算・ひき算の逆算",
+        calc_idea_basic: "計算のくふう（まとめて計算）",
+        estimation_basic: "計算の見積もり（およその数）",
+        add_3terms_2digit: "3つの数のたし算・ひき算",
+        add_sub_2digit_2step: "2けたの2段階計算",
+        kuku_intro: "かけ算のいみと九九（2〜5のだん）",
+        kuku_partial: "九九の応用・発展",
+        box_shape: "はこの形（面・辺・ちょう点）",
+        shape_tri_quad: "図形（三角形と四角形）",
+        shape_figure_tap: "図形（辺・頂点を さがそう）",
+        shape_figure_measure: "図形（図から 長さや 数を みよう）"
       }
     }
   };
@@ -55,35 +100,30 @@ class UnitRegistry {
       },
       2: {
         1: [
-          { id: "add_2digit_no_carry", name: "2けたのたし算（くり上がりなし）", concepts: ["add_2digit_basic"], learningGroupId: "addition_subtraction" },
-          { id: "sub_2digit_no_borrow", name: "2けたのひき算（くり下がりなし）", concepts: ["sub_2digit_basic"], learningGroupId: "addition_subtraction" },
+          { id: "addition_2digit", name: "2けたのたし算", concepts: ["add_2digit_basic", "add_2digit_carry"], learningGroupId: "addition_subtraction" },
+          { id: "subtraction_2digit", name: "2けたのひき算", concepts: ["sub_2digit_basic", "sub_2digit_borrow"], learningGroupId: "addition_subtraction" },
           { id: "length_unit", name: "長さの単位（cm・mm）", concepts: ["length_convert_basic", "length_convert_m_cm"] },
           { id: "big_number_10000", name: "大きな数（3けた・10000まで）", concepts: ["place_value_1000", "big_number_read_write", "big_number_compare"] },
           { id: "time_clock_basic", name: "時こくと時間", concepts: ["time_minute_convert_g2", "time_duration_forward", "time_duration_between"] },
           { id: "fraction_intro", name: "分数（2年）", concepts: ["fraction_denominator", "fraction_compare_basic"] },
-          { id: "box_shape", name: "はこの形（面・辺・ちょう点）", concepts: ["box_faces_edges_vertices", "box_face_shape", "box_net_basic"], learningGroupId: "geometry" },
-          { id: "shape_tri_quad", name: "図形（三角形と四角形）", concepts: ["tri_quad_identify", "rect_square_identify"], learningGroupId: "geometry" }
+          { id: "geometry_g2", name: "図形", concepts: ["box_faces_edges_vertices", "box_face_shape", "box_net_basic", "tri_quad_identify", "rect_square_identify"], learningGroupId: "geometry" },
+          { id: "multiplication_g2", name: "かけ算・九九", concepts: ["kuku_basic_groups", "kuku_groups_intro"], learningGroupId: "multiplication" }
         ],
         2: [
-          { id: "add_2digit_carry", name: "2けたのたし算（くり上がりあり）", concepts: ["add_2digit_carry"], learningGroupId: "addition_subtraction" },
-          { id: "sub_2digit_borrow", name: "2けたのひき算（くり下がりあり）", concepts: ["sub_2digit_borrow"], learningGroupId: "addition_subtraction" },
-          { id: "add_sub_inverse", name: "たし算・ひき算の逆算", concepts: ["add_sub_missing_number"], learningGroupId: "addition_subtraction" },
+          { id: "addition_2digit", name: "2けたのたし算", concepts: ["add_2digit_basic", "add_2digit_carry"], learningGroupId: "addition_subtraction" },
+          { id: "subtraction_2digit", name: "2けたのひき算", concepts: ["sub_2digit_basic", "sub_2digit_borrow"], learningGroupId: "addition_subtraction" },
           { id: "length_unit", name: "長さの単位（cm・mm）", concepts: ["length_add_sub_mixed"] },
           { id: "time_clock_basic", name: "時こくと時間", concepts: ["time_duration_across_hour"] },
           { id: "fraction_intro", name: "分数（2年）", concepts: ["fraction_compare_pictures"] },
-          { id: "kuku_intro", name: "かけ算のいみと九九（2〜5のだん）", concepts: ["kuku_basic_groups"], learningGroupId: "multiplication" },
+          { id: "multiplication_g2", name: "かけ算・九九", concepts: ["kuku_basic_groups", "kuku_groups_intro"], learningGroupId: "multiplication" },
           { id: "volume_unit", name: "かさの単位（L・dL・mL）", concepts: ["volume_convert_basic", "volume_compare_basic"] },
-          { id: "calc_idea_basic", name: "計算のくふう（まとめて計算）", concepts: ["calc_idea_make_10", "calc_idea_make_100", "calc_idea_sub_together"], learningGroupId: "addition_subtraction" },
-          { id: "estimation_basic", name: "計算の見積もり（およその数）", concepts: ["estimation_round10_add", "estimation_round100_mul"] },
-          // V2.8.0: 図形を「直接タップ」して答える問題。Lv1の識別中心から段階的に進む。
-          { id: "shape_figure_tap", name: "図形（辺・頂点を さがそう）", concepts: ["tri_quad_tap_vertex", "tri_quad_tap_edge"], learningGroupId: "geometry" }
+          { id: "calc_application", name: "計算の活用", concepts: ["add_sub_missing_number", "calc_idea_make_10", "calc_idea_make_100", "calc_idea_sub_together", "estimation_round10_add", "estimation_round100_mul"], learningGroupId: "calculation_application" },
+          { id: "geometry_g2", name: "図形", concepts: ["box_faces_edges_vertices", "box_face_shape", "box_net_basic", "tri_quad_identify", "rect_square_identify", "tri_quad_tap_vertex", "tri_quad_tap_edge"], learningGroupId: "geometry" }
         ],
         3: [
-          { id: "kuku_partial", name: "九九の応用・発展", concepts: ["kuku_advanced_groups", "kuku_mastery"], learningGroupId: "multiplication" },
-          { id: "add_3terms_2digit", name: "3つの数のたし算・ひき算", concepts: ["three_terms_2digit"], learningGroupId: "addition_subtraction" },
-          { id: "add_sub_2digit_2step", name: "2けたの2段階計算", concepts: ["two_step_2digit", "working_backwards"], learningGroupId: "addition_subtraction" },
-          // V2.8.0: 図を見て数値で答える問題（方眼・辺の長さ・頂点の数）。
-          { id: "shape_figure_measure", name: "図形（図から 長さや 数を みよう）", concepts: ["tri_quad_count_parts", "tri_quad_grid_length"], learningGroupId: "geometry" }
+          { id: "multiplication_g2", name: "九九の応用・発展", concepts: ["kuku_advanced_groups", "kuku_mastery"], learningGroupId: "multiplication" },
+          { id: "calc_application", name: "計算の活用", concepts: ["three_terms_2digit", "two_step_2digit", "working_backwards"], learningGroupId: "calculation_application" },
+          { id: "geometry_g2", name: "図形", concepts: ["tri_quad_count_parts", "tri_quad_grid_length"], learningGroupId: "geometry" }
         ]
       },
       3: {
@@ -169,12 +209,24 @@ class UnitRegistry {
     return this.learningGroups[subjectId]?.[grade]?.[groupId] || null;
   }
 
+  static getCanonicalUnitId(subjectId, grade, unitId) {
+    return this.legacyUnitIdMap[subjectId]?.[grade]?.[unitId] || unitId;
+  }
+
   static findUnit(subjectId, grade, unitId) {
     if (!this.units[subjectId] || !this.units[subjectId][grade]) return null;
+    const canonicalId = this.getCanonicalUnitId(subjectId, grade, unitId);
     for (const level of [1, 2, 3]) {
       const list = this.units[subjectId][grade][level] || [];
-      const found = list.find(u => u.id === unitId);
-      if (found) return { ...found, difficultyLevel: level, grade };
+      const found = list.find(u => u.id === canonicalId);
+      if (found) {
+        return {
+          ...found,
+          name: this.legacyUnitDisplayNames[subjectId]?.[grade]?.[unitId] || found.name,
+          difficultyLevel: level,
+          grade
+        };
+      }
     }
     return null;
   }

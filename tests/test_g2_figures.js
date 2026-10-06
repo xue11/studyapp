@@ -33,27 +33,27 @@ console.log("\n1. 単元の登録");
   const lv1 = UnitRegistry.getUnitsForLevel("math", 2, 1).map(u => u.id);
   const lv2 = UnitRegistry.getUnitsForLevel("math", 2, 2).map(u => u.id);
   const lv3 = UnitRegistry.getUnitsForLevel("math", 2, 3).map(u => u.id);
-  ok(lv1.includes("shape_tri_quad"), "shape_tri_quad は 2年Lv1");
-  ok(lv2.includes("shape_figure_tap"), "shape_figure_tap は 2年Lv2");
-  ok(lv3.includes("shape_figure_measure"), "shape_figure_measure は 2年Lv3");
+  ok(lv1.includes("geometry_g2"), "図形の基本単元は 2年Lv1");
+  ok(lv2.includes("geometry_g2"), "図形の発展単元は 2年Lv2");
+  ok(lv3.includes("geometry_g2"), "図形の活用単元は 2年Lv3");
 }
 
 // ---------------------------------------------------------------
 console.log("\n2. テンプレートの登録");
 const EXPECTED = [
-  ["g2_tri_quad_identify", "shape_tri_quad", 1, "multi_choice"],
-  ["g2_rect_square", "shape_tri_quad", 1, "multi_choice"],
-  ["g2_shape_sides_pick", "shape_tri_quad", 1, "single_choice"],
-  ["g2_shape_vertices_pick", "shape_tri_quad", 1, "multi_choice"],
-  ["g2_tap_right_vertex", "shape_figure_tap", 2, "figure_tap"],
-  ["g2_tap_all_edges", "shape_figure_tap", 2, "figure_tap"],
-  ["g2_tap_longest_side", "shape_figure_tap", 2, "figure_tap"],
-  ["g2_tap_equal_sides", "shape_figure_tap", 2, "figure_tap"],
-  ["g2_disp_count_vertices", "shape_figure_measure", 3, "figure_display"],
-  ["g2_disp_count_angles", "shape_figure_measure", 3, "figure_display"],
-  ["g2_disp_grid_sides", "shape_figure_measure", 3, "figure_display"],
-  ["g2_disp_square_perimeter", "shape_figure_measure", 3, "figure_display"],
-  ["g2_adv_rectangle_perimeter_01", "shape_figure_measure", 3, "figure_display"]
+  ["g2_tri_quad_identify", "geometry_g2", 1, "multi_choice"],
+  ["g2_rect_square", "geometry_g2", 1, "multi_choice"],
+  ["g2_shape_sides_pick", "geometry_g2", 1, "single_choice"],
+  ["g2_shape_vertices_pick", "geometry_g2", 1, "multi_choice"],
+  ["g2_tap_right_vertex", "geometry_g2", 2, "figure_tap"],
+  ["g2_tap_all_edges", "geometry_g2", 2, "figure_tap"],
+  ["g2_tap_longest_side", "geometry_g2", 2, "figure_tap"],
+  ["g2_tap_equal_sides", "geometry_g2", 2, "figure_tap"],
+  ["g2_disp_count_vertices", "geometry_g2", 3, "figure_display"],
+  ["g2_disp_count_angles", "geometry_g2", 3, "figure_display"],
+  ["g2_disp_grid_sides", "geometry_g2", 3, "figure_display"],
+  ["g2_disp_square_perimeter", "geometry_g2", 3, "figure_display"],
+  ["g2_adv_rectangle_perimeter_01", "geometry_g2", 3, "figure_display"]
 ];
 {
   EXPECTED.forEach(s => {
@@ -261,26 +261,26 @@ console.log("\n6. Engine 回帰（angle / rectangle_tall / 設問文）");
 console.log("\n7. 単元選択 / テスト生成との整合");
 {
   const off2 = UnitSelector._filterFigureUnits(
-    UnitRegistry.getUnitsForLevel("math", 2, 2), { settings: { figureEnabled: false } }
+    UnitRegistry.getUnitsForLevel("math", 2, 2), { settings: { figureEnabled: false } }, "math", 2, 2
   ).map(u => u.id);
-  ok(off2.indexOf("shape_figure_tap") < 0, "figureEnabled=false で shape_figure_tap が除外");
+  ok(off2.indexOf("geometry_g2") < 0, "figureEnabled=false で shape_figure_tap が除外");
   const off3 = UnitSelector._filterFigureUnits(
-    UnitRegistry.getUnitsForLevel("math", 2, 3), { settings: { figureEnabled: false } }
+    UnitRegistry.getUnitsForLevel("math", 2, 3), { settings: { figureEnabled: false } }, "math", 2, 3
   ).map(u => u.id);
-  ok(off3.indexOf("shape_figure_measure") < 0, "figureEnabled=false で shape_figure_measure が除外");
+  ok(off3.indexOf("geometry_g2") < 0, "figureEnabled=false で shape_figure_measure が除外");
 
-  ok(TestEngine._isFigureUnitId("shape_figure_tap") === true, "TestEngine が shape_figure_tap を図形と判定");
-  ok(TestEngine._isFigureUnitId("shape_figure_measure") === true, "TestEngine が shape_figure_measure を図形と判定");
-  ok(TestEngine._isFigureUnitId("kuku_partial") === false, "TestEngine が非図形単元を判定");
+  ok(TestEngine._isFigureUnitId("geometry_g2") === true, "TestEngine が shape_figure_tap を図形と判定");
+  ok(TestEngine._isFigureUnitId("geometry_g2") === true, "TestEngine が shape_figure_measure を図形と判定");
+  ok(TestEngine._isFigureUnitId("multiplication_g2") === false, "TestEngine が非図形単元を判定");
 
-  const tapPool = TemplateRegistry.getByUnit("math", 2, 2, "shape_figure_tap");
+  const tapPool = TemplateRegistry.getByUnit("math", 2, 2, "geometry_g2");
   ok(tapPool.length === 4, "shape_figure_tap に4件のテンプレート (n=" + tapPool.length + ")");
   ok(tapPool.every(t => t.answerType === "figure_tap"), "shape_figure_tap はすべて figure_tap");
-  const dispPool = TemplateRegistry.getByUnit("math", 2, 3, "shape_figure_measure");
+  const dispPool = TemplateRegistry.getByUnit("math", 2, 3, "geometry_g2");
   ok(dispPool.length === 5, "shape_figure_measure に5件のテンプレート (n=" + dispPool.length + ")");
   ok(dispPool.every(t => t.answerType === "figure_display"), "shape_figure_measure はすべて figure_display");
-  const lv1Pool = TemplateRegistry.getByUnit("math", 2, 1, "shape_tri_quad");
-  ok(lv1Pool.length === 4, "shape_tri_quad に4件のテンプレート (n=" + lv1Pool.length + ")");
+  const lv1Pool = TemplateRegistry.getByUnit("math", 2, 1, "geometry_g2");
+  ok(lv1Pool.length === 8, "図形Lv1に三角形・四角形とはこの形の8型 (n=" + lv1Pool.length + ")");
 }
 
 console.log("\n--- " + (fail === 0 ? "ALL PASS" : "FAIL " + fail) + " ---");

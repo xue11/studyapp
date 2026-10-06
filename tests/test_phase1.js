@@ -70,8 +70,8 @@ function testSchemaAndValidation() {
 
   // Duplicate active reviewQueue entry test
   state.profiles[0].reviewQueue = [
-    { subjectId: "math", grade: 2, unitId: "add_2digit_carry", status: "active" },
-    { subjectId: "math", grade: 2, unitId: "add_2digit_carry", status: "active" }
+    { subjectId: "math", grade: 2, unitId: "addition_2digit", status: "active" },
+    { subjectId: "math", grade: 2, unitId: "addition_2digit", status: "active" }
   ];
   const invalidResult = validateAppState(state);
   assert.strictEqual(invalidResult.valid, false, "Duplicate active review queue entries must be rejected");

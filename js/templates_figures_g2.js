@@ -194,7 +194,7 @@
     {
       templateId: "g2_tri_quad_identify",
       grade: 2, difficultyLevel: 1,
-      unitId: "shape_tri_quad", conceptId: "tri_quad_identify",
+      unitId: "geometry_g2", conceptId: "tri_quad_identify",
       problemType: "figure", answerType: "multi_choice",
       format: "三角形・四角形を すべて 選びましょう。",
       generate: {
@@ -209,7 +209,7 @@
     {
       templateId: "g2_rect_square",
       grade: 2, difficultyLevel: 1,
-      unitId: "shape_tri_quad", conceptId: "rect_square_identify",
+      unitId: "geometry_g2", conceptId: "rect_square_identify",
       // V2.8.0: 「直角がすべて」の四角形をすべて選ぶ = 長方形（縦長・正方形含む）ため multi_choice へ
       problemType: "figure", answerType: "multi_choice",
       format: "4つの 角が すべて 直角の 四角形を 選びましょう。",
@@ -225,7 +225,7 @@
     {
       templateId: "g2_shape_sides_pick",
       grade: 2, difficultyLevel: 1,
-      unitId: "shape_tri_quad", conceptId: "tri_quad_sides_count",
+      unitId: "geometry_g2", conceptId: "tri_quad_sides_count",
       problemType: "figure", answerType: "single_choice",
       format: "図を よんで、つぎの 本数の 辺で かこまれている 図を 選びましょう。",
       generate: { target_idx: { type: "integer", range: [1, 4] } },
@@ -237,7 +237,7 @@
     {
       templateId: "g2_shape_vertices_pick",
       grade: 2, difficultyLevel: 1,
-      unitId: "shape_tri_quad", conceptId: "tri_quad_vertices_pick",
+      unitId: "geometry_g2", conceptId: "tri_quad_vertices_pick",
       problemType: "figure", answerType: "multi_choice",
       format: "頂点（ちょうてん）が 3つの 図を すべて 選びましょう。",
       generate: { pattern_seed: { type: "integer", range: [0, 5] } },
@@ -250,7 +250,7 @@
     {
       templateId: "g2_tap_right_vertex",
       grade: 2, difficultyLevel: 2,
-      unitId: "shape_figure_tap", conceptId: "tri_quad_tap_vertex",
+      unitId: "geometry_g2", conceptId: "tri_quad_tap_vertex",
       problemType: "figure", answerType: "figure_tap",
       format: "直角（□の マーク）がある 頂点を すべて タップしてね。",
       generate: { shape_idx: { type: "integer", range: [1, 4] } },
@@ -266,7 +266,7 @@
     {
       templateId: "g2_tap_all_edges",
       grade: 2, difficultyLevel: 2,
-      unitId: "shape_figure_tap", conceptId: "tri_quad_tap_edge",
+      unitId: "geometry_g2", conceptId: "tri_quad_tap_edge",
       problemType: "figure", answerType: "figure_tap",
       format: "四角形の 4本の 辺を すべて タップしてね。",
       generate: { pattern_seed: { type: "integer", range: [0, 1] } },
@@ -282,7 +282,7 @@
     {
       templateId: "g2_tap_longest_side",
       grade: 2, difficultyLevel: 2,
-      unitId: "shape_figure_tap", conceptId: "tri_quad_tap_longest",
+      unitId: "geometry_g2", conceptId: "tri_quad_tap_longest",
       problemType: "figure", answerType: "figure_tap",
       format: "いちばん 長い 辺を すべて タップしてね。",
       generate: { shape_idx: { type: "integer", range: [1, 2] } },
@@ -299,7 +299,7 @@
     {
       templateId: "g2_tap_equal_sides",
       grade: 2, difficultyLevel: 2,
-      unitId: "shape_figure_tap", conceptId: "tri_quad_tap_equal",
+      unitId: "geometry_g2", conceptId: "tri_quad_tap_equal",
       problemType: "figure", answerType: "figure_tap",
       format: "長さが 同じ 辺を すべて タップしてね。",
       generate: { pattern_seed: { type: "integer", range: [0, 1] } },
@@ -316,7 +316,7 @@
     {
       templateId: "g2_disp_count_vertices",
       grade: 2, difficultyLevel: 3,
-      unitId: "shape_figure_measure", conceptId: "tri_quad_count_vertices",
+      unitId: "geometry_g2", conceptId: "tri_quad_count_vertices",
       problemType: "figure", answerType: "figure_display",
       format: "図の 頂点（ちょうてん）は いくつ？",
       generate: { sides: { type: "integer", range: [3, 6] } },
@@ -330,7 +330,7 @@
     {
       templateId: "g2_disp_count_angles",
       grade: 2, difficultyLevel: 3,
-      unitId: "shape_figure_measure", conceptId: "tri_quad_count_angles",
+      unitId: "geometry_g2", conceptId: "tri_quad_count_angles",
       problemType: "figure", answerType: "figure_display",
       format: "図の 角（かく）は いくつ？",
       generate: { sides: { type: "integer", range: [3, 5] } },
@@ -344,7 +344,7 @@
     {
       templateId: "g2_disp_grid_sides",
       grade: 2, difficultyLevel: 3,
-      unitId: "shape_figure_measure", conceptId: "tri_quad_grid_count",
+      unitId: "geometry_g2", conceptId: "tri_quad_grid_count",
       problemType: "figure", answerType: "figure_display",
       format: "方眼（こう眼）の 図の よこの 辺は いくつ？",
       generate: { n: { type: "integer", range: [2, 4] } },
@@ -358,7 +358,7 @@
     {
       templateId: "g2_disp_square_perimeter",
       grade: 2, difficultyLevel: 3,
-      unitId: "shape_figure_measure", conceptId: "tri_quad_grid_length",
+      unitId: "geometry_g2", conceptId: "tri_quad_grid_length",
       problemType: "figure", answerType: "figure_display",
       format: "方眼の 正方形の 周（まわり）の 長さは何cm？",
       generate: { n: { type: "integer", range: [2, 4] } },

@@ -44,16 +44,16 @@ function testBuildSummary() {
   profile.points.total = 250;
   profile.points.achievementLevel = 3;
   profile.history = [
-    { grade: 2, unitId: "add_2digit_no_carry", correct: true, completedAt: "2026-09-01T00:00:00Z" },
-    { grade: 2, unitId: "add_2digit_no_carry", correct: true, completedAt: "2026-09-02T00:00:00Z" },
-    { grade: 2, unitId: "sub_2digit_no_borrow", correct: false, completedAt: "2026-09-03T00:00:00Z" }
+    { grade: 2, unitId: "addition_2digit", correct: true, completedAt: "2026-09-01T00:00:00Z" },
+    { grade: 2, unitId: "addition_2digit", correct: true, completedAt: "2026-09-02T00:00:00Z" },
+    { grade: 2, unitId: "subtraction_2digit", correct: false, completedAt: "2026-09-03T00:00:00Z" }
   ];
-  gp.unitStats["add_2digit_no_carry"] = { attempts: 8, correct: 7, accuracy: 0.875, masteryScore: 0.85 };
-  gp.unitStats["sub_2digit_no_borrow"] = { attempts: 5, correct: 3, accuracy: 0.60, masteryScore: 0.55 };
+  gp.unitStats["addition_2digit"] = { attempts: 8, correct: 7, accuracy: 0.875, masteryScore: 0.85 };
+  gp.unitStats["subtraction_2digit"] = { attempts: 5, correct: 3, accuracy: 0.60, masteryScore: 0.55 };
   profile.reviewQueue = [
-    { unitId: "sub_2digit_no_borrow", status: "active" },
-    { unitId: "add_2digit_carry", status: "active" },
-    { unitId: "kuku_intro", status: "graduated" }
+    { unitId: "subtraction_2digit", status: "active" },
+    { unitId: "addition_2digit", status: "active" },
+    { unitId: "multiplication_g2", status: "graduated" }
   ];
   profile.badges = ["first_step"];
 
@@ -69,17 +69,17 @@ function testBuildSummary() {
   const lv1Units = UnitRegistry.getUnitsForLevel("math", 2, 1);
   assert.strictEqual(summary.currentUnitRows.length, lv1Units.length,
     `Grade2 Lv1 unit rows must match registry (${lv1Units.length})`);
-  const addRow = summary.currentUnitRows.find(r => r.unitId === "add_2digit_no_carry");
-  const subRow = summary.currentUnitRows.find(r => r.unitId === "sub_2digit_no_borrow");
+  const addRow = summary.currentUnitRows.find(r => r.unitId === "addition_2digit");
+  const subRow = summary.currentUnitRows.find(r => r.unitId === "subtraction_2digit");
   assert.ok(addRow, "add unit row present");
   assert.strictEqual(addRow.status, "achieved");
   assert.strictEqual(addRow.accuracy, 0.875);
   assert.ok(subRow);
   assert.strictEqual(subRow.status, "weak");
-  assert.strictEqual(subRow.name, "2けたのひき算（くり下がりなし）", "unit name resolved from registry");
+  assert.strictEqual(subRow.name, "2けたのひき算", "unified unit name resolved from registry");
 
   // 弱点単元抽出 (全学年またぎ)
-  assert.ok(summary.weakUnits.some(w => w.unitId === "sub_2digit_no_borrow"), "weak unit extracted");
+  assert.ok(summary.weakUnits.some(w => w.unitId === "subtraction_2digit"), "weak unit extracted");
 
   // 復習状況
   assert.strictEqual(summary.reviewInfo.active, 2);

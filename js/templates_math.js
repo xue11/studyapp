@@ -213,7 +213,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_basic_add_01",
     grade: 2, difficultyLevel: 1,
-    unitId: "add_2digit_no_carry", conceptId: "add_2digit_basic",
+    unitId: "addition_2digit", conceptId: "add_2digit_basic",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} = ?",
     commutativePairs: [["a", "b"]],
@@ -241,7 +241,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_basic_sub_01",
     grade: 2, difficultyLevel: 1,
-    unitId: "sub_2digit_no_borrow", conceptId: "sub_2digit_basic",
+    unitId: "subtraction_2digit", conceptId: "sub_2digit_basic",
     problemType: "calculation", answerType: "number_input",
     format: "{a} - {b} = ?",
     generate: {
@@ -268,7 +268,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_std_kuku_01",
     grade: 2, difficultyLevel: 2,
-    unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+    unitId: "multiplication_g2", conceptId: "kuku_basic_groups",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} = ?",
     formats: ["{a} × {b} = ?", "{a} の {b} ばい は いくつ？", "{a} × {b} は？"],
@@ -295,7 +295,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_std_add_carry_01",
     grade: 2, difficultyLevel: 2,
-    unitId: "add_2digit_carry", conceptId: "add_2digit_carry",
+    unitId: "addition_2digit", conceptId: "addition_2digit",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} = ?",
     commutativePairs: [["a", "b"]],
@@ -323,7 +323,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_std_sub_borrow_01",
     grade: 2, difficultyLevel: 2,
-    unitId: "sub_2digit_borrow", conceptId: "sub_2digit_borrow",
+    unitId: "subtraction_2digit", conceptId: "subtraction_2digit",
     problemType: "calculation", answerType: "number_input",
     format: "{a} - {b} = ?",
     generate: {
@@ -350,7 +350,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_adv_kuku_01",
     grade: 2, difficultyLevel: 3,
-    unitId: "kuku_partial", conceptId: "kuku_advanced_groups",
+    unitId: "multiplication_g2", conceptId: "kuku_advanced_groups",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} = ?",
     generate: {
@@ -376,7 +376,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_adv_3terms_01",
     grade: 2, difficultyLevel: 3,
-    unitId: "add_3terms_2digit", conceptId: "three_terms_2digit",
+    unitId: "calc_application", conceptId: "three_terms_2digit",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} + {c} = ?",
     generate: {
@@ -403,7 +403,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_adv_2step_01",
     grade: 2, difficultyLevel: 3,
-    unitId: "add_sub_2digit_2step", conceptId: "two_step_2digit",
+    unitId: "calc_application", conceptId: "two_step_2digit",
     problemType: "calculation", answerType: "number_input",
     format: "{a} + {b} - {c} = ?",
     generate: {
@@ -1367,7 +1367,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_word_add_2digit_01",
     grade: 2, difficultyLevel: 1,
-    unitId: "add_2digit_no_carry", conceptId: "add_2digit_basic",
+    unitId: "addition_2digit", conceptId: "add_2digit_basic",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "{person}さんは シールを {a}まい もっています。{b}まい もらいました。ぜんぶで なんまい？",
@@ -1399,7 +1399,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_word_add_2digit_02",
     grade: 2, difficultyLevel: 1,
-    unitId: "add_2digit_no_carry", conceptId: "add_2digit_basic",
+    unitId: "addition_2digit", conceptId: "add_2digit_basic",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "りんごが {a}こ、なしが {b}こ あります。ぜんぶで なんこ？",
@@ -1430,7 +1430,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_word_kuku_01",
     grade: 2, difficultyLevel: 2,
-    unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+    unitId: "multiplication_g2", conceptId: "kuku_basic_groups",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "ふくろに あめが {b}こ はいっています。{a}ふくろ あると ぜんぶで なんこ？",
@@ -1461,7 +1461,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_word_kuku_02",
     grade: 2, difficultyLevel: 2,
-    unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+    unitId: "multiplication_g2", conceptId: "kuku_basic_groups",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "ねこが {a}ひき います。1ぴきに 足は 4本。足は ぜんぶで なんぼん？",
@@ -1493,7 +1493,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_word_kuku_03",
     grade: 2, difficultyLevel: 2,
-    unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+    unitId: "multiplication_g2", conceptId: "kuku_basic_groups",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "1こ {b}えんの あめを {a}こ かいました。だい金は なんえん？",
@@ -1524,7 +1524,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_word_kuku_adv_01",
     grade: 2, difficultyLevel: 3,
-    unitId: "kuku_partial", conceptId: "kuku_advanced_groups",
+    unitId: "multiplication_g2", conceptId: "kuku_advanced_groups",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "1はこに ケーキが {b}こ はいっています。{a}はこ ぶんは ぜんぶで なんこ？",
@@ -2311,7 +2311,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_adv_kuku_fill_01",
     grade: 2, difficultyLevel: 3,
-    unitId: "kuku_partial", conceptId: "kuku_advanced_groups",
+    unitId: "multiplication_g2", conceptId: "kuku_advanced_groups",
     problemType: "calculation", answerType: "choice",
     format: "□ × {b} = {answer_val} の □ に入る数はどれ？",
     generate: {
@@ -2471,7 +2471,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g2_puzzle_reverse_story_01",
     grade: 2, difficultyLevel: 3,
-    unitId: "add_sub_2digit_2step", conceptId: "working_backwards",
+    unitId: "calc_application", conceptId: "working_backwards",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "バスに人が乗っています。バス停で {off}人 降りて、{on}人 乗りました。いまバスには {current}人 います。さいしょは 何人 乗っていた？"

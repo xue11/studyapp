@@ -56,6 +56,21 @@ mockUI.state = {
 mockUI.getActiveProfile = function() {
   return this.state.profiles[0];
 };
+{
+  const profile = mockUI.getActiveProfile();
+  profile.settings.figureEnabled = false;
+  const geometryPool = TemplateRegistry.getByUnit("math", 2, 1, "geometry_g2");
+  const enabledPool = mockUI._filterFigureTemplates(geometryPool, profile);
+  check("図形OFFでも箱の形の問題は残り、図形問題だけ除外される",
+    enabledPool.length > 0 && enabledPool.every(t => t.problemType !== "figure"));
+  const reviewPool = mockUI._getTemplatesForSelection(
+    TemplateRegistry, 2, 2,
+    { unitId: "geometry_g2", type: "review", reviewItem: { templateId: "g2_basic_box_01" } }
+  );
+  check("別レベルの箱の形の復習でも図形問題に置き換わらない",
+    reviewPool.length > 0 && reviewPool.every(t => t.problemType !== "figure"));
+  profile.settings.figureEnabled = true;
+}
 mockUI.navigate = function(screen, params) {
   this.navigatedTo = screen;
   this.navigatedParams = params;
@@ -86,13 +101,13 @@ check("全問が time_unit 単元", mockUI.session.questions.every(q => q.unitId
 check("全問が grade 3", mockUI.session.questions.every(q => q.grade === 3));
 
 // -------------------------------------------------------------
-// 3. 九九単元 (2年: kuku_intro 10問)
+// 3. 九九単元 (2年: multiplication_g2 10問)
 // -------------------------------------------------------------
 console.log("\n3. startUnitPracticeSession 実行検証 (九九: kuku_intro 10問)");
 
-mockUI.startUnitPracticeSession("kuku_intro", 10, 2);
+mockUI.startUnitPracticeSession("multiplication_g2", 10, 2);
 check("出題数が10問", mockUI.session.questions.length === 10);
-check("全問が kuku_intro 単元", mockUI.session.questions.every(q => q.unitId === "kuku_intro"));
+check("全問がかけ算・九九単元", mockUI.session.questions.every(q => q.unitId === "multiplication_g2"));
 
 // -------------------------------------------------------------
 // 4. 選択したレベルだけを出題する
@@ -117,24 +132,27 @@ console.log("\n5. UI描画検証 (_renderUnitSelectScreen / _renderHomeScreen)")
 const unitSelectHTML = mockUI._renderUnitSelectScreen({ grade: 2 });
 check("単元選択画面に「単元をえらんで練習」見出しが含まれる", unitSelectHTML.includes("単元をえらんで練習"));
 check("時こくと時間のカードが含まれる", unitSelectHTML.includes("時こくと時間"));
-check("かけ算のいみと九九のカードが含まれる", unitSelectHTML.includes("かけ算のいみと九九"));
+check("かけ算・九九のカードが含まれる", unitSelectHTML.includes("かけ算・九九"));
 check("5問れんしゅうボタンが含まれる", unitSelectHTML.includes("5問"));
 check("10問れんしゅうボタンが含まれる", unitSelectHTML.includes("10問"));
 check("単元カードにLv1基礎の練習ボタンが含まれる",
   unitSelectHTML.includes("Lv1 基礎") && unitSelectHTML.includes("app.startUnitPracticeSession('length_unit', 5, 2, 1)"));
 check("複数レベルの単元に全レベル練習ボタンが含まれる",
   unitSelectHTML.includes("全レベルから10問") && unitSelectHTML.includes("app.startUnitPracticeSession('length_unit', 10, 2, 2)"));
-check("関連単元が3つの学習領域見出しにまとめられる",
-  ["たし算・ひき算", "かけ算・九九", "図形"].every(label => unitSelectHTML.includes(`<h3 style="font-size:1rem; margin:0; padding:0 2px;">${label}</h3>`)));
-check("関連単元は既存IDのままレベル別に練習できる",
-  ["add_2digit_no_carry", "add_2digit_carry", "kuku_intro", "kuku_partial", "shape_tri_quad", "shape_figure_tap", "shape_figure_measure"]
-    .every(unitId => unitSelectHTML.includes(`app.startUnitPracticeSession('${unitId}'`)));
-check("図形領域のLv1〜Lv3問題がそれぞれ表示される",
-  ["shape_tri_quad', 5, 2, 1", "shape_figure_tap', 5, 2, 2", "shape_figure_measure', 5, 2, 3"]
+check("たし算は同じ単元カードにLv1とLv2がある",
+  ["addition_2digit', 5, 2, 1", "addition_2digit', 5, 2, 2"]
     .every(action => unitSelectHTML.includes(action)));
-check("旧単元IDに保存済みの練習履歴が引き続き表示される",
+check("ひき算は同じ単元カードにLv1とLv2がある",
+  ["subtraction_2digit', 5, 2, 1", "subtraction_2digit', 5, 2, 2"]
+    .every(action => unitSelectHTML.includes(action)));
+check("九九・図形・計算の活用に同一IDの複数レベルがある",
+  ["multiplication_g2', 5, 2, 1", "multiplication_g2', 5, 2, 2", "multiplication_g2', 5, 2, 3",
+    "geometry_g2', 5, 2, 1", "geometry_g2', 5, 2, 2", "geometry_g2', 5, 2, 3",
+    "calc_application', 5, 2, 2", "calc_application', 5, 2, 3"]
+    .every(action => unitSelectHTML.includes(action)));
+check("移行後の統合単元に保存済みの練習履歴が引き続き表示される",
   (() => {
-    mockUI.getActiveProfile().skill.subject.gradeProgress.grade2.unitStats.add_2digit_carry = {
+    mockUI.getActiveProfile().skill.subject.gradeProgress.grade2.unitStats.addition_2digit = {
       attempts: 7, correct: 6, accuracy: 6 / 7, masteryScore: 0.8
     };
     return mockUI._renderUnitSelectScreen({ grade: 2 }).includes("練習: <b>7問</b>");

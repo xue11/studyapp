@@ -281,7 +281,7 @@
     {
       templateId: "g2_basic_box_01",
       grade: 2, difficultyLevel: 1,
-      unitId: "box_shape", conceptId: "box_faces_edges_vertices",
+      unitId: "geometry_g2", conceptId: "box_faces_edges_vertices",
       problemType: "calculation", answerType: "number_input",
       format: "{q_text}",
       generate: {
@@ -314,7 +314,7 @@
     {
       templateId: "g2_basic_box_02",
       grade: 2, difficultyLevel: 1,
-      unitId: "box_shape", conceptId: "box_face_shape",
+      unitId: "geometry_g2", conceptId: "box_face_shape",
       problemType: "calculation", answerType: "number_input",
       format: "{q_text}",
       generate: {
@@ -347,7 +347,7 @@
     {
       templateId: "g2_basic_box_03",
       grade: 2, difficultyLevel: 1,
-      unitId: "box_shape", conceptId: "box_net_basic",
+      unitId: "geometry_g2", conceptId: "box_net_basic",
       problemType: "calculation", answerType: "number_input",
       format: "{q_text}",
       generate: {
@@ -388,7 +388,7 @@
     {
       templateId: "g2_std_calcidea_01",
       grade: 2, difficultyLevel: 2,
-      unitId: "calc_idea_basic", conceptId: "calc_idea_make_100",
+      unitId: "calc_application", conceptId: "calc_idea_make_100",
       problemType: "calculation", answerType: "number_input",
       commutativePairs: [["a", "b"]],
       format: "{a} + {b} + {c} = ? （くふうして けいさんしよう）",
@@ -418,7 +418,7 @@
     {
       templateId: "g2_std_calcidea_02",
       grade: 2, difficultyLevel: 2,
-      unitId: "calc_idea_basic", conceptId: "calc_idea_sub_together",
+      unitId: "calc_application", conceptId: "calc_idea_sub_together",
       problemType: "calculation", answerType: "number_input",
       format: "{n} − {a} − {b} = ? （くふうして けいさんしよう）",
       generate: {
@@ -450,7 +450,7 @@
     {
       templateId: "g2_std_estimation_01",
       grade: 2, difficultyLevel: 2,
-      unitId: "estimation_basic", conceptId: "estimation_round10_add",
+      unitId: "calc_application", conceptId: "estimation_round10_add",
       problemType: "calculation", answerType: "number_input",
       commutativePairs: [["a", "b"]],
       format: "{a} + {b} は およそ いくつ？ 十のくらいまでの がい数に して 見つもろう。",
@@ -479,7 +479,7 @@
     {
       templateId: "g2_std_estimation_02",
       grade: 2, difficultyLevel: 2,
-      unitId: "estimation_basic", conceptId: "estimation_round100_mul",
+      unitId: "calc_application", conceptId: "estimation_round100_mul",
       problemType: "calculation", answerType: "number_input",
       format: "1つ {a}円の おかしを {n}こ 買います。全部で およそ いくら？ 百のくらいまでの がい数で 見つもろう。",
       generate: {
@@ -510,7 +510,7 @@
     {
       templateId: "g2_std_kuku_bai_01",
       grade: 2, difficultyLevel: 2,
-      unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+      unitId: "multiplication_g2", conceptId: "kuku_basic_groups",
       problemType: "word_problem", answerType: "number_input",
       sentencePatterns: [
         "{person}さんは シールを {a}まい もっています。おにいさんは {person}さんの {b}ばい もっています。おにいさんは なんまい もっている？",
@@ -545,7 +545,7 @@
     {
       templateId: "g2_adv_kuku_table_01",
       grade: 2, difficultyLevel: 3,
-      unitId: "kuku_partial", conceptId: "kuku_mastery",
+      unitId: "multiplication_g2", conceptId: "kuku_mastery",
       problemType: "calculation", answerType: "number_input",
       commutativePairs: [["a", "b"]],
       format: "九九の 表で、{a}の だん と {b}の だん が 交わるところ の 数は いくつ？",
@@ -574,7 +574,7 @@
     {
       templateId: "g2_word_add_carry_01",
       grade: 2, difficultyLevel: 2,
-      unitId: "add_2digit_carry", conceptId: "add_2digit_carry",
+      unitId: "addition_2digit", conceptId: "addition_2digit",
       problemType: "word_problem", answerType: "number_input",
       format: "あかいカードを {a}まい、あおいカードを {b}まい もっています。カードは あわせて なんまい？",
       generate: {
@@ -590,7 +590,7 @@
     {
       templateId: "g2_word_sub_borrow_01",
       grade: 2, difficultyLevel: 2,
-      unitId: "sub_2digit_borrow", conceptId: "sub_2digit_borrow",
+      unitId: "subtraction_2digit", conceptId: "subtraction_2digit",
       problemType: "word_problem", answerType: "number_input",
       format: "シールを {a}まい もっていました。{b}まい あげると、のこりは なんまい？",
       generate: {
@@ -676,8 +676,8 @@
     },
     {
       templateId: "g2_word_kuku_array_01",
-      grade: 2, difficultyLevel: 2,
-      unitId: "kuku_intro", conceptId: "kuku_basic_groups",
+      grade: 2, difficultyLevel: 1,
+      unitId: "multiplication_g2", conceptId: "kuku_groups_intro",
       problemType: "word_problem", answerType: "number_input",
       format: "{groups}つのまとまりに、●が {perGroup}こずつあります。<br>{picture}<br>●は ぜんぶで なんこ？",
       generate: {
@@ -714,7 +714,7 @@
     {
       templateId: "g2_basic_box_04",
       grade: 2, difficultyLevel: 1,
-      unitId: "box_shape", conceptId: "box_net_basic",
+      unitId: "geometry_g2", conceptId: "box_net_basic",
       problemType: "calculation", answerType: "number_input",
       format: "箱の形に組み立てられる展開図は どれ？ 1・2・3の番号で答えよう。<br>1　{net1}<br>2　{net2}<br>3　{net3}",
       generate: {
@@ -735,7 +735,7 @@
     {
       templateId: "g2_std_calcidea_03",
       grade: 2, difficultyLevel: 2,
-      unitId: "calc_idea_basic", conceptId: "calc_idea_make_10",
+      unitId: "calc_application", conceptId: "calc_idea_make_10",
       problemType: "calculation", answerType: "number_input",
       format: "{a} + {b} + {c} = ? （10のまとまりをつくって けいさんしよう）",
       generate: {
@@ -752,7 +752,7 @@
     {
       templateId: "g2_std_inverse_add_sub_01",
       grade: 2, difficultyLevel: 2,
-      unitId: "add_sub_inverse", conceptId: "add_sub_missing_number",
+      unitId: "calc_application", conceptId: "add_sub_missing_number",
       problemType: "word_problem", answerType: "number_input",
       format: "{q_text}",
       generate: {
@@ -881,7 +881,7 @@
     {
       templateId: "g2_adv_kuku_reverse_story_01",
       grade: 2, difficultyLevel: 3,
-      unitId: "kuku_partial", conceptId: "kuku_advanced_groups",
+      unitId: "multiplication_g2", conceptId: "kuku_advanced_groups",
       problemType: "word_problem", answerType: "number_input",
       format: "{total}このクッキーを、1ふくろに {perGroup}こずつ入れます。ふくろは 何ふくろできますか？",
       generate: {
@@ -901,7 +901,7 @@
     {
       templateId: "g2_adv_3terms_make100_01",
       grade: 2, difficultyLevel: 3,
-      unitId: "add_3terms_2digit", conceptId: "three_terms_2digit",
+      unitId: "calc_application", conceptId: "three_terms_2digit",
       problemType: "calculation", answerType: "number_input",
       commutativePairs: [["a", "b"], ["b", "c"], ["a", "c"]],
       format: "{a} + {b} + {c} = ? くふうして計算しよう。",
@@ -922,7 +922,7 @@
     {
       templateId: "g2_adv_2step_story_02",
       grade: 2, difficultyLevel: 3,
-      unitId: "add_sub_2digit_2step", conceptId: "working_backwards",
+      unitId: "calc_application", conceptId: "working_backwards",
       problemType: "word_problem", answerType: "number_input",
       format: "{q_text}",
       generate: {
@@ -947,7 +947,7 @@
     {
       templateId: "g2_adv_rectangle_perimeter_01",
       grade: 2, difficultyLevel: 3,
-      unitId: "shape_figure_measure", conceptId: "tri_quad_grid_length",
+      unitId: "geometry_g2", conceptId: "tri_quad_grid_length",
       problemType: "figure", answerType: "figure_display",
       format: "図の長方形の まわりの長さは何cm？",
       generate: {

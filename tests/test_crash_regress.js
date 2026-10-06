@@ -34,8 +34,8 @@ const crossLevelQueue = [{
   reviewId: "rev_crash_check",
   subjectId: "math",
   grade: 2,
-  unitId: "add_2digit_carry",
-  conceptId: "add_2digit_carry",
+  unitId: "addition_2digit",
+  conceptId: "addition_2digit",
   templateId: "g2_std_add_carry_01",
   failCount: 1,
   successCount: 0,
@@ -49,7 +49,7 @@ const crossLevelQueue = [{
 {
   const sel = UnitSelector.selectNextUnit(mkProfile(1, crossLevelQueue), undefined, todayFix);
   assert.strictEqual(sel.type, "review", "別レベルunitの復習が復習として選択されること");
-  assert.strictEqual(sel.unitId, "add_2digit_carry");
+  assert.strictEqual(sel.unitId, "addition_2digit");
   const templates = AppUI.prototype._getTemplatesForSelection.call(
     { _shuffleArray: (arr) => [...arr].sort(() => Math.random() - 0.5) },
     TemplateRegistry,

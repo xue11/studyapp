@@ -15,7 +15,7 @@ const assert = require("assert");
 const gp = {
   difficultyLevel: 1,
   unitStats: {},
-  unitRotationBag: ["add_2digit_no_carry", "sub_2digit_no_borrow"] // V2.6より前のgrade2L1 bag
+  unitRotationBag: ["addition_2digit", "subtraction_2digit"] // V2.6より前のgrade2L1 bag
 };
 const units = UnitRegistry.getUnitsForLevel("math", 2, 1); // 現在: 旧2unit + length_unit
 console.log("grade2 L1 units:", units.map(u => u.id).join(", "));
@@ -88,8 +88,8 @@ const mkProfile = (lv, queue) => ({
   reviewQueue: queue
 });
 const crossLevelQueue = [{
-  reviewId: "rev_test_1", subjectId: "math", grade: 2, unitId: "add_2digit_carry",
-  conceptId: "add_2digit_carry", templateId: "g2_std_add_carry_01",
+  reviewId: "rev_test_1", subjectId: "math", grade: 2, unitId: "addition_2digit",
+  conceptId: "addition_2digit", templateId: "g2_std_add_carry_01",
   failCount: 1, successCount: 0, intervalDays: 1, dueAt: "2026-09-14", registeredAt: "2026-09-10", status: "active"
 }];
 
@@ -97,7 +97,7 @@ const crossLevelQueue = [{
 for (const lv of [1, 2, 3]) {
   const sel = UnitSelector.selectNextUnit(mkProfile(lv, crossLevelQueue), APP_CONFIG, todayFix);
   assert.strictEqual(sel.type, "review", "L" + lv + ": 別レベルunitの復習がスキップされないこと");
-  assert.strictEqual(sel.unitId, "add_2digit_carry");
+  assert.strictEqual(sel.unitId, "addition_2digit");
 }
 console.log("[PASS] 復習選択: 別レベル所属unitの復習は全レベルで選択される");
 
