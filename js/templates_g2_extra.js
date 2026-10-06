@@ -748,6 +748,227 @@
       hintSteps: ["{a} の一のくらいは {a % 10}。{c} をたすと 10のまとまりになるよ。", "{a} + {c} を先に計算してから、{b} をたそう。"],
       explanationTemplate: "{a} + {c} = {a + c}。それに {b} をたして {answer} だね。",
       understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_std_inverse_add_sub_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "add_sub_inverse", conceptId: "add_sub_missing_number",
+      problemType: "word_problem", answerType: "number_input",
+      format: "{q_text}",
+      generate: {
+        type_idx: { type: "integer", range: [1, 2] },
+        a: { type: "integer", range: [15, 49] },
+        b: {
+          type: "integer", range: [11, 39],
+          constraints: ["type_idx === 1 ? (a % 10) + (b % 10) >= 10 : b < a && (a % 10) < (b % 10)"]
+        },
+        total: { formula: "a + b" },
+        remaining: { formula: "a - b" },
+        q_text: {
+          formula: "type_idx === 1 ? 'カードを ' + a + 'まい もっています。何まいか もらうと ' + total + 'まいに なりました。もらったのは 何まい？' : 'シールを ' + a + 'まい もっています。何まいか あげると ' + remaining + 'まいに なりました。あげたのは 何まい？'"
+        },
+        answer: { formula: "b" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "分からない数を □ として、たし算か ひき算の式にしよう。",
+        "{type_idx === 1 ? total + ' から ' + a + ' を ひくと、もらった数が 分かるよ。' : a + ' から ' + remaining + ' を ひくと、あげた数が 分かるよ。'}"
+      ],
+      explanationTemplate: "{type_idx === 1 ? total + ' - ' + a + ' = ' + answer + ' まい だね。' : a + ' - ' + remaining + ' = ' + answer + ' まい だね。'}",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_std_length_add_diff_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "length_unit", conceptId: "length_add_sub_mixed",
+      problemType: "word_problem", answerType: "number_input",
+      format: "{q_text}",
+      generate: {
+        operation: { type: "integer", range: [1, 2] },
+        a: { type: "integer", range: [1, 5] },
+        b: { type: "integer", range: [0, 9] },
+        c: { type: "integer", range: [1, 5] },
+        d: { type: "integer", range: [0, 9], constraints: ["a * 10 + b !== c * 10 + d"] },
+        left: { formula: "a * 10 + b" },
+        right: { formula: "c * 10 + d" },
+        answer: { formula: "operation === 1 ? left + right : Math.abs(left - right)" },
+        q_text: {
+          formula: "operation === 1 ? (a + 'cm ' + b + 'mm と ' + c + 'cm ' + d + 'mm のテープを つなぎます。あわせて なんmm？') : (a + 'cm ' + b + 'mm と ' + c + 'cm ' + d + 'mm のテープの 長さのちがいは なんmm？')"
+        }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "1cm は 10mm だから、cm を mm に なおそう。",
+        "{a}cm {b}mm は {left}mm、{c}cm {d}mm は {right}mm だよ。"
+      ],
+      explanationTemplate: "{left}mm と {right}mm を {operation === 1 ? 'あわせる' : 'くらべる'}と、答えは {answer}mm だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_std_volume_add_diff_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "volume_unit", conceptId: "volume_add_sub_mixed",
+      problemType: "word_problem", answerType: "number_input",
+      format: "{q_text}",
+      generate: {
+        operation: { type: "integer", range: [1, 2] },
+        a: { type: "integer", range: [1, 4] },
+        b: { type: "integer", range: [0, 9] },
+        c: { type: "integer", range: [1, 4] },
+        d: { type: "integer", range: [0, 9], constraints: ["a * 10 + b !== c * 10 + d"] },
+        left: { formula: "a * 10 + b" },
+        right: { formula: "c * 10 + d" },
+        answer: { formula: "operation === 1 ? left + right : Math.abs(left - right)" },
+        q_text: {
+          formula: "operation === 1 ? (a + 'L ' + b + 'dL と ' + c + 'L ' + d + 'dL の水を あわせます。なんdL？') : (a + 'L ' + b + 'dL と ' + c + 'L ' + d + 'dL の水の かさのちがいは なんdL？')"
+        }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "1L は 10dL だから、L を dL に なおそう。",
+        "{a}L {b}dL は {left}dL、{c}L {d}dL は {right}dL だね。"
+      ],
+      explanationTemplate: "{left}dL と {right}dL を {operation === 1 ? 'あわせる' : 'くらべる'}と、答えは {answer}dL だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_std_time_elapsed_hour_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "time_clock_basic", conceptId: "time_duration_across_hour",
+      problemType: "word_problem", answerType: "number_input",
+      format: "午前 {startH}時 {startM}分から 午前 {endH}時 {endM}分まで、何分 かかりましたか？",
+      generate: {
+        startH: { type: "integer", range: [7, 9] },
+        startM: { type: "choice", values: [10, 20, 30, 40, 50] },
+        elapsed: {
+          type: "choice", values: [20, 30, 40, 50, 60, 70, 80, 90],
+          constraints: ["startM + elapsed >= 60"]
+        },
+        endH: { formula: "startH + Math.floor((startM + elapsed) / 60)" },
+        endM: { formula: "(startM + elapsed) % 60" },
+        answer: { formula: "elapsed" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "{startH}時{startM}分から {endH}時まで、あと何分か考えよう。",
+        "{startM}分から 60分までの分と、{endM}分を あわせよう。"
+      ],
+      explanationTemplate: "(60 - {startM}) + {endM} を計算すると、{answer}分 だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_std_fraction_compare_picture_01",
+      grade: 2, difficultyLevel: 2,
+      unitId: "fraction_intro", conceptId: "fraction_compare_pictures",
+      problemType: "calculation", answerType: "number_input",
+      format: "同じ大きさに {denominator}こに分けたテープです。色のついた部分が多いほうの分子を答えよう。<br>A　{pictureA}　B　{pictureB}",
+      generate: {
+        denominator: { type: "integer", range: [3, 8] },
+        numeratorA: { type: "integer", range: [1, 7], constraints: ["numeratorA < denominator"] },
+        numeratorB: { type: "integer", range: [1, 7], constraints: ["numeratorB < denominator && numeratorB !== numeratorA"] },
+        pictureA: { formula: "'■'.repeat(numeratorA) + '□'.repeat(denominator - numeratorA)" },
+        pictureB: { formula: "'■'.repeat(numeratorB) + '□'.repeat(denominator - numeratorB)" },
+        answer: { formula: "Math.max(numeratorA, numeratorB)" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "どちらも同じ大きさに、同じ数だけ分けているね。",
+        "■の数が多いテープの分子を答えよう。"
+      ],
+      explanationTemplate: "分けた数が同じときは、色のついた部分が多いほうが大きい分数だよ。答えは {answer} だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_adv_kuku_reverse_story_01",
+      grade: 2, difficultyLevel: 3,
+      unitId: "kuku_partial", conceptId: "kuku_advanced_groups",
+      problemType: "word_problem", answerType: "number_input",
+      format: "{total}このクッキーを、1ふくろに {perGroup}こずつ入れます。ふくろは 何ふくろできますか？",
+      generate: {
+        groups: { type: "integer", range: [6, 9] },
+        perGroup: { type: "integer", range: [6, 9] },
+        total: { formula: "groups * perGroup" },
+        answer: { formula: "groups" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "1ふくろに {perGroup}こずつ入れるんだね。九九の {perGroup}の段を使おう。",
+        "{perGroup} × □ = {total} になる □ をさがそう。"
+      ],
+      explanationTemplate: "{perGroup} × {answer} = {total} だから、{answer}ふくろ できるね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_adv_3terms_make100_01",
+      grade: 2, difficultyLevel: 3,
+      unitId: "add_3terms_2digit", conceptId: "three_terms_2digit",
+      problemType: "calculation", answerType: "number_input",
+      commutativePairs: [["a", "b"], ["b", "c"], ["a", "c"]],
+      format: "{a} + {b} + {c} = ? くふうして計算しよう。",
+      generate: {
+        a: { type: "integer", range: [11, 49] },
+        b: { type: "integer", range: [11, 49] },
+        c: { formula: "100 - a" },
+        answer: { formula: "a + b + c" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "{a} と {c} をたすと、どんな数になるかな？",
+        "{a} + {c} で100をつくってから、{b} をたそう。"
+      ],
+      explanationTemplate: "{a} + {c} = 100。100 + {b} = {answer} だから、答えは {answer} だね。",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_adv_2step_story_02",
+      grade: 2, difficultyLevel: 3,
+      unitId: "add_sub_2digit_2step", conceptId: "working_backwards",
+      problemType: "word_problem", answerType: "number_input",
+      format: "{q_text}",
+      generate: {
+        type_idx: { type: "integer", range: [1, 2] },
+        start: { type: "integer", range: [20, 59] },
+        gained: { type: "integer", range: [11, 29] },
+        used: { type: "integer", range: [11, 29], constraints: ["start + gained > used"] },
+        final: { formula: "start + gained - used" },
+        answer: { formula: "type_idx === 1 ? final : start" },
+        q_text: {
+          formula: "type_idx === 1 ? ('ノートを ' + start + 'さつ もっています。さらに ' + gained + 'さつ もらい、そのあと ' + used + 'さつ つかいました。いま 何さつ？') : ('ノートを何さつか もっていました。' + gained + 'さつ もらい、そのあと ' + used + 'さつ つかうと ' + final + 'さつに なりました。はじめは何さつ？')"
+        }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "{type_idx === 1 ? 'まず もらった数を たして、そのあと つかった数を ひこう。' : 'いまの数から、あとでつかった数をもどし、もらった数をひこう。'}",
+        "{type_idx === 1 ? start + ' + ' + gained + ' - ' + used + ' のじゅんに計算しよう。' : final + ' + ' + used + ' - ' + gained + ' のじゅんに、はじめの数をもとめよう。'}"
+      ],
+      explanationTemplate: "{type_idx === 1 ? start + ' + ' + gained + ' - ' + used + ' = ' + final + ' だね。' : final + ' + ' + used + ' - ' + gained + ' = ' + answer + ' だね。'}",
+      understandingCheck: { enabled: false }
+    },
+    {
+      templateId: "g2_adv_rectangle_perimeter_01",
+      grade: 2, difficultyLevel: 3,
+      unitId: "shape_figure_measure", conceptId: "tri_quad_grid_length",
+      problemType: "figure", answerType: "figure_display",
+      format: "図の長方形の まわりの長さは何cm？",
+      generate: {
+        width: { type: "integer", range: [2, 6] },
+        height: { type: "integer", range: [1, 4] },
+        answer: { formula: "2 * (width + height)" }
+      },
+      figureSpec: {
+        shape: "quadrilateral",
+        w: "{width}", h: "{height}", pxPerUnit: 26, grid: 1,
+        autoMarks: false,
+        labels: { edges: { AB: "{width}cm", BC: "{height}cm" } }
+      },
+      figureAnswerUnit: "cm",
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "長方形は向かい合う辺の長さが同じだよ。",
+        "{width}cm と {height}cm の辺が2本ずつあるね。"
+      ],
+      explanationTemplate: "{width} + {height} + {width} + {height} = {answer}cm だね。",
+      understandingCheck: { enabled: false }
     }
   ];
 

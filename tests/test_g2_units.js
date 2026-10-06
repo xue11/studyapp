@@ -33,6 +33,18 @@ const BREADTH_TEMPLATES = [
   { id: "g2_std_calcidea_03", level: 2, unit: "calc_idea_basic" }
 ];
 
+const DEEPENING_TEMPLATES = [
+  { id: "g2_std_inverse_add_sub_01", level: 2, unit: "add_sub_inverse" },
+  { id: "g2_std_length_add_diff_01", level: 2, unit: "length_unit" },
+  { id: "g2_std_volume_add_diff_01", level: 2, unit: "volume_unit" },
+  { id: "g2_std_time_elapsed_hour_01", level: 2, unit: "time_clock_basic" },
+  { id: "g2_std_fraction_compare_picture_01", level: 2, unit: "fraction_intro" },
+  { id: "g2_adv_kuku_reverse_story_01", level: 3, unit: "kuku_partial" },
+  { id: "g2_adv_3terms_make100_01", level: 3, unit: "add_3terms_2digit" },
+  { id: "g2_adv_2step_story_02", level: 3, unit: "add_sub_2digit_2step" },
+  { id: "g2_adv_rectangle_perimeter_01", level: 3, unit: "shape_figure_measure" }
+];
+
 // 1. UnitRegistry 登録確認
 function testUnitsRegistered() {
   console.log("1. Testing UnitRegistry registration for new units...");
@@ -183,6 +195,64 @@ function testBreadthTemplates() {
   console.log("  [PASS] 10 templates × 20 generated questions meet content and answer checks");
 }
 
+function testDeepeningTemplates() {
+  console.log("3.7 Testing grade-2 deepening templates across Lv2 and Lv3...");
+  for (const spec of DEEPENING_TEMPLATES) {
+    const template = TemplateRegistry.get(spec.id);
+    assert.ok(template, `${spec.id} must be registered`);
+    assert.strictEqual(template.grade, 2, `${spec.id} must target grade 2`);
+    assert.strictEqual(template.difficultyLevel, spec.level, `${spec.id} difficulty`);
+    assert.strictEqual(template.unitId, spec.unit, `${spec.id} unit`);
+    const registeredUnits = UnitRegistry.getUnitsForLevel("math", 2, spec.level).map(unit => unit.id);
+    assert.ok(registeredUnits.includes(spec.unit), `${spec.id} unit must be selectable at Lv${spec.level}`);
+
+    for (let i = 0; i < 20; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(spec.id, []);
+      assert.ok(QuestionValidator.validate(q, []).valid, `${spec.id} must pass validation`);
+      assert.ok(Number.isInteger(Number(q.answer)), `${spec.id} answer must be an integer`);
+      const v = q.variables;
+
+      if (spec.id === "g2_std_inverse_add_sub_01") {
+        assert.strictEqual(Number(q.answer), v.b);
+        if (v.type_idx === 1) {
+          assert.ok((v.a % 10) + (v.b % 10) >= 10);
+          assert.strictEqual(v.a + v.b, v.total);
+        } else {
+          assert.ok(v.b < v.a && (v.a % 10) < (v.b % 10));
+          assert.strictEqual(v.a - v.b, v.remaining);
+        }
+      } else if (spec.id === "g2_std_length_add_diff_01" || spec.id === "g2_std_volume_add_diff_01") {
+        const expected = v.operation === 1 ? v.left + v.right : Math.abs(v.left - v.right);
+        assert.strictEqual(Number(q.answer), expected);
+        assert.notStrictEqual(v.left, v.right);
+      } else if (spec.id === "g2_std_time_elapsed_hour_01") {
+        assert.ok(v.endH > v.startH, "Elapsed-time problem must cross at least one hour");
+        assert.strictEqual((v.endH - v.startH) * 60 + v.endM - v.startM, Number(q.answer));
+      } else if (spec.id === "g2_std_fraction_compare_picture_01") {
+        assert.strictEqual((v.pictureA.match(/■/g) || []).length, v.numeratorA);
+        assert.strictEqual((v.pictureB.match(/■/g) || []).length, v.numeratorB);
+        assert.strictEqual((v.pictureA.match(/■|□/g) || []).length, v.denominator);
+        assert.strictEqual((v.pictureB.match(/■|□/g) || []).length, v.denominator);
+        assert.strictEqual(Number(q.answer), Math.max(v.numeratorA, v.numeratorB));
+      } else if (spec.id === "g2_adv_kuku_reverse_story_01") {
+        assert.strictEqual(v.groups * v.perGroup, v.total);
+        assert.strictEqual(Number(q.answer), v.groups);
+      } else if (spec.id === "g2_adv_3terms_make100_01") {
+        assert.strictEqual(v.a + v.c, 100);
+        assert.strictEqual(Number(q.answer), v.a + v.b + v.c);
+      } else if (spec.id === "g2_adv_2step_story_02") {
+        assert.strictEqual(v.start + v.gained - v.used, v.final);
+        assert.strictEqual(Number(q.answer), v.type_idx === 1 ? v.final : v.start);
+        if (v.type_idx === 2) assert.strictEqual(v.final + v.used - v.gained, v.start);
+      } else if (spec.id === "g2_adv_rectangle_perimeter_01") {
+        assert.ok(q.figureHTML && q.figureHTML.includes("<svg"), "Rectangle must render as SVG");
+        assert.strictEqual(Number(q.answer), 2 * (v.width + v.height));
+      }
+    }
+  }
+  console.log("  [PASS] All deepening patterns generated x20 with valid units, displays, and answers");
+}
+
 // 4.5 かけ算単元の追加サブトピック (何倍・九九の表ときまり)
 function testKukuSubTopics() {
   console.log("4.5 Testing kuku sub-topic templates (何倍 / 九九の表ときまり)...");
@@ -247,7 +317,20 @@ function testRotationBagSync() {
   for (const unitId of NEW_UNITS[1]) {
     assert.ok(seen.has(unitId), `New unit '${unitId}' must appear within one rotation`);
   }
-  console.log(`  [PASS] New units injected into legacy bag within 1 rotation (units=${units.length})`);
+  const gpLv2 = {
+    difficultyLevel: 2,
+    unitStats: {},
+    unitRotationBag: ["add_2digit_carry", "sub_2digit_borrow", "kuku_intro", "volume_unit", "calc_idea_basic", "estimation_basic"]
+  };
+  const unitsLv2 = UnitRegistry.getUnitsForLevel("math", 2, 2);
+  const seenLv2 = new Set();
+  for (let i = 0; i < unitsLv2.length; i++) {
+    seenLv2.add(UnitSelector._drawFromRotationBag(gpLv2, unitsLv2));
+  }
+  for (const unitId of ["add_sub_inverse", "length_unit", "time_clock_basic", "fraction_intro"]) {
+    assert.ok(seenLv2.has(unitId), `New Lv2 unit '${unitId}' must appear within one rotation`);
+  }
+  console.log(`  [PASS] New units injected into legacy Lv1/Lv2 bags within 1 rotation (Lv1=${units.length}, Lv2=${unitsLv2.length})`);
 }
 
 // 5. RISU 2年生 単元一覧との突合サマリー (図形1単元 + 図形以外11単元)
@@ -291,6 +374,7 @@ testTemplatesExist();
 testMassGeneration();
 testBoxNetFaceCounts();
 testBreadthTemplates();
+testDeepeningTemplates();
 testKukuSubTopics();
 testExistingUnitStrengthening();
 testRotationBagSync();

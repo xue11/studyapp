@@ -3,7 +3,7 @@
  *
  * 検証する契約:
  *   1. Lv1 / Lv2 / Lv3 の単元とテンプレートが登録されている
- *   2. 12本すべてが10問ずつ生成でき、QuestionValidator を通る
+ *   2. 13本すべてが10問ずつ生成でき、QuestionValidator を通る
  *   3. figure_tap: 正解部品が figureParts に実在し、条件（直角/最長/等辺/すべて）と一致する
  *   4. figure_display: 描かれた図が「答え」と一致する（頂点数・辺の長さ・周）
  *   5. Engine 回帰: angle の頂点O / rectangle_tall / 設問文の潰れが直っているか
@@ -52,7 +52,8 @@ const EXPECTED = [
   ["g2_disp_count_vertices", "shape_figure_measure", 3, "figure_display"],
   ["g2_disp_count_angles", "shape_figure_measure", 3, "figure_display"],
   ["g2_disp_grid_sides", "shape_figure_measure", 3, "figure_display"],
-  ["g2_disp_square_perimeter", "shape_figure_measure", 3, "figure_display"]
+  ["g2_disp_square_perimeter", "shape_figure_measure", 3, "figure_display"],
+  ["g2_adv_rectangle_perimeter_01", "shape_figure_measure", 3, "figure_display"]
 ];
 {
   EXPECTED.forEach(s => {
@@ -65,7 +66,7 @@ const EXPECTED = [
   });
   const g2fig = Object.values(TemplateRegistry.templates)
     .filter(t => t.problemType === "figure" && t.grade === 2);
-  ok(g2fig.length === 12, "G2 図形テンプレートは 12件 (actual=" + g2fig.length + ")");
+  ok(g2fig.length === 13, "G2 図形テンプレートは 13件 (actual=" + g2fig.length + ")");
 }
 
 // ---------------------------------------------------------------
@@ -195,7 +196,19 @@ console.log("\n5. figure_display: 図が答えと一致すること");
 
   {
     let good = 0;
-    ["g2_disp_count_vertices", "g2_disp_count_angles", "g2_disp_grid_sides", "g2_disp_square_perimeter"]
+    for (let i = 0; i < 10; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion("g2_adv_rectangle_perimeter_01", []);
+      const edges = (q.figureSpec.labels || {}).edges || {};
+      const w = Number(String(edges.AB || "").replace("cm", ""));
+      const h = Number(String(edges.BC || "").replace("cm", ""));
+      if (Number.isFinite(w) && Number.isFinite(h) && 2 * (w + h) === Number(q.answer)) good++;
+    }
+    ok(good === 10, "g2_adv_rectangle_perimeter_01 答え=2×(たて+よこ) (" + good + "/10)");
+  }
+
+  {
+    let good = 0;
+    ["g2_disp_count_vertices", "g2_disp_count_angles", "g2_disp_grid_sides", "g2_disp_square_perimeter", "g2_adv_rectangle_perimeter_01"]
       .forEach(id => {
         for (let i = 0; i < 5; i++) {
           const q = RuleBasedQuestionSource.generateQuestion(id, []);
@@ -205,7 +218,7 @@ console.log("\n5. figure_display: 図が答えと一致すること");
             && !q.figureParts && !q.figureChoices) good++;
         }
       });
-    ok(good === 20, "figureHTML が描画され、数値入力形式である (" + good + "/20)");
+    ok(good === 25, "figureHTML が描画され、数値入力形式である (" + good + "/25)");
   }
 }
 
@@ -264,7 +277,7 @@ console.log("\n7. 単元選択 / テスト生成との整合");
   ok(tapPool.length === 4, "shape_figure_tap に4件のテンプレート (n=" + tapPool.length + ")");
   ok(tapPool.every(t => t.answerType === "figure_tap"), "shape_figure_tap はすべて figure_tap");
   const dispPool = TemplateRegistry.getByUnit("math", 2, 3, "shape_figure_measure");
-  ok(dispPool.length === 4, "shape_figure_measure に4件のテンプレート (n=" + dispPool.length + ")");
+  ok(dispPool.length === 5, "shape_figure_measure に5件のテンプレート (n=" + dispPool.length + ")");
   ok(dispPool.every(t => t.answerType === "figure_display"), "shape_figure_measure はすべて figure_display");
   const lv1Pool = TemplateRegistry.getByUnit("math", 2, 1, "shape_tri_quad");
   ok(lv1Pool.length === 4, "shape_tri_quad に4件のテンプレート (n=" + lv1Pool.length + ")");

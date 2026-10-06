@@ -57,6 +57,10 @@ class UnitRegistry {
         2: [
           { id: "add_2digit_carry", name: "2けたのたし算（くり上がりあり）", concepts: ["add_2digit_carry"] },
           { id: "sub_2digit_borrow", name: "2けたのひき算（くり下がりあり）", concepts: ["sub_2digit_borrow"] },
+          { id: "add_sub_inverse", name: "たし算・ひき算の逆算", concepts: ["add_sub_missing_number"] },
+          { id: "length_unit", name: "長さの単位（cm・mm）", concepts: ["length_add_sub_mixed"] },
+          { id: "time_clock_basic", name: "時こくと時間", concepts: ["time_duration_across_hour"] },
+          { id: "fraction_intro", name: "分数（2年）", concepts: ["fraction_compare_pictures"] },
           { id: "kuku_intro", name: "かけ算のいみと九九（2〜5のだん）", concepts: ["kuku_basic_groups"] },
           { id: "volume_unit", name: "かさの単位（L・dL・mL）", concepts: ["volume_convert_basic", "volume_compare_basic"] },
           { id: "calc_idea_basic", name: "計算のくふう（まとめて計算）", concepts: ["calc_idea_make_10", "calc_idea_make_100", "calc_idea_sub_together"] },
