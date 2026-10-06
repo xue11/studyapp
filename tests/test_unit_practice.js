@@ -25,6 +25,7 @@ require("../js/templates_math.js");
 require("../js/templates_units_p1.js");
 require("../js/templates_figures_g1.js");
 require("../js/templates_figures_g2.js");
+require("../js/templates_g2_extra.js");
 require("../js/templates_clock.js");
 
 const { AppUI } = require("../js/ui.js");
@@ -123,6 +124,21 @@ check("単元カードにLv1基礎の練習ボタンが含まれる",
   unitSelectHTML.includes("Lv1 基礎") && unitSelectHTML.includes("app.startUnitPracticeSession('length_unit', 5, 2, 1)"));
 check("複数レベルの単元に全レベル練習ボタンが含まれる",
   unitSelectHTML.includes("全レベルから10問") && unitSelectHTML.includes("app.startUnitPracticeSession('length_unit', 10, 2, 2)"));
+check("関連単元が3つの学習領域見出しにまとめられる",
+  ["たし算・ひき算", "かけ算・九九", "図形"].every(label => unitSelectHTML.includes(`<h3 style="font-size:1rem; margin:0; padding:0 2px;">${label}</h3>`)));
+check("関連単元は既存IDのままレベル別に練習できる",
+  ["add_2digit_no_carry", "add_2digit_carry", "kuku_intro", "kuku_partial", "shape_tri_quad", "shape_figure_tap", "shape_figure_measure"]
+    .every(unitId => unitSelectHTML.includes(`app.startUnitPracticeSession('${unitId}'`)));
+check("図形領域のLv1〜Lv3問題がそれぞれ表示される",
+  ["shape_tri_quad', 5, 2, 1", "shape_figure_tap', 5, 2, 2", "shape_figure_measure', 5, 2, 3"]
+    .every(action => unitSelectHTML.includes(action)));
+check("旧単元IDに保存済みの練習履歴が引き続き表示される",
+  (() => {
+    mockUI.getActiveProfile().skill.subject.gradeProgress.grade2.unitStats.add_2digit_carry = {
+      attempts: 7, correct: 6, accuracy: 6 / 7, masteryScore: 0.8
+    };
+    return mockUI._renderUnitSelectScreen({ grade: 2 }).includes("練習: <b>7問</b>");
+  })());
 
 const homeHTML = mockUI._renderHomeScreen(mockUI.getActiveProfile());
 check("ホーム画面に「たんげんをえらんで練習」ボタンが含まれる", homeHTML.includes("たんげんをえらんで練習"));

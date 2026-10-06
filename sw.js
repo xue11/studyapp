@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.7)
-const CACHE_NAME = 'arith-study-v2.9.7-jst-history-cap';
+// PWA Service Worker (V2.9.7 related-unit grouping update)
+const CACHE_NAME = 'arith-study-v2.9.7-related-unit-groups';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -45,9 +45,8 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-// インストール時：キャッシュプリフェッチ & 直ちに有効化待機へ
+// インストール時：キャッシュを準備し、更新はユーザーの操作まで待機する
 self.addEventListener('install', e => {
-  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))

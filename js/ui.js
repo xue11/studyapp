@@ -1479,6 +1479,79 @@ class AppUI {
       return "➕";
     };
 
+    const unitSections = [];
+    const sectionsByKey = new Map();
+    for (const unit of allUnits) {
+      const groupId = unit.learningGroupId || null;
+      const sectionKey = groupId || `unit:${unit.id}`;
+      let section = sectionsByKey.get(sectionKey);
+      if (!section) {
+        section = {
+          groupId,
+          label: groupId && UnitRegistry.getLearningGroupLabel("math", viewGrade, groupId),
+          units: []
+        };
+        sectionsByKey.set(sectionKey, section);
+        unitSections.push(section);
+      }
+      section.units.push(unit);
+    }
+    const groupOrder = { addition_subtraction: 0, multiplication: 1, geometry: 2 };
+    unitSections.sort((a, b) =>
+      (a.groupId ? groupOrder[a.groupId] : 100) - (b.groupId ? groupOrder[b.groupId] : 100)
+    );
+
+    const renderUnitCard = (u) => {
+      const stats = unitStats[u.id];
+      const availableLevels = [1, 2, 3].filter(level =>
+        (tReg.getByUnit("math", viewGrade, level, u.id) || []).length > 0
+      );
+      const attempts = stats?.attempts || 0;
+      const accuracy = (attempts > 0 && stats?.accuracy !== null && stats?.accuracy !== undefined)
+        ? Math.round(stats.accuracy * 100) : null;
+      const icon = getUnitIcon(u);
+
+      let accuracyBadge = '';
+      if (accuracy !== null) {
+        if (accuracy >= 80) accuracyBadge = `<span class="badge success">正解率 ${accuracy}%</span>`;
+        else if (accuracy >= 60) accuracyBadge = `<span class="badge" style="background:#fef3c7; color:#b45309;">正解率 ${accuracy}%</span>`;
+        else accuracyBadge = `<span class="badge warn">正解率 ${accuracy}% (にがて)</span>`;
+      } else {
+        accuracyBadge = `<span class="badge" style="background:var(--bg); color:var(--text-muted);">未学習</span>`;
+      }
+
+      return `
+        <div style="border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; background:var(--card-bg); box-shadow:var(--shadow-sm);">
+          <div style="font-weight:bold; font-size:0.95rem; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <span style="font-size:1.2rem;">${icon}</span>
+            <span>${u.name}</span>
+          </div>
+
+          <div style="display:flex; gap:6px; align-items:center; font-size:0.8rem; color:var(--text-muted); margin-bottom:10px; flex-wrap:wrap;">
+            ${accuracyBadge}
+            <span>練習: <b>${attempts}問</b></span>
+            <span>種類: <b>${u.templateCount}問型</b></span>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            ${availableLevels.map(level => `
+              <div style="display:grid; grid-template-columns: minmax(72px, 0.7fr) 1fr 1fr; gap:6px; align-items:center;">
+                <span style="font-size:0.8rem; color:var(--text-muted);">Lv${level} ${["", "基礎", "標準", "発展"][level]}</span>
+                <button class="btn btn-outline" style="min-height:36px; padding:5px 7px; font-size:0.8rem; margin-bottom:0;"
+                  onclick="app.startUnitPracticeSession('${u.id}', 5, ${viewGrade}, ${level})">⚡ 5問</button>
+                <button class="btn btn-primary" style="min-height:36px; padding:5px 7px; font-size:0.8rem; margin-bottom:0;"
+                  onclick="app.startUnitPracticeSession('${u.id}', 10, ${viewGrade}, ${level})">🚀 10問</button>
+              </div>
+            `).join("")}
+            ${availableLevels.length > 1 ? `
+              <button class="btn btn-outline" style="min-height:34px; padding:5px 8px; font-size:0.8rem; margin:0;"
+                onclick="app.startUnitPracticeSession('${u.id}', 10, ${viewGrade})">全レベルから10問</button>
+            ` : ""}
+          </div>
+        </div>
+      `;
+    };
+
     return `
       <div class="card" style="padding:16px 14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -1501,61 +1574,21 @@ class AppUI {
         </div>
 
         <!-- 単元一覧リスト -->
-        <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; flex-direction:column; gap:14px;">
           ${allUnits.length === 0 ? `
             <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.9rem;">
               この学年の単元問題は準備中です。
             </div>
-          ` : allUnits.map(u => {
-            const stats = unitStats[u.id];
-            const availableLevels = [1, 2, 3].filter(level =>
-              (tReg.getByUnit("math", viewGrade, level, u.id) || []).length > 0
-            );
-            const attempts = stats?.attempts || 0;
-            const accuracy = (attempts > 0 && stats?.accuracy !== null && stats?.accuracy !== undefined)
-              ? Math.round(stats.accuracy * 100) : null;
-            const icon = getUnitIcon(u);
-
-            let accuracyBadge = '';
-            if (accuracy !== null) {
-              if (accuracy >= 80) accuracyBadge = `<span class="badge success">正解率 ${accuracy}%</span>`;
-              else if (accuracy >= 60) accuracyBadge = `<span class="badge" style="background:#fef3c7; color:#b45309;">正解率 ${accuracy}%</span>`;
-              else accuracyBadge = `<span class="badge warn">正解率 ${accuracy}% (にがて)</span>`;
-            } else {
-              accuracyBadge = `<span class="badge" style="background:var(--bg); color:var(--text-muted);">未学習</span>`;
-            }
-
-            return `
-              <div style="border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; background:var(--card-bg); box-shadow:var(--shadow-sm);">
-                <div style="font-weight:bold; font-size:0.95rem; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                  <span style="font-size:1.2rem;">${icon}</span>
-                  <span>${u.name}</span>
-                </div>
-
-                <div style="display:flex; gap:6px; align-items:center; font-size:0.8rem; color:var(--text-muted); margin-bottom:10px; flex-wrap:wrap;">
-                  ${accuracyBadge}
-                  <span>練習: <b>${attempts}問</b></span>
-                  <span>種類: <b>${u.templateCount}問型</b></span>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:7px;">
-                  ${availableLevels.map(level => `
-                    <div style="display:grid; grid-template-columns: minmax(72px, 0.7fr) 1fr 1fr; gap:6px; align-items:center;">
-                      <span style="font-size:0.8rem; color:var(--text-muted);">Lv${level} ${["", "基礎", "標準", "発展"][level]}</span>
-                      <button class="btn btn-outline" style="min-height:36px; padding:5px 7px; font-size:0.8rem; margin-bottom:0;"
-                        onclick="app.startUnitPracticeSession('${u.id}', 5, ${viewGrade}, ${level})">⚡ 5問</button>
-                      <button class="btn btn-primary" style="min-height:36px; padding:5px 7px; font-size:0.8rem; margin-bottom:0;"
-                        onclick="app.startUnitPracticeSession('${u.id}', 10, ${viewGrade}, ${level})">🚀 10問</button>
-                    </div>
-                  `).join("")}
-                  ${availableLevels.length > 1 ? `
-                    <button class="btn btn-outline" style="min-height:34px; padding:5px 8px; font-size:0.8rem; margin:0;"
-                      onclick="app.startUnitPracticeSession('${u.id}', 10, ${viewGrade})">全レベルから10問</button>
-                  ` : ""}
-                </div>
+          ` : unitSections.map(section => `
+            <section style="display:flex; flex-direction:column; gap:8px;">
+              ${section.label ? `
+                <h3 style="font-size:1rem; margin:0; padding:0 2px;">${section.label}</h3>
+              ` : ""}
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                ${section.units.map(renderUnitCard).join("")}
               </div>
-            `;
-          }).join("")}
+            </section>
+          `).join("")}
         </div>
       </div>
     `;
