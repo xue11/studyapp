@@ -386,21 +386,25 @@ class AppUI {
    * @param {string} unitId 練習対象の単元ID (例: 'time_clock_basic', 'kuku_intro')
    * @param {number} count 出題数 (デフォルト 10問、5問も指定可能)
    * @param {number|null} targetGrade 対象学年 (nullなら現在学年)
+   * @param {number|null} targetLevel 出題レベル (nullなら全レベルから出題)
    */
-  startUnitPracticeSession(unitId, count = 10, targetGrade = null) {
+  startUnitPracticeSession(unitId, count = 10, targetGrade = null, targetLevel = null) {
     const profile = this.getActiveProfile();
     const currentGrade = targetGrade || profile.skill.subject.currentGrade;
     const tReg = TemplateRegistry;
 
-    // 指定単元のテンプレートをレベル横断で収集
+    // 指定単元のテンプレートを全レベル、または選択されたレベルから収集
     let pool = [];
-    for (let lv = 1; lv <= 3; lv++) {
+    const levels = targetLevel === null ? [1, 2, 3] : [Number(targetLevel)];
+    for (const lv of levels) {
       const tmpls = tReg.getByUnit("math", currentGrade, lv, unitId) || [];
       pool = pool.concat(tmpls);
     }
 
     if (pool.length === 0) {
-      alert("この単元の問題は準備中です。");
+      alert(targetLevel === null
+        ? "この単元の問題は準備中です。"
+        : `この単元のLv${targetLevel}の問題は準備中です。`);
       return;
     }
 
@@ -415,6 +419,7 @@ class AppUI {
       targetUnitId: unitId,
       targetUnitName: unitName,
       targetGrade: currentGrade,
+      targetDifficultyLevel: targetLevel === null ? null : Number(targetLevel),
       currentIndex: 0,
       totalCount: count,
       correctCount: 0,
@@ -1503,6 +1508,9 @@ class AppUI {
             </div>
           ` : allUnits.map(u => {
             const stats = unitStats[u.id];
+            const availableLevels = [1, 2, 3].filter(level =>
+              (tReg.getByUnit("math", viewGrade, level, u.id) || []).length > 0
+            );
             const attempts = stats?.attempts || 0;
             const accuracy = (attempts > 0 && stats?.accuracy !== null && stats?.accuracy !== undefined)
               ? Math.round(stats.accuracy * 100) : null;
@@ -1530,11 +1538,20 @@ class AppUI {
                   <span>種類: <b>${u.templateCount}問型</b></span>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                  <button class="btn btn-outline" style="min-height:38px; padding:6px 10px; font-size:0.85rem; margin-bottom:0;" 
-                    onclick="app.startUnitPracticeSession('${u.id}', 5, ${viewGrade})">⚡ 5問れんしゅう</button>
-                  <button class="btn btn-primary" style="min-height:38px; padding:6px 10px; font-size:0.85rem; margin-bottom:0;" 
-                    onclick="app.startUnitPracticeSession('${u.id}', 10, ${viewGrade})">🚀 10問れんしゅう</button>
+                <div style="display:flex; flex-direction:column; gap:7px;">
+                  ${availableLevels.map(level => `
+                    <div style="display:grid; grid-template-columns: minmax(72px, 0.7fr) 1fr 1fr; gap:6px; align-items:center;">
+                      <span style="font-size:0.8rem; color:var(--text-muted);">Lv${level} ${["", "基礎", "標準", "発展"][level]}</span>
+                      <button class="btn btn-outline" style="min-height:36px; padding:5px 7px; font-size:0.8rem; margin-bottom:0;"
+                        onclick="app.startUnitPracticeSession('${u.id}', 5, ${viewGrade}, ${level})">⚡ 5問</button>
+                      <button class="btn btn-primary" style="min-height:36px; padding:5px 7px; font-size:0.8rem; margin-bottom:0;"
+                        onclick="app.startUnitPracticeSession('${u.id}', 10, ${viewGrade}, ${level})">🚀 10問</button>
+                    </div>
+                  `).join("")}
+                  ${availableLevels.length > 1 ? `
+                    <button class="btn btn-outline" style="min-height:34px; padding:5px 8px; font-size:0.8rem; margin:0;"
+                      onclick="app.startUnitPracticeSession('${u.id}', 10, ${viewGrade})">全レベルから10問</button>
+                  ` : ""}
                 </div>
               </div>
             `;
@@ -2286,4 +2303,3 @@ if (typeof module !== "undefined" && module.exports) {
   window.app = app;
   window.formatElapsed = formatElapsed;
 }
-

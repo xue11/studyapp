@@ -94,24 +94,43 @@ check("出題数が10問", mockUI.session.questions.length === 10);
 check("全問が kuku_intro 単元", mockUI.session.questions.every(q => q.unitId === "kuku_intro"));
 
 // -------------------------------------------------------------
-// 4. UI 画面描画の検証 (_renderUnitSelectScreen)
+// 4. 選択したレベルだけを出題する
 // -------------------------------------------------------------
-console.log("\n4. UI描画検証 (_renderUnitSelectScreen / _renderHomeScreen)");
+console.log("\n4. startUnitPracticeSession レベル指定検証 (2年: length_unit)");
+
+mockUI.startUnitPracticeSession("length_unit", 5, 2, 1);
+check("Lv1の指定がセッションに保存される", mockUI.session.targetDifficultyLevel === 1);
+check("Lv1指定ではLv1問題のみ出題される",
+  mockUI.session.questions.length === 5 && mockUI.session.questions.every(q => q.difficultyLevel === 1));
+
+mockUI.startUnitPracticeSession("length_unit", 5, 2, 2);
+check("Lv2の指定がセッションに保存される", mockUI.session.targetDifficultyLevel === 2);
+check("Lv2指定ではLv2問題のみ出題される",
+  mockUI.session.questions.length === 5 && mockUI.session.questions.every(q => q.difficultyLevel === 2));
+
+// -------------------------------------------------------------
+// 5. UI画面描画の検証 (_renderUnitSelectScreen)
+// -------------------------------------------------------------
+console.log("\n5. UI描画検証 (_renderUnitSelectScreen / _renderHomeScreen)");
 
 const unitSelectHTML = mockUI._renderUnitSelectScreen({ grade: 2 });
 check("単元選択画面に「単元をえらんで練習」見出しが含まれる", unitSelectHTML.includes("単元をえらんで練習"));
 check("時こくと時間のカードが含まれる", unitSelectHTML.includes("時こくと時間"));
 check("かけ算のいみと九九のカードが含まれる", unitSelectHTML.includes("かけ算のいみと九九"));
-check("5問れんしゅうボタンが含まれる", unitSelectHTML.includes("5問れんしゅう"));
-check("10問れんしゅうボタンが含まれる", unitSelectHTML.includes("10問れんしゅう"));
+check("5問れんしゅうボタンが含まれる", unitSelectHTML.includes("5問"));
+check("10問れんしゅうボタンが含まれる", unitSelectHTML.includes("10問"));
+check("単元カードにLv1基礎の練習ボタンが含まれる",
+  unitSelectHTML.includes("Lv1 基礎") && unitSelectHTML.includes("app.startUnitPracticeSession('length_unit', 5, 2, 1)"));
+check("複数レベルの単元に全レベル練習ボタンが含まれる",
+  unitSelectHTML.includes("全レベルから10問") && unitSelectHTML.includes("app.startUnitPracticeSession('length_unit', 10, 2, 2)"));
 
 const homeHTML = mockUI._renderHomeScreen(mockUI.getActiveProfile());
 check("ホーム画面に「たんげんをえらんで練習」ボタンが含まれる", homeHTML.includes("たんげんをえらんで練習"));
 
 // -------------------------------------------------------------
-// 5. 結果画面描画の検証 (_renderSessionResultScreen)
+// 6. 結果画面描画の検証 (_renderSessionResultScreen)
 // -------------------------------------------------------------
-console.log("\n5. 結果画面描画検証 (特訓モード完了表示)");
+console.log("\n6. 結果画面描画検証 (特訓モード完了表示)");
 
 const resultHTML = mockUI._renderSessionResultScreen({
   correctCount: 9,
