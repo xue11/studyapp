@@ -430,11 +430,11 @@ const MATH_TEMPLATES = [
   // ==========================================
   // 小学3年生 (Grade 3)
   // ==========================================
-  // Lv1: kuku_all
+  // Lv1: multiplication_g3 (九九まとめ)
   {
     templateId: "g3_basic_kuku_01",
     grade: 3, difficultyLevel: 1,
-    unitId: "kuku_all", conceptId: "kuku_mastery",
+    unitId: "multiplication_g3", conceptId: "kuku_mastery",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} = ?",
     formats: ["{a} × {b} = ?", "{a} のだん の {b} ばい？", "{a} × {b} は いくつ？"],
@@ -484,11 +484,11 @@ const MATH_TEMPLATES = [
       }
     }
   },
-  // Lv2: mul_2digit_1digit
+  // Lv2: multiplication_g3 (2けた×1けた)
   {
     templateId: "g3_std_mul21_01",
     grade: 3, difficultyLevel: 2,
-    unitId: "mul_2digit_1digit", conceptId: "mul_2digit_algorithm",
+    unitId: "multiplication_g3", conceptId: "mul_2digit_algorithm",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} = ?",
     generate: {
@@ -511,11 +511,11 @@ const MATH_TEMPLATES = [
       }
     }
   },
-  // Lv2: div_no_remainder (割り算 あまりなし)
+  // Lv2: division_g3 (割り算 あまりなし)
   {
     templateId: "g3_std_div_no_remainder_01",
     grade: 3, difficultyLevel: 2,
-    unitId: "div_no_remainder", conceptId: "division_equal_share",
+    unitId: "division_g3", conceptId: "division_equal_share",
     problemType: "calculation", answerType: "number_input",
     format: "{a} ÷ {b} = ?",
     generate: {
@@ -538,11 +538,11 @@ const MATH_TEMPLATES = [
       }
     }
   },
-  // Lv3: div_with_remainder (割り算 あまりあり)
+  // Lv3: division_g3 (割り算 あまりあり)
   {
     templateId: "g3_adv_div_rem_01",
     grade: 3, difficultyLevel: 3,
-    unitId: "div_with_remainder", conceptId: "division_with_remainder",
+    unitId: "division_g3", conceptId: "division_with_remainder",
     problemType: "calculation", answerType: "number_input",
     format: "{a} ÷ {b} の商（あまりは考えない商）はいくつ？",
     generate: {
@@ -566,11 +566,11 @@ const MATH_TEMPLATES = [
       }
     }
   },
-  // Lv3: mixed_mul_div_2step
+  // Lv3: calc_application_g3 (かけ算・わり算の2段階計算)
   {
     templateId: "g3_adv_muldiv2_01",
     grade: 3, difficultyLevel: 3,
-    unitId: "mixed_mul_div_2step", conceptId: "mixed_mul_div",
+    unitId: "calc_application_g3", conceptId: "mixed_mul_div",
     problemType: "calculation", answerType: "number_input",
     format: "{a} × {b} ÷ {c} = ?",
     generate: {
@@ -1619,7 +1619,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g3_word_div_01",
     grade: 3, difficultyLevel: 2,
-    unitId: "div_no_remainder", conceptId: "division_equal_share",
+    unitId: "division_g3", conceptId: "division_equal_share",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "クッキーが {total}まい あります。{b}人で 同じ数ずつ 分けると、1人 なんまい？",
@@ -1650,7 +1650,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g3_word_div_02",
     grade: 3, difficultyLevel: 2,
-    unitId: "div_no_remainder", conceptId: "division_equal_share",
+    unitId: "division_g3", conceptId: "division_equal_share",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "{total}本の 花を 同じ数ずつ {b}本 ずつ たばに します。なんたば できますか？",
@@ -1681,7 +1681,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g3_word_div_03",
     grade: 3, difficultyLevel: 2,
-    unitId: "div_no_remainder", conceptId: "division_equal_share",
+    unitId: "division_g3", conceptId: "division_equal_share",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "1はこに {b}こ はいります。{total}こ の おかしは なんはこ できますか？",
@@ -1712,7 +1712,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g3_word_div_rem_01",
     grade: 3, difficultyLevel: 3,
-    unitId: "div_with_remainder", conceptId: "division_with_remainder",
+    unitId: "division_g3", conceptId: "division_with_remainder",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "あめ {total}こを {b}人で 同じ数ずつ 分けると、1人 なんこ もらえて、なんこ あまる？ あまりを 答えてください。",
@@ -2331,7 +2331,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g3_word_reverse_div_01",
     grade: 3, difficultyLevel: 3,
-    unitId: "div_no_remainder", conceptId: "division_equal_share",
+    unitId: "division_g3", conceptId: "division_equal_share",
     problemType: "word_problem", answerType: "number_input",
     sentencePatterns: [
       "クッキーを {b}人で 同じ数ずつ 分けたら、1人分が {a}枚に なりました。クッキーは ぜんぶで 何枚 あった？",
@@ -2515,7 +2515,7 @@ const MATH_TEMPLATES = [
   {
     templateId: "g3_puzzle_symbol_01",
     grade: 3, difficultyLevel: 3,
-    unitId: "kuku_all", conceptId: "cryptarithmetic",
+    unitId: "multiplication_g3", conceptId: "cryptarithmetic",
     problemType: "calculation", answerType: "number_input",
     format: "同じマークには 同じ数が入ります。\n「 ★ × ★ = {sq} 」のとき、★ に入る数は？",
     generate: {

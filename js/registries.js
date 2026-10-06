@@ -32,6 +32,12 @@ class UnitRegistry {
         multiplication: "かけ算・九九",
         geometry: "図形",
         calculation_application: "計算の活用"
+      },
+      3: {
+        addition_subtraction: "たし算・ひき算",
+        multiplication: "かけ算",
+        division: "わり算",
+        calculation_application: "計算の活用"
       }
     }
   };
@@ -54,6 +60,13 @@ class UnitRegistry {
         shape_tri_quad: "geometry_g2",
         shape_figure_tap: "geometry_g2",
         shape_figure_measure: "geometry_g2"
+      },
+      3: {
+        kuku_all: "multiplication_g3",
+        mul_2digit_1digit: "multiplication_g3",
+        div_no_remainder: "division_g3",
+        div_with_remainder: "division_g3",
+        mixed_mul_div_2step: "calc_application_g3"
       }
     }
   };
@@ -76,6 +89,13 @@ class UnitRegistry {
         shape_tri_quad: "図形（三角形と四角形）",
         shape_figure_tap: "図形（辺・頂点を さがそう）",
         shape_figure_measure: "図形（図から 長さや 数を みよう）"
+      },
+      3: {
+        kuku_all: "九九のまとめ・応用パズル",
+        mul_2digit_1digit: "2けた×1けたのかけ算",
+        div_no_remainder: "わり算（あまりなし・逆向き）",
+        div_with_remainder: "わり算（あまりあり）",
+        mixed_mul_div_2step: "かけ算・わり算の2段階計算"
       }
     }
   };
@@ -128,21 +148,20 @@ class UnitRegistry {
       },
       3: {
         1: [
-          { id: "kuku_all", name: "九九のまとめ", concepts: ["kuku_mastery"] },
-          { id: "add_sub_3digit", name: "3けたのたし算・ひき算", concepts: ["add_sub_3digit_basic"] }
+          { id: "multiplication_g3", name: "かけ算", concepts: ["kuku_mastery"], learningGroupId: "multiplication" },
+          { id: "add_sub_3digit", name: "3けたのたし算・ひき算", concepts: ["add_sub_3digit_basic"], learningGroupId: "addition_subtraction" }
         ],
         2: [
-          { id: "mul_2digit_1digit", name: "2けた×1けたのかけ算", concepts: ["mul_2digit_algorithm"] },
-          { id: "div_no_remainder", name: "わり算（あまりなし）", concepts: ["division_equal_share", "division_by_multiplication"] },
+          { id: "multiplication_g3", name: "かけ算", concepts: ["mul_2digit_algorithm"], learningGroupId: "multiplication" },
+          { id: "division_g3", name: "わり算", concepts: ["division_equal_share", "division_by_multiplication"], learningGroupId: "division" },
           { id: "length_unit", name: "長さの単位（m・cm・km）", concepts: ["length_convert_m_km"] },
           { id: "weight_unit", name: "重さの単位（kg・g）", concepts: ["weight_convert_basic"] },
           { id: "time_unit", name: "時間の単位（時・分・秒）", concepts: ["time_convert_calc", "clock_read_24h", "clock_time_after_h", "clock_duration_hm", "clock_to_minutes"] }
         ],
         3: [
-          { id: "div_with_remainder", name: "わり算（あまりあり）", concepts: ["division_with_remainder"] },
-          { id: "mixed_mul_div_2step", name: "かけ算・わり算の2段階計算", concepts: ["mixed_mul_div"] },
-          { id: "div_no_remainder", name: "わり算の逆向き問題（総数を求める）", concepts: ["division_equal_share"] },
-          { id: "kuku_all", name: "九九の応用パズル", concepts: ["kuku_mastery", "cryptarithmetic"] },
+          { id: "division_g3", name: "わり算", concepts: ["division_with_remainder", "division_equal_share"], learningGroupId: "division" },
+          { id: "calc_application_g3", name: "計算の活用", concepts: ["mixed_mul_div"], learningGroupId: "calculation_application" },
+          { id: "multiplication_g3", name: "かけ算", concepts: ["kuku_mastery", "cryptarithmetic"], learningGroupId: "multiplication" },
           // V2.7.0: 図形タップ問題 (answerType: "figure_tap") の3年生向け単元
           { id: "angle_figure", name: "角と三角形（図形タップ）", concepts: ["angle_right_vertex", "angle_right_all", "tri_longest_side"] },
           { id: "area_grid_figure", name: "面積と方眼（図形タップ）", concepts: ["area_square_sides", "area_rect_sides", "area_square_equal_sides"] },
@@ -271,9 +290,9 @@ class BadgeRegistry {
     },
     {
       id: "kuku_master",
-      label: "九九マスター",
-      description: "九九のまとめで正答率90%以上（20問以上）",
-      condition: { type: "unit_accuracy", unit: "kuku_all", minAttempts: 20, minAccuracy: 0.9 }
+      label: "かけ算マスター",
+      description: "かけ算で正答率90%以上（20問以上）",
+      condition: { type: "unit_accuracy", unit: "multiplication_g3", minAttempts: 20, minAccuracy: 0.9 }
     }
   ];
 

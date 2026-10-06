@@ -125,9 +125,27 @@ check("Lv2指定ではLv2問題のみ出題される",
   mockUI.session.questions.length === 5 && mockUI.session.questions.every(q => q.difficultyLevel === 2));
 
 // -------------------------------------------------------------
-// 5. UI画面描画の検証 (_renderUnitSelectScreen)
+// 5. Grade 3 consolidated unit series
 // -------------------------------------------------------------
-console.log("\n5. UI描画検証 (_renderUnitSelectScreen / _renderHomeScreen)");
+console.log("\n5. startUnitPracticeSession 検証 (3年の統合単元)");
+for (const [unitId, level] of [
+  ["add_sub_3digit", 1],
+  ["multiplication_g3", 1],
+  ["multiplication_g3", 2],
+  ["division_g3", 2],
+  ["division_g3", 3],
+  ["calc_application_g3", 3]
+]) {
+  mockUI.startUnitPracticeSession(unitId, 5, 3, level);
+  check(`${unitId} Lv${level}で選んだ系列・レベルの問題だけを出題`,
+    mockUI.session.questions.length === 5 &&
+    mockUI.session.questions.every(q => q.unitId === unitId && q.difficultyLevel === level));
+}
+
+// -------------------------------------------------------------
+// 6. UI画面描画の検証 (_renderUnitSelectScreen)
+// -------------------------------------------------------------
+console.log("\n6. UI描画検証 (_renderUnitSelectScreen / _renderHomeScreen)");
 
 const unitSelectHTML = mockUI._renderUnitSelectScreen({ grade: 2 });
 check("単元選択画面に「単元をえらんで練習」見出しが含まれる", unitSelectHTML.includes("単元をえらんで練習"));
@@ -150,6 +168,14 @@ check("九九・図形・計算の活用に同一IDの複数レベルがある",
     "geometry_g2', 5, 2, 1", "geometry_g2', 5, 2, 2", "geometry_g2', 5, 2, 3",
     "calc_application', 5, 2, 2", "calc_application', 5, 2, 3"]
     .every(action => unitSelectHTML.includes(action)));
+const grade3UnitSelectHTML = mockUI._renderUnitSelectScreen({ grade: 3 });
+check("3年生のかけ算・わり算は複数レベルで同じ系列IDを使う",
+  ["multiplication_g3', 5, 3, 1", "multiplication_g3', 5, 3, 2",
+    "division_g3', 5, 3, 2", "division_g3', 5, 3, 3"]
+    .every(action => grade3UnitSelectHTML.includes(action)));
+check("3年生の2段階計算は計算の活用として選べる",
+  grade3UnitSelectHTML.includes("計算の活用") &&
+  grade3UnitSelectHTML.includes("calc_application_g3', 5, 3, 3"));
 check("移行後の統合単元に保存済みの練習履歴が引き続き表示される",
   (() => {
     mockUI.getActiveProfile().skill.subject.gradeProgress.grade2.unitStats.addition_2digit = {
@@ -162,9 +188,9 @@ const homeHTML = mockUI._renderHomeScreen(mockUI.getActiveProfile());
 check("ホーム画面に「たんげんをえらんで練習」ボタンが含まれる", homeHTML.includes("たんげんをえらんで練習"));
 
 // -------------------------------------------------------------
-// 6. 結果画面描画の検証 (_renderSessionResultScreen)
+// 7. 結果画面描画の検証 (_renderSessionResultScreen)
 // -------------------------------------------------------------
-console.log("\n6. 結果画面描画検証 (特訓モード完了表示)");
+console.log("\n7. 結果画面描画検証 (特訓モード完了表示)");
 
 const resultHTML = mockUI._renderSessionResultScreen({
   correctCount: 9,

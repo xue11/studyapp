@@ -48,6 +48,14 @@ const GRADE_2_UNIT_ID_MIGRATIONS = {
   shape_figure_measure: "geometry_g2"
 };
 
+const GRADE_3_UNIT_ID_MIGRATIONS = {
+  kuku_all: "multiplication_g3",
+  mul_2digit_1digit: "multiplication_g3",
+  div_no_remainder: "division_g3",
+  div_with_remainder: "division_g3",
+  mixed_mul_div_2step: "calc_application_g3"
+};
+
 function migrateAppState(data) {
   if (!data || typeof data !== "object") {
     throw new Error("Migration: Invalid data format.");
@@ -89,7 +97,8 @@ function migrateAppState(data) {
       if (!p.settings) p.settings = {};
       if (typeof p.settings.figureEnabled !== "boolean") p.settings.figureEnabled = true;
 
-      migrateGrade2UnitData(p);
+      migrateGradeUnitData(p, 2, GRADE_2_UNIT_ID_MIGRATIONS);
+      migrateGradeUnitData(p, 3, GRADE_3_UNIT_ID_MIGRATIONS);
     }
   }
 
@@ -100,12 +109,12 @@ function migrateAppState(data) {
   return state;
 }
 
-function migrateGrade2UnitData(profile) {
-  const gradeProgress = profile.skill?.subject?.gradeProgress?.grade2;
+function migrateGradeUnitData(profile, grade, unitIdMigrations) {
+  const gradeProgress = profile.skill?.subject?.gradeProgress?.[`grade${grade}`];
   if (gradeProgress) {
     if (gradeProgress.unitStats && typeof gradeProgress.unitStats === "object") {
       const stats = gradeProgress.unitStats;
-      for (const [legacyId, canonicalId] of Object.entries(GRADE_2_UNIT_ID_MIGRATIONS)) {
+      for (const [legacyId, canonicalId] of Object.entries(unitIdMigrations)) {
         if (!Object.prototype.hasOwnProperty.call(stats, legacyId)) continue;
         const legacyStats = stats[legacyId] || {};
         const canonicalStats = stats[canonicalId];
@@ -140,7 +149,7 @@ function migrateGrade2UnitData(profile) {
 
     if (Array.isArray(gradeProgress.unitRotationBag)) {
       const mappedBag = gradeProgress.unitRotationBag.map(unitId =>
-        GRADE_2_UNIT_ID_MIGRATIONS[unitId] || unitId
+        unitIdMigrations[unitId] || unitId
       );
       gradeProgress.unitRotationBag = [...new Set(mappedBag)];
     }
@@ -150,13 +159,13 @@ function migrateGrade2UnitData(profile) {
   const migratedReviews = [];
   const reviewIndexes = new Map();
   for (const item of profile.reviewQueue) {
-    if (item.grade !== 2) {
+    if (item.grade !== grade) {
       migratedReviews.push(item);
       continue;
     }
 
-    const canonicalUnitId = GRADE_2_UNIT_ID_MIGRATIONS[item.unitId] || item.unitId;
-    const isGroupedUnit = Object.values(GRADE_2_UNIT_ID_MIGRATIONS).includes(canonicalUnitId);
+    const canonicalUnitId = unitIdMigrations[item.unitId] || item.unitId;
+    const isGroupedUnit = Object.values(unitIdMigrations).includes(canonicalUnitId);
     if (!isGroupedUnit) {
       migratedReviews.push(item);
       continue;

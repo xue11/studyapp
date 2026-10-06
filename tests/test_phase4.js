@@ -18,9 +18,9 @@ function testTestEngineGeneration() {
   const gp = profile.skill.subject.gradeProgress.grade3;
 
   // 履歴と弱点の設定
-  profile.history.push({ grade: 3, unitId: "div_no_remainder", correct: true });
-  profile.history.push({ grade: 3, unitId: "mul_2digit_1digit", correct: true });
-  gp.unitStats["kuku_all"] = { attempts: 6, correct: 3, accuracy: 0.50, masteryScore: 0.45 }; // 弱点
+  profile.history.push({ grade: 3, unitId: "division_g3", correct: true });
+  profile.history.push({ grade: 3, unitId: "multiplication_g3", correct: true });
+  gp.unitStats["multiplication_g3"] = { attempts: 6, correct: 3, accuracy: 0.50, masteryScore: 0.45 }; // 弱点
 
   const questions = TestEngine.generateTestQuestions(profile, APP_CONFIG);
   assert.strictEqual(questions.length, 10, "Test must have exactly 10 questions");
@@ -109,4 +109,3 @@ try {
   console.error("\nTEST FAILED:", err);
   process.exit(1);
 }
-

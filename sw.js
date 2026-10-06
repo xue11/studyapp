@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.7 canonical grade-2 units update)
-const CACHE_NAME = 'arith-study-v2.9.7-canonical-g2-units';
+// PWA Service Worker (V2.9.7 canonical grade-2 and grade-3 units update)
+const CACHE_NAME = 'arith-study-v2.9.7-canonical-g3-units';
 const urlsToCache = [
   '/',
   '/index.html',

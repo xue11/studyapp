@@ -28,7 +28,7 @@ function testQuestionValidator() {
     templateId: "g3_std_div_no_remainder_01",
     grade: 3,
     difficultyLevel: 2,
-    unitId: "div_no_remainder",
+    unitId: "division_g3",
     conceptId: "division_equal_share",
     problemType: "calculation",
     answerType: "number_input",
@@ -144,7 +144,7 @@ function testReviewEngine() {
   const reg1 = ReviewEngine.registerForReview(profile, {
     subjectId: "math",
     grade: 3,
-    unitId: "div_no_remainder",
+    unitId: "division_g3",
     templateId: "g3_std_div_no_remainder_01"
   }, "2026-08-31");
   assert.strictEqual(reg1.registered, true);
@@ -156,7 +156,7 @@ function testReviewEngine() {
   const reg2 = ReviewEngine.registerForReview(profile, {
     subjectId: "math",
     grade: 3,
-    unitId: "div_no_remainder"
+    unitId: "division_g3"
   }, "2026-08-31");
   assert.strictEqual(reg2.registered, false);
   assert.strictEqual(reg2.reason, "maintained");
@@ -182,7 +182,7 @@ function testReviewEngine() {
   const reg3 = ReviewEngine.registerForReview(profile, {
     subjectId: "math",
     grade: 3,
-    unitId: "div_no_remainder"
+    unitId: "division_g3"
   }, "2026-09-25");
   assert.strictEqual(reg3.registered, true);
   assert.strictEqual(reg3.reason, "reactivated");
@@ -338,4 +338,3 @@ try {
   console.error("\nTEST FAILED:", err);
   process.exit(1);
 }
-

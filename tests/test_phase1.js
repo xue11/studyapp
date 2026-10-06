@@ -114,7 +114,8 @@ function testMigration() {
   const p = migrated.profiles[0];
   assert.strictEqual(p.skill.subject.gradeProgress.grade3.difficultyLevel, 2);
   assert.strictEqual(p.skill.subject.gradeProgress.grade3.learningStartDate, "2026-08-01");
-  assert.ok(p.skill.subject.gradeProgress.grade3.unitStats.div_no_remainder);
+  assert.ok(p.skill.subject.gradeProgress.grade3.unitStats.division_g3);
+  assert.ok(!p.skill.subject.gradeProgress.grade3.unitStats.div_no_remainder);
   assert.strictEqual(typeof p.skill.subject.difficultyLevel, "undefined", "Old flat fields removed");
   assert.strictEqual(typeof p.streaks.incorrectStreak, "undefined", "incorrectStreak removed during migration");
   assert.strictEqual(p.identity.nickname, "", "missing nickname auto-filled during migration (V2.5.14)");
@@ -169,4 +170,3 @@ try {
   console.error("\nTEST FAILED:", err);
   process.exit(1);
 }
-

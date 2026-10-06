@@ -57,7 +57,7 @@ ok(!off.includes('angle_figure') && !off.includes('area_grid_figure') && !off.in
   'figureEnabled=false で G3図形3単元が除外される (残=' + JSON.stringify(off) + ')');
 ok(on.includes('angle_figure') && on.includes('area_grid_figure') && on.includes('solid_net_figure'),
   'figureEnabled=true で G3図形3単元が選択される (n=' + on.length + ')');
-ok(off.includes('div_with_remainder'), '非図形単元は figureEnabled=false でも残る');
+ok(off.includes('division_g3'), '非図形単元は figureEnabled=false でも残る');
 
 // --- V2.8.0 回帰: figure_tap の設問文がカード問題に潰されないこと
 // 此前は question_source が problemType だけで buildProblem を呼んでいたため、
