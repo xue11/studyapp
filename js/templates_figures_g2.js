@@ -166,18 +166,23 @@
       var tgt = Math.min(2, Math.max(1, Number(vars.target_idx) || 1));
       var ds = Number(vars.distractor_seed) || 0;
       var cards2 = [
-        { id: "c1", figure: { type: "quadrilateral", params: { size: 92, variant: "rectangle_wide", rotation: 0, rightAngle: true } }, text: "4つの 角が 直角" },
-        { id: "c2", figure: { type: "quadrilateral", params: { size: 92, variant: "rectangle_tall", rotation: 0, rightAngle: true } }, text: "4つの 角が 直角" },
-        { id: "c3", figure: { type: "quadrilateral", params: { size: 88, variant: "square", rotation: 0, rightAngle: true } }, text: "4つの 角が 直角" },
-        { id: "c4", figure: { type: "quadrilateral", params: { size: 92, variant: "parallelogram", rotation: 0 } }, text: "ななめの 角がある" },
-        { id: "c5", figure: { type: "quadrilateral", params: { size: 92, variant: "trapezoid", rotation: 0 } }, text: "ななめの 角がある" },
-        { id: "c6", figure: { type: "quadrilateral", params: { size: 92, variant: "rhombus", rotation: 0 } }, text: "ななめの 角がある" }
+        { id: "c1", figure: { type: "quadrilateral", params: { size: 92, variant: "rectangle_wide", rotation: 0 } }, text: "" },
+        { id: "c2", figure: { type: "quadrilateral", params: { size: 92, variant: "rectangle_tall", rotation: 0 } }, text: "" },
+        { id: "c3", figure: { type: "quadrilateral", params: { size: 88, variant: "square", rotation: 0 } }, text: "" },
+        { id: "c4", figure: { type: "quadrilateral", params: { size: 92, variant: "parallelogram", rotation: 0 } }, text: "" },
+        { id: "c5", figure: { type: "quadrilateral", params: { size: 92, variant: "trapezoid", rotation: 0 } }, text: "" },
+        { id: "c6", figure: { type: "quadrilateral", params: { size: 92, variant: "rhombus", rotation: 0 } }, text: "" }
       ];
       if (ds % 2 === 1) {
         var tmp = cards2[0]; cards2[0] = cards2[2]; cards2[2] = tmp;
       }
       // tgt=1 → 横長長方形のみ / tgt=2 → 長方形をすべて選ぶ（縦長・正方形も含む）
-      var answerIds = tgt === 1 ? ["c1"] : ["c1", "c2", "c3"];
+      var answerVariants = tgt === 1
+        ? ["rectangle_wide"]
+        : ["rectangle_wide", "rectangle_tall", "square"];
+      var answerIds = cards2.filter(function (card) {
+        return answerVariants.indexOf(card.figure.params.variant) >= 0;
+      }).map(function (card) { return card.id; });
       var qlabel = tgt === 1 ? "横長の 長方形" : "4つの 角が すべて 直角の 四角形";
       return {
         questionText: qlabel + "を すべて えらびましょう。",
@@ -198,14 +203,14 @@
       var want = (Number(vars.target_idx) || 1) - 1;
       if (!(want >= 0 && want < 4)) want = Math.floor(Math.random() * 4);
       var cards3 = kinds.map(function (k) {
-        return { id: k.id, figure: k.figure, text: k.text };
+        return { id: k.id, figure: k.figure, text: "" };
       });
       for (var k2 = cards3.length - 1; k2 > 0; k2--) {
         var j2 = Math.floor(Math.random() * (k2 + 1));
         var t2 = cards3[k2]; cards3[k2] = cards3[j2]; cards3[j2] = t2;
       }
       return {
-        questionText: "よんで「" + kinds[want].text + "の 辺で かこまれている」図を えらびましょう。",
+        questionText: "辺が " + kinds[want].sides + "本の 図を えらびましょう。",
         figureChoices: cards3,
         correctChoiceIds: [kinds[want].id],
         answer: kinds[want].id,

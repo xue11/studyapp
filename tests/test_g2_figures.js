@@ -129,6 +129,43 @@ console.log("\n3.5. 三角形・四角形の図と選択肢が一致し、正誤
   ok(sideCountFromSVG(hexagonHtml) === 6, "六角形カードのSVGは実際に6辺");
 }
 
+console.log("\n3.6. 辺の数・直角を選ぶ問題に答えの手がかりがないこと");
+{
+  const G2UI = globalThis.FigureShapeUI_G2;
+  let sideAnswerMatches = true;
+  let sideChoicesUnlabeled = true;
+  let rectangleAnswerMatches = true;
+  let rectangleChoicesUnlabeled = true;
+  for (let i = 0; i < 40; i++) {
+    const sideQ = RuleBasedQuestionSource.generateQuestion("g2_shape_sides_pick", []);
+    const sideTarget = Number((sideQ.questionText.match(/辺が\s*(\d+)本/) || [])[1]);
+    const sideCorrect = sideQ.figureChoices.filter(choice => sideQ.correctChoiceIds.includes(choice.id));
+    if (sideCorrect.length !== 1 || G2UI.figureSideCount(sideCorrect[0].figure.type, sideCorrect[0].figure.params) !== sideTarget) {
+      sideAnswerMatches = false;
+    }
+    if (sideQ.figureChoices.some(choice => choice.text !== "" || /[3-6]本|ちがう|よんでOK/.test(G2UI.shapeCardHTML2(choice, false)))) {
+      sideChoicesUnlabeled = false;
+    }
+
+    const rectangleQ = RuleBasedQuestionSource.generateQuestion("g2_rect_square", []);
+    const expectedVariants = rectangleQ.questionText.includes("横長")
+      ? ["rectangle_wide"]
+      : ["rectangle_wide", "rectangle_tall", "square"];
+    const rectangleCorrect = rectangleQ.figureChoices
+      .filter(choice => rectangleQ.correctChoiceIds.includes(choice.id))
+      .map(choice => choice.figure.params.variant)
+      .sort();
+    if (JSON.stringify(rectangleCorrect) !== JSON.stringify(expectedVariants.slice().sort())) rectangleAnswerMatches = false;
+    if (rectangleQ.figureChoices.some(choice =>
+      choice.text !== "" || choice.figure.params.rightAngle || /直角|ななめ/.test(G2UI.shapeCardHTML2(choice, false))
+    )) rectangleChoicesUnlabeled = false;
+  }
+  ok(sideAnswerMatches, "辺の本数の正解が設問と図形の辺数に一致 (40問)");
+  ok(sideChoicesUnlabeled, "辺の本数選択肢に本数や正誤の表示がない (40問)");
+  ok(rectangleAnswerMatches, "直角の四角形の正解IDが図形と一致 (40問)");
+  ok(rectangleChoicesUnlabeled, "直角問題の選択肢に説明文や直角マークがない (40問)");
+}
+
 // ---------------------------------------------------------------
 console.log("\n4. figure_tap: 正解部品が図と一致すること");
 {
