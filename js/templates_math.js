@@ -2554,6 +2554,289 @@ const MATH_TEMPLATES = [
   }
 ];
 
+function createGrade3NumericTemplate(options) {
+  return {
+    templateId: options.id,
+    grade: 3,
+    difficultyLevel: options.level,
+    unitId: options.unit,
+    conceptId: options.concept,
+    problemType: options.problemType || "calculation",
+    answerType: "number_input",
+    format: options.format,
+    generate: Object.assign({}, options.generate, {
+      answer: { formula: options.answer }
+    }),
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: options.hints,
+    explanationTemplate: options.explanation,
+    understandingCheck: { enabled: false }
+  };
+}
+
+MATH_TEMPLATES.push(
+  // 3年生 たし算・ひき算の幅とレベルを補う。
+  createGrade3NumericTemplate({
+    id: "g3_basic_sub3_no_borrow_02", level: 1, unit: "add_sub_3digit",
+    concept: "add_sub_3digit_basic", format: "{a} − {b} = ?",
+    generate: { a: { type: "integer", range: [420, 899] }, b: { type: "integer", range: [110, 399], constraints: ["a % 10 >= b % 10", "Math.floor(a / 10) % 10 >= Math.floor(b / 10) % 10", "a > b"] } },
+    answer: "a - b",
+    hints: ["一の位、十の位、百の位の順にひこう。", "どの位でもくり下がりがいらないことを確かめよう。"],
+    explanation: "{a} − {b} = {answer} だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_word_sub3_no_borrow_01", level: 1, unit: "add_sub_3digit",
+    concept: "add_sub_3digit_basic", problemType: "word_problem",
+    format: "本が {a}さつ ありました。{b}さつ 貸しました。のこりは何さつ？",
+    generate: { a: { type: "integer", range: [500, 999] }, b: { type: "integer", range: [100, 399], constraints: ["a % 10 >= b % 10", "Math.floor(a / 10) % 10 >= Math.floor(b / 10) % 10", "a > b"] } },
+    answer: "a - b",
+    hints: ["貸したあとの数だから、ひき算で考えよう。", "位ごとにくり下がりがないか確認しよう。"],
+    explanation: "{a} − {b} = {answer}さつ だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_add3_carry_01", level: 2, unit: "add_sub_3digit",
+    concept: "add_sub_3digit_carry", format: "{a} + {b} = ?",
+    generate: { a: { type: "integer", range: [245, 684] }, b: { type: "integer", range: [126, 294], constraints: ["a % 10 + b % 10 >= 10", "a + b < 1000"] } },
+    answer: "a + b",
+    hints: ["一の位からたして、10以上なら十の位へくり上げよう。", "十の位、百の位にもくり上がりがないか見よう。"],
+    explanation: "くり上がりに気をつけて計算すると、{a} + {b} = {answer}。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_sub3_borrow_01", level: 2, unit: "add_sub_3digit",
+    concept: "add_sub_3digit_borrow", format: "{a} − {b} = ?",
+    generate: { a: { type: "integer", range: [420, 899] }, b: { type: "integer", range: [125, 389], constraints: ["a % 10 < b % 10", "a > b"] } },
+    answer: "a - b",
+    hints: ["一の位でひけないときは、十の位から1くり下げよう。", "十の位からもひけるか確かめて計算しよう。"],
+    explanation: "くり下がりに気をつけて、{a} − {b} = {answer}。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_word_addsub3_choose_01", level: 2, unit: "add_sub_3digit",
+    concept: "add_sub_3digit_word_problem", problemType: "word_problem",
+    format: "午前に {morning}人、午後に {afternoon}人 来ました。きのうは {yesterday}人でした。きのうより何人多い？",
+    generate: { morning: { type: "integer", range: [120, 350] }, afternoon: { type: "integer", range: [130, 350] }, yesterday: { type: "integer", range: [250, 600], constraints: ["morning + afternoon > yesterday"] }, total: { formula: "morning + afternoon" } },
+    answer: "total - yesterday",
+    hints: ["まず今日来た人を、午前と午後であわせよう。", "今日の人数から、きのうの人数をひこう。"],
+    explanation: "{morning} + {afternoon} = {total}人。{total} − {yesterday} = {answer}人 だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_addsub3_missing_01", level: 3, unit: "add_sub_3digit",
+    concept: "add_sub_3digit_inverse", format: "{a} + □ = {total}。□に入る数は？",
+    generate: { a: { type: "integer", range: [215, 564] }, missing: { type: "integer", range: [125, 326] }, total: { formula: "a + missing" } },
+    answer: "total - a",
+    hints: ["□に入る数は、ぜんぶの数から分かっている数をひくと見つかるよ。", "{total} − {a} を計算しよう。"],
+    explanation: "{total} − {a} = {answer} だから、□は {answer}。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_addsub3_two_step_01", level: 3, unit: "add_sub_3digit",
+    concept: "add_sub_3digit_two_step", problemType: "word_problem",
+    format: "カードが {start}まい あります。{added}まい もらい、{used}まい 使いました。のこりは何まい？",
+    generate: { start: { type: "integer", range: [250, 520] }, added: { type: "integer", range: [120, 300] }, used: { type: "integer", range: [110, 280], constraints: ["start + added >= used"] }, total: { formula: "start + added" } },
+    answer: "total - used",
+    hints: ["もらった分を先にたそう。", "そのあと使った分をひこう。"],
+    explanation: "{start} + {added} = {total}、{total} − {used} = {answer}まい。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_addsub3_compare_02", level: 3, unit: "add_sub_3digit",
+    concept: "add_sub_3digit_word_problem", problemType: "word_problem",
+    format: "青いおりがみは {blue}まい。赤は青より {more}まい多く、黄は赤より {less}まい少ないです。黄は何まい？",
+    generate: { blue: { type: "integer", range: [150, 420] }, more: { type: "integer", range: [110, 240] }, less: { type: "integer", range: [100, 200] } },
+    answer: "blue + more - less",
+    hints: ["まず赤のおりがみの数をたし算で出そう。", "赤の数から黄とのちがいをひこう。"],
+    explanation: "{blue} + {more} − {less} = {answer}まい だね。"
+  }),
+  // 3年生 かけ算: 九九から2けた×1けた、発展へ。
+  createGrade3NumericTemplate({
+    id: "g3_basic_kuku_missing_factor_02", level: 1, unit: "multiplication_g3",
+    concept: "kuku_mastery", format: "{a} × □ = {product}。□に入る数は？",
+    generate: { a: { type: "integer", range: [2, 9] }, factor: { type: "integer", range: [2, 9] }, product: { formula: "a * factor" } },
+    answer: "product / a",
+    hints: ["{a}の段で {product} になる答えをさがそう。", "{a} × {factor} = {product} だね。"],
+    explanation: "{a} × {answer} = {product} だから、□は {answer}。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_basic_kuku_story_03", level: 1, unit: "multiplication_g3",
+    concept: "kuku_mastery", problemType: "word_problem",
+    format: "1台に {each}人ずつ乗ります。バスが {buses}台あると、ぜんぶで何人？",
+    generate: { each: { type: "integer", range: [2, 9] }, buses: { type: "integer", range: [2, 9] } },
+    answer: "each * buses",
+    hints: ["同じ人数のまとまりが何台分あるか考えよう。", "{each} × {buses} を計算しよう。"],
+    explanation: "{each} × {buses} = {answer}人 だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_basic_kuku_fact_family_04", level: 1, unit: "multiplication_g3",
+    concept: "kuku_mastery", format: "{product} ÷ {a} = ?",
+    generate: { a: { type: "integer", range: [2, 9] }, b: { type: "integer", range: [2, 9] }, product: { formula: "a * b" } },
+    answer: "product / a",
+    hints: ["わり算を九九のかけ算になおして考えよう。", "{a} × □ = {product} になる数をさがそう。"],
+    explanation: "{a} × {answer} = {product} だから、{product} ÷ {a} = {answer}。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_mul21_no_carry_02", level: 2, unit: "multiplication_g3",
+    concept: "mul_2digit_algorithm", format: "{a} × {b} = ?",
+    generate: { tens: { type: "integer", range: [1, 4] }, ones: { type: "integer", range: [1, 9] }, b: { type: "integer", range: [2, 5], constraints: ["ones * b < 10"] }, a: { formula: "tens * 10 + ones" } },
+    answer: "a * b",
+    hints: ["十の位と一の位に分けてかけよう。", "一の位の積でくり上がりがないね。"],
+    explanation: "{a} × {b} = {answer} だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_mul21_carry_02", level: 2, unit: "multiplication_g3",
+    concept: "mul_2digit_algorithm", format: "{a} × {b} = ?",
+    generate: { tens: { type: "integer", range: [1, 4] }, ones: { type: "integer", range: [4, 9] }, b: { type: "integer", range: [2, 9], constraints: ["ones * b >= 10"] }, a: { formula: "tens * 10 + ones" } },
+    answer: "a * b",
+    hints: ["一の位をかけて、十の位にくり上げよう。", "十の位の積に、くり上げた数もたそう。"],
+    explanation: "{a} × {b} = {answer} だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_word_mul21_01", level: 2, unit: "multiplication_g3",
+    concept: "mul_2digit_algorithm", problemType: "word_problem",
+    format: "1ふくろに {each}こ入りのおかしが {bags}ふくろあります。ぜんぶで何こ？",
+    generate: { tens: { type: "integer", range: [1, 3] }, ones: { type: "integer", range: [2, 8] }, each: { formula: "tens * 10 + ones" }, bags: { type: "integer", range: [3, 8] } },
+    answer: "each * bags",
+    hints: ["同じ数ずつ入ったふくろの数だけ、かけ算しよう。", "{each} × {bags} を計算しよう。"],
+    explanation: "{each} × {bags} = {answer}こ だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_mul21_missing_01", level: 3, unit: "multiplication_g3",
+    concept: "mul_2digit_inverse", format: "{a} × {b} = □。□に入る答えを書こう。",
+    generate: { tens: { type: "integer", range: [2, 8] }, ones: { type: "integer", range: [1, 9] }, a: { formula: "tens * 10 + ones" }, b: { type: "integer", range: [3, 9] } },
+    answer: "a * b",
+    hints: ["十の位と一の位に分けて計算しよう。", "{a}を分けて、それぞれに{b}をかけよう。"],
+    explanation: "{a} × {b} = {answer} だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_mul21_story_02", level: 3, unit: "multiplication_g3",
+    concept: "mul_2digit_inverse", problemType: "word_problem",
+    format: "同じ本を {groups}人に {each}さつずつ配ると、ぜんぶで何さつ？",
+    generate: { groups: { type: "integer", range: [3, 8] }, each: { type: "integer", range: [12, 29] } },
+    answer: "groups * each",
+    hints: ["1人分の数が何人分あるか考えよう。", "{each} × {groups} を計算しよう。"],
+    explanation: "{each} × {groups} = {answer}さつ だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_mul21_pattern_03", level: 3, unit: "multiplication_g3",
+    concept: "mul_2digit_algorithm", format: "{a} × {b} = ?",
+    generate: { tens: { type: "integer", range: [1, 5] }, ones: { type: "integer", range: [2, 9] }, a: { formula: "tens * 10 + ones" }, b: { type: "integer", range: [3, 8] } },
+    answer: "a * b",
+    hints: ["{a}を何十といくつに分けよう。", "分けた数をそれぞれ{b}倍して、答えをたそう。"],
+    explanation: "{a} × {b} = {answer} だね。"
+  }),
+  // 3年生 わり算の問い方と計算の活用Lv2を追加。
+  createGrade3NumericTemplate({
+    id: "g3_std_div_share_04", level: 2, unit: "division_g3",
+    concept: "division_equal_share", problemType: "word_problem",
+    format: "{total}このボールを {people}人で同じ数ずつ分けます。1人分は何こ？",
+    generate: { divisor: { type: "integer", range: [2, 9] }, quotient: { type: "integer", range: [2, 9] }, total: { formula: "divisor * quotient" }, people: { formula: "divisor" } },
+    answer: "total / people",
+    hints: ["同じ数ずつ分けるから、わり算だよ。", "{total} ÷ {people} を九九で考えよう。"],
+    explanation: "{total} ÷ {people} = {answer}こ だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_div_grouping_05", level: 2, unit: "division_g3",
+    concept: "division_by_multiplication", problemType: "word_problem",
+    format: "{total}このクッキーを1ふくろに {each}こずつ入れます。何ふくろできる？",
+    generate: { each: { type: "integer", range: [2, 9] }, bags: { type: "integer", range: [2, 9] }, total: { formula: "each * bags" } },
+    answer: "total / each",
+    hints: ["何ふくろできるかは、全体を1ふくろ分の数でわろう。", "{each} × □ = {total} になる数をさがそう。"],
+    explanation: "{total} ÷ {each} = {answer}ふくろ だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_div_remainder_02", level: 3, unit: "division_g3",
+    concept: "division_with_remainder", problemType: "word_problem",
+    format: "{total}このクッキーを1ふくろに {each}こずつ入れます。ぜんぶ入れるには何ふくろいる？",
+    generate: { each: { type: "integer", range: [3, 9] }, fullBags: { type: "integer", range: [2, 8] }, remainder: { type: "integer", range: [1, 8], constraints: ["remainder < each"] }, total: { formula: "each * fullBags + remainder" } },
+    answer: "fullBags + 1",
+    hints: ["まず、いっぱいになるふくろの数と、のこりのクッキーを考えよう。", "のこりも入れるふくろがもう1ついるね。"],
+    explanation: "{total} ÷ {each} は {fullBags} あまり {remainder}。のこりを入れるふくろもいるから、{answer}ふくろ。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_div_check_03", level: 3, unit: "division_g3",
+    concept: "division_with_remainder", format: "{a} ÷ {b} = {quotient} あまり ?。あまりはいくつ？",
+    generate: { b: { type: "integer", range: [3, 9] }, quotient: { type: "integer", range: [2, 8] }, remainder: { type: "integer", range: [1, 8], constraints: ["remainder < b"] }, a: { formula: "b * quotient + remainder" } },
+    answer: "remainder",
+    hints: ["わる数より小さいあまりを考えよう。", "{b} × {quotient} = {b * quotient}。{a}との差があまりだよ。"],
+    explanation: "{a} − ({b} × {quotient}) = {answer}。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_calc_choose_operation_01", level: 2, unit: "calc_application_g3",
+    concept: "choose_multiplication_or_division", problemType: "word_problem",
+    format: "{boxes}はこに、えんぴつが {each}本ずつ入っています。えんぴつはぜんぶで何本？",
+    generate: { boxes: { type: "integer", range: [3, 9] }, each: { type: "integer", range: [4, 9] } },
+    answer: "boxes * each",
+    hints: ["同じ数ずつのまとまりがいくつあるか見よう。", "かけ算でぜんぶの数を求めよう。"],
+    explanation: "{boxes} × {each} = {answer}本 だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_calc_division_story_02", level: 2, unit: "calc_application_g3",
+    concept: "choose_multiplication_or_division", problemType: "word_problem",
+    format: "{total}本の花を {vases}本ずつ花びんに入れます。花びんはいくついる？",
+    generate: { vases: { type: "integer", range: [2, 9] }, count: { type: "integer", range: [2, 9] }, total: { formula: "vases * count" } },
+    answer: "total / vases",
+    hints: ["全部の数を1つ分の数でわるよ。", "{vases} × □ = {total} になる数を考えよう。"],
+    explanation: "{total} ÷ {vases} = {answer}本 だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_calc_expression_03", level: 2, unit: "calc_application_g3",
+    concept: "choose_multiplication_or_division", format: "「{groups}人に {each}こずつ配る」ことを表す式の答えは？",
+    generate: { groups: { type: "integer", range: [3, 9] }, each: { type: "integer", range: [2, 9] } },
+    answer: "groups * each",
+    hints: ["同じ数ずつ配るまとまりを考えよう。", "{groups} × {each} を計算しよう。"],
+    explanation: "{groups} × {each} = {answer} だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_calc_two_step_story_02", level: 3, unit: "calc_application_g3",
+    concept: "mixed_mul_div", problemType: "word_problem",
+    format: "{boxes}はこに {each}こずつ入ったボールを、{teams}チームに同じ数ずつ分けます。1チーム分は何こ？",
+    generate: { boxes: { type: "integer", range: [3, 8] }, each: { type: "integer", range: [4, 9] }, teams: { type: "integer", range: [2, 6], constraints: ["boxes * each % teams === 0"] }, total: { formula: "boxes * each" } },
+    answer: "total / teams",
+    hints: ["まず、ボールのぜんぶの数をかけ算で求めよう。", "ぜんぶの数をチームの数でわろう。"],
+    explanation: "{boxes} × {each} = {total}こ。{total} ÷ {teams} = {answer}こ。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_adv_calc_two_step_compare_03", level: 3, unit: "calc_application_g3",
+    concept: "mixed_mul_div", problemType: "word_problem",
+    format: "{boxes}はこに {each}こずつ入ったみかんから、{used}こ食べました。のこりを {people}人で同じ数ずつ分けると1人何こ？",
+    generate: { boxes: { type: "integer", range: [4, 9] }, each: { type: "integer", range: [5, 9] }, used: { type: "integer", range: [2, 15] }, people: { type: "integer", range: [2, 6], constraints: ["(boxes * each - used) % people === 0"] }, total: { formula: "boxes * each" } },
+    answer: "(total - used) / people",
+    hints: ["先にみかんのぜんぶの数を求め、食べた数をひこう。", "のこりを人数でわけよう。"],
+    explanation: "{boxes} × {each} − {used} = {total - used}。{total - used} ÷ {people} = {answer}こ。"
+  }),
+  // 3年生 長さ・重さの単位換算と文章題。
+  createGrade3NumericTemplate({
+    id: "g3_std_length_m_to_cm_02", level: 2, unit: "length_unit",
+    concept: "length_convert_m_km", format: "{meters}m は何cm？",
+    generate: { meters: { type: "integer", range: [2, 9] } },
+    answer: "meters * 100",
+    hints: ["1m は 100cm だよ。", "{meters} を 100倍しよう。"],
+    explanation: "{meters} × 100 = {answer}cm だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_length_km_to_m_03", level: 2, unit: "length_unit",
+    concept: "length_convert_m_km", problemType: "word_problem",
+    format: "家から公園まで {km}km あります。何m？",
+    generate: { km: { type: "integer", range: [2, 8] } },
+    answer: "km * 1000",
+    hints: ["1km は 1000m だよ。", "{km} を 1000倍しよう。"],
+    explanation: "{km} × 1000 = {answer}m だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_weight_kg_to_g_02", level: 2, unit: "weight_unit",
+    concept: "weight_convert_basic", format: "{kg}kg は何g？",
+    generate: { kg: { type: "integer", range: [2, 9] } },
+    answer: "kg * 1000",
+    hints: ["1kg は 1000g だよ。", "{kg} を 1000倍しよう。"],
+    explanation: "{kg} × 1000 = {answer}g だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_weight_compare_03", level: 2, unit: "weight_unit",
+    concept: "weight_compare_convert", problemType: "word_problem",
+    format: "りんごは {kg}kg、みかんは {grams}g です。りんごのほうが何g重い？",
+    generate: { kg: { type: "integer", range: [2, 8] }, grams: { type: "integer", range: [200, 900] } },
+    answer: "kg * 1000 - grams",
+    hints: ["りんごの重さをgになおそう。", "同じ単位にそろえてから、みかんの重さをひこう。"],
+    explanation: "{kg}kg = {kg * 1000}g。{kg * 1000} − {grams} = {answer}g。"
+  })
+);
+
 
 function registerAllMathTemplates() {
   const reg = typeof window !== "undefined" ? window.TemplateRegistry : require('./registries.js').TemplateRegistry;

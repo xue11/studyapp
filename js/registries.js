@@ -154,11 +154,13 @@ class UnitRegistry {
         2: [
           { id: "multiplication_g3", name: "かけ算", concepts: ["mul_2digit_algorithm"], learningGroupId: "multiplication" },
           { id: "division_g3", name: "わり算", concepts: ["division_equal_share", "division_by_multiplication"], learningGroupId: "division" },
+          { id: "calc_application_g3", name: "計算の活用", concepts: ["choose_multiplication_or_division"], learningGroupId: "calculation_application" },
           { id: "length_unit", name: "長さの単位（m・cm・km）", concepts: ["length_convert_m_km"] },
           { id: "weight_unit", name: "重さの単位（kg・g）", concepts: ["weight_convert_basic"] },
           { id: "time_unit", name: "時間の単位（時・分・秒）", concepts: ["time_convert_calc", "clock_read_24h", "clock_time_after_h", "clock_duration_hm", "clock_to_minutes"] }
         ],
         3: [
+          { id: "add_sub_3digit", name: "3けたのたし算・ひき算", concepts: ["add_sub_3digit_inverse", "add_sub_3digit_two_step", "add_sub_3digit_word_problem"], learningGroupId: "addition_subtraction" },
           { id: "division_g3", name: "わり算", concepts: ["division_with_remainder", "division_equal_share"], learningGroupId: "division" },
           { id: "calc_application_g3", name: "計算の活用", concepts: ["mixed_mul_div"], learningGroupId: "calculation_application" },
           { id: "multiplication_g3", name: "かけ算", concepts: ["kuku_mastery", "cryptarithmetic"], learningGroupId: "multiplication" },

@@ -65,11 +65,19 @@ console.log("=== V2.6.4 figure toggle + G2 tests ===");
   const lv2 = UnitSelector._filterFigureUnits(
     UnitRegistry.getUnitsForLevel("math", 2, 2), p, "math", 2, 2
   );
+  const lv3 = UnitSelector._filterFigureUnits(
+    UnitRegistry.getUnitsForLevel("math", 2, 3), p, "math", 2, 3
+  );
   assert.ok(lv1.some(u => u.id === "geometry_g2"), "Lv1 keeps mixed geometry unit for box questions");
-  assert.ok(!lv2.some(u => u.id === "geometry_g2"), "Lv2 figure-only geometry unit is excluded");
+  assert.ok(lv2.some(u => u.id === "geometry_g2"), "Lv2 keeps geometry unit with non-figure questions");
+  assert.ok(lv3.some(u => u.id === "geometry_g2"), "Lv3 keeps geometry unit with non-figure questions");
 
   const boxPool = TemplateRegistry.getByUnit("math", 2, 1, "geometry_g2");
   assert.ok(boxPool.some(t => t.problemType !== "figure"), "Lv1 geometry includes non-figure box questions");
+  for (const level of [2, 3]) {
+    const pool = TemplateRegistry.getByUnit("math", 2, level, "geometry_g2");
+    assert.ok(pool.some(t => t.problemType !== "figure"), `Lv${level} geometry includes non-figure questions`);
+  }
   console.log("  [PASS] mixed geometry unit retains non-figure questions when OFF");
 }
 

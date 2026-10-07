@@ -263,22 +263,28 @@ console.log("\n7. 単元選択 / テスト生成との整合");
   const off2 = UnitSelector._filterFigureUnits(
     UnitRegistry.getUnitsForLevel("math", 2, 2), { settings: { figureEnabled: false } }, "math", 2, 2
   ).map(u => u.id);
-  ok(off2.indexOf("geometry_g2") < 0, "figureEnabled=false で shape_figure_tap が除外");
+  ok(off2.indexOf("geometry_g2") >= 0, "figureEnabled=false でも非図形問題のあるLv2 geometry_g2を表示");
   const off3 = UnitSelector._filterFigureUnits(
     UnitRegistry.getUnitsForLevel("math", 2, 3), { settings: { figureEnabled: false } }, "math", 2, 3
   ).map(u => u.id);
-  ok(off3.indexOf("geometry_g2") < 0, "figureEnabled=false で shape_figure_measure が除外");
+  ok(off3.indexOf("geometry_g2") >= 0, "figureEnabled=false でも非図形問題のあるLv3 geometry_g2を表示");
 
   ok(TestEngine._isFigureUnitId("geometry_g2") === true, "TestEngine が shape_figure_tap を図形と判定");
   ok(TestEngine._isFigureUnitId("geometry_g2") === true, "TestEngine が shape_figure_measure を図形と判定");
   ok(TestEngine._isFigureUnitId("multiplication_g2") === false, "TestEngine が非図形単元を判定");
 
   const tapPool = TemplateRegistry.getByUnit("math", 2, 2, "geometry_g2");
-  ok(tapPool.length === 4, "shape_figure_tap に4件のテンプレート (n=" + tapPool.length + ")");
-  ok(tapPool.every(t => t.answerType === "figure_tap"), "shape_figure_tap はすべて figure_tap");
+  const tapFigurePool = tapPool.filter(t => t.problemType === "figure");
+  ok(tapPool.length === 6, "Lv2 geometry_g2 に6件のテンプレート (n=" + tapPool.length + ")");
+  ok(tapFigurePool.length === 4, "Lv2 geometry_g2 に図形問題が4件 (n=" + tapFigurePool.length + ")");
+  ok(tapFigurePool.every(t => t.answerType === "figure_tap"), "Lv2 geometry_g2 の図形問題はすべて figure_tap");
+  ok(tapPool.some(t => t.problemType !== "figure"), "Lv2 geometry_g2 に非図形問題も含む");
   const dispPool = TemplateRegistry.getByUnit("math", 2, 3, "geometry_g2");
-  ok(dispPool.length === 5, "shape_figure_measure に5件のテンプレート (n=" + dispPool.length + ")");
-  ok(dispPool.every(t => t.answerType === "figure_display"), "shape_figure_measure はすべて figure_display");
+  const dispFigurePool = dispPool.filter(t => t.problemType === "figure");
+  ok(dispPool.length === 8, "Lv3 geometry_g2 に8件のテンプレート (n=" + dispPool.length + ")");
+  ok(dispFigurePool.length === 5, "Lv3 geometry_g2 に図形問題が5件 (n=" + dispFigurePool.length + ")");
+  ok(dispFigurePool.every(t => t.answerType === "figure_display"), "Lv3 geometry_g2 の図形問題はすべて figure_display");
+  ok(dispPool.some(t => t.problemType !== "figure"), "Lv3 geometry_g2 に非図形問題も含む");
   const lv1Pool = TemplateRegistry.getByUnit("math", 2, 1, "geometry_g2");
   ok(lv1Pool.length === 8, "図形Lv1に三角形・四角形とはこの形の8型 (n=" + lv1Pool.length + ")");
 }

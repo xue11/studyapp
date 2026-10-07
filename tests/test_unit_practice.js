@@ -130,6 +130,8 @@ check("Lv2指定ではLv2問題のみ出題される",
 console.log("\n5. startUnitPracticeSession 検証 (3年の統合単元)");
 for (const [unitId, level] of [
   ["add_sub_3digit", 1],
+  ["add_sub_3digit", 2],
+  ["add_sub_3digit", 3],
   ["multiplication_g3", 1],
   ["multiplication_g3", 2],
   ["division_g3", 2],
@@ -176,6 +178,10 @@ check("3年生のかけ算・わり算は複数レベルで同じ系列IDを使�
 check("3年生の2段階計算は計算の活用として選べる",
   grade3UnitSelectHTML.includes("計算の活用") &&
   grade3UnitSelectHTML.includes("calc_application_g3', 5, 3, 3"));
+check("3年生のたし算・ひき算はLv1〜Lv3から選べる",
+  [1, 2, 3].every(level =>
+    grade3UnitSelectHTML.includes(`add_sub_3digit', 5, 3, ${level}`)
+  ));
 check("移行後の統合単元に保存済みの練習履歴が引き続き表示される",
   (() => {
     mockUI.getActiveProfile().skill.subject.gradeProgress.grade2.unitStats.addition_2digit = {

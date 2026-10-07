@@ -8,6 +8,7 @@ const assert = require("assert");
 const { TemplateRegistry, UnitRegistry } = require("../js/registries.js");
 const { QuestionValidator } = require("../js/validator.js");
 const { RuleBasedQuestionSource } = require("../js/question_source.js");
+require("../js/templates_math.js");
 require("../js/templates_units_p1.js");
 require("../js/templates_units_p2.js");
 require("../js/templates_g2_extra.js");
@@ -44,6 +45,29 @@ const DEEPENING_TEMPLATES = [
   { id: "g2_adv_3terms_make100_01", level: 3, unit: "calc_application" },
   { id: "g2_adv_2step_story_02", level: 3, unit: "calc_application" },
   { id: "g2_adv_rectangle_perimeter_01", level: 3, unit: "geometry_g2" }
+];
+
+const BALANCE_TEMPLATES = [
+  ["g2_basic_sub_no_borrow_02", 1, "subtraction_2digit"],
+  ["g2_basic_sub_no_borrow_03", 1, "subtraction_2digit"],
+  ["g2_word_sub_no_borrow_01", 1, "subtraction_2digit"],
+  ["g2_basic_kuku_equal_groups_02", 1, "multiplication_g2"],
+  ["g2_basic_kuku_repeated_add_03", 1, "multiplication_g2"],
+  ["g2_basic_kuku_missing_group_04", 1, "multiplication_g2"],
+  ["g2_std_length_convert_mm_02", 2, "length_unit"],
+  ["g2_std_length_add_cm_03", 2, "length_unit"],
+  ["g2_std_time_elapsed_minutes_02", 2, "time_clock_basic"],
+  ["g2_std_time_duration_03", 2, "time_clock_basic"],
+  ["g2_std_fraction_equal_parts_02", 2, "fraction_intro"],
+  ["g2_std_fraction_compare_same_denominator_03", 2, "fraction_intro"],
+  ["g2_word_add_carry_02", 2, "addition_2digit"],
+  ["g2_std_add_carry_02", 2, "addition_2digit"],
+  ["g2_word_sub_borrow_02", 2, "subtraction_2digit"],
+  ["g2_std_geometry_edges_word_01", 2, "geometry_g2"],
+  ["g2_std_geometry_shape_edges_02", 2, "geometry_g2"],
+  ["g2_adv_geometry_box_faces_01", 3, "geometry_g2"],
+  ["g2_adv_geometry_perimeter_text_02", 3, "geometry_g2"],
+  ["g2_adv_geometry_square_perimeter_03", 3, "geometry_g2"]
 ];
 
 // 1. UnitRegistry 登録確認
@@ -259,6 +283,49 @@ function testDeepeningTemplates() {
   console.log("  [PASS] All deepening patterns generated x20 with valid units, displays, and answers");
 }
 
+function testBalancedTemplates() {
+  console.log("3.8 Testing grade-2 breadth additions across all target units...");
+  for (const [id, level, unitId] of BALANCE_TEMPLATES) {
+    const template = TemplateRegistry.get(id);
+    assert.ok(template, `${id} must be registered`);
+    assert.strictEqual(template.grade, 2, `${id} grade`);
+    assert.strictEqual(template.difficultyLevel, level, `${id} level`);
+    assert.strictEqual(template.unitId, unitId, `${id} unit`);
+    assert.ok(UnitRegistry.getUnitsForLevel("math", 2, level).some(unit => unit.id === unitId),
+      `${id} unit must be selectable at Lv${level}`);
+    for (let i = 0; i < 20; i++) {
+      const question = RuleBasedQuestionSource.generateQuestion(id, []);
+      assert.ok(QuestionValidator.validate(question, []).valid,
+        `${id} invalid: ${JSON.stringify(QuestionValidator.validate(question, []).errors).slice(0, 250)}`);
+      assert.ok(Number.isInteger(Number(question.answer)), `${id} answer must be an integer`);
+      assert.ok(question.hintSteps.length >= 2, `${id} needs two hint steps`);
+      assert.ok(question.explanation.length > 0, `${id} needs an explanation`);
+      const variables = question.variables;
+      if (id.startsWith("g2_basic_sub_no_borrow_") || id === "g2_word_sub_no_borrow_01") {
+        assert.ok(variables.a % 10 >= variables.b % 10, `${id} must not require borrowing in ones`);
+      } else if (id === "g2_word_add_carry_02" || id === "g2_std_add_carry_02") {
+        assert.ok(variables.a % 10 + variables.b % 10 >= 10, `${id} must require carrying`);
+      } else if (id === "g2_std_time_elapsed_minutes_02") {
+        assert.ok(variables.endHour > variables.hour, `${id} must cross an hour`);
+        assert.strictEqual(Number(question.answer), variables.duration);
+      } else if (id === "g2_std_fraction_compare_same_denominator_03") {
+        assert.ok(variables.b > variables.a && variables.b < variables.denominator);
+        assert.strictEqual(Number(question.answer), variables.b);
+      }
+    }
+  }
+  assert.ok(TemplateRegistry.getByUnit("math", 2, 1, "subtraction_2digit").length >= 4);
+  assert.ok(TemplateRegistry.getByUnit("math", 2, 1, "multiplication_g2").length >= 4);
+  for (const unitId of ["length_unit", "time_clock_basic", "fraction_intro"]) {
+    assert.ok(TemplateRegistry.getByUnit("math", 2, 2, unitId).length >= 3, `${unitId} Lv2 must have at least 3 types`);
+  }
+  assert.ok(TemplateRegistry.getByUnit("math", 2, 2, "geometry_g2").some(t => t.problemType !== "figure"),
+    "Figure-disabled learners need text-based Lv2 geometry questions");
+  assert.ok(TemplateRegistry.getByUnit("math", 2, 3, "geometry_g2").some(t => t.problemType !== "figure"),
+    "Figure-disabled learners need text-based Lv3 geometry questions");
+  console.log(`  [PASS] ${BALANCE_TEMPLATES.length} new grade-2 templates generated and validated x20`);
+}
+
 // 4.5 かけ算単元の追加サブトピック (何倍・九九の表ときまり)
 function testKukuSubTopics() {
   console.log("4.5 Testing kuku sub-topic templates (何倍 / 九九の表ときまり)...");
@@ -381,6 +448,7 @@ testMassGeneration();
 testBoxNetFaceCounts();
 testBreadthTemplates();
 testDeepeningTemplates();
+testBalancedTemplates();
 testKukuSubTopics();
 testExistingUnitStrengthening();
 testRotationBagSync();

@@ -972,6 +972,212 @@
     }
   ];
 
+  function numericTemplate(options) {
+    return {
+      templateId: options.id,
+      grade: 2,
+      difficultyLevel: options.level,
+      unitId: options.unit,
+      conceptId: options.concept,
+      problemType: options.problemType || "calculation",
+      answerType: "number_input",
+      format: options.format,
+      generate: Object.assign({}, options.generate, {
+        answer: { formula: options.answer }
+      }),
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: options.hints,
+      explanationTemplate: options.explanation,
+      understandingCheck: { enabled: false }
+    };
+  }
+
+  T.push(
+    // Lv1 addition and subtraction fundamentals.
+    numericTemplate({
+      id: "g2_basic_sub_no_borrow_02", level: 1, unit: "subtraction_2digit",
+      concept: "sub_2digit_basic", format: "{a} − {b} = ?",
+      generate: { a: { type: "integer", range: [40, 99] }, b: { type: "integer", range: [10, 39], constraints: ["Math.floor(a / 10) > Math.floor(b / 10)", "a % 10 >= b % 10"] } },
+      answer: "a - b",
+      hints: ["十のくらいと一のくらいに分けよう。", "一のくらいから順番にひこう。"],
+      explanation: "{a} − {b} = {answer} だね。"
+    }),
+    numericTemplate({
+      id: "g2_basic_sub_no_borrow_03", level: 1, unit: "subtraction_2digit",
+      concept: "sub_2digit_basic", format: "{a} − {b} = ?",
+      generate: { a: { type: "integer", range: [30, 99] }, b: { type: "integer", range: [10, 29], constraints: ["a % 10 >= b % 10", "a > b"] } },
+      answer: "a - b",
+      hints: ["一のくらいでくり下がりがあるか見よう。", "{a % 10} から {b % 10} をひけるかな？"],
+      explanation: "くり下がりをしないで計算できるね。{a} − {b} = {answer}。"
+    }),
+    numericTemplate({
+      id: "g2_word_sub_no_borrow_01", level: 1, unit: "subtraction_2digit",
+      concept: "sub_2digit_basic", problemType: "word_problem",
+      format: "シールが {a}まい あります。{b}まい あげると、のこりは 何まい？",
+      generate: { a: { type: "integer", range: [40, 99] }, b: { type: "integer", range: [10, 39], constraints: ["Math.floor(a / 10) > Math.floor(b / 10)", "a % 10 >= b % 10"] } },
+      answer: "a - b",
+      hints: ["あげたあとの数だから、ひき算をしよう。", "{a} から {b} をひこう。"],
+      explanation: "{a} − {b} = {answer}。のこりは {answer}まいだね。"
+    }),
+    numericTemplate({
+      id: "g2_word_add_carry_02", level: 2, unit: "addition_2digit",
+      concept: "add_2digit_carry", problemType: "word_problem",
+      format: "赤い花が {a}本、白い花が {b}本 あります。あわせて何本？",
+      generate: { a: { type: "integer", range: [21, 64] }, b: { type: "integer", range: [12, 34], constraints: ["a % 10 + b % 10 >= 10", "a + b < 100"] } },
+      answer: "a + b",
+      hints: ["あわせた数だから、たし算だね。", "一のくらいにくり上がりがないか確かめよう。"],
+      explanation: "{a} + {b} = {answer}本 だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_add_carry_02", level: 2, unit: "addition_2digit",
+      concept: "add_2digit_carry", format: "{a} + {b} = ?",
+      generate: { a: { type: "integer", range: [24, 68] }, b: { type: "integer", range: [17, 39], constraints: ["a % 10 + b % 10 >= 10", "a + b < 100"] } },
+      answer: "a + b",
+      hints: ["一のくらいを先にたそう。", "10以上になったら、十のくらいに1くり上げよう。"],
+      explanation: "一のくらいでくり上がるね。{a} + {b} = {answer}。"
+    }),
+    numericTemplate({
+      id: "g2_word_sub_borrow_02", level: 2, unit: "subtraction_2digit",
+      concept: "sub_2digit_borrow", problemType: "word_problem",
+      format: "本が {a}さつ あります。{b}さつ 読みました。まだ読んでいない本は何さつ？",
+      generate: { a: { type: "integer", range: [41, 89] }, b: { type: "integer", range: [12, 38], constraints: ["a % 10 < b % 10", "a > b"] } },
+      answer: "a - b",
+      hints: ["読んだ本をひくと、まだ読んでいない本の数になるよ。", "一のくらいでくり下がりをしよう。"],
+      explanation: "{a} − {b} = {answer}さつ だね。"
+    }),
+    // Lv1 multiplication meaning and Lv2 length, time, and fractions.
+    numericTemplate({
+      id: "g2_basic_kuku_equal_groups_02", level: 1, unit: "multiplication_g2",
+      concept: "kuku_groups_intro",
+      format: "{groups}人に あめを {each}こずつ 配ります。あめは ぜんぶで何こ？",
+      generate: { groups: { type: "integer", range: [2, 5] }, each: { type: "integer", range: [2, 5] } },
+      answer: "groups * each",
+      hints: ["同じ数ずつのまとまりがいくつあるか考えよう。", "{each} を {groups}回 たすかわりに、かけ算にしよう。"],
+      explanation: "{each} × {groups} = {answer}こ だね。"
+    }),
+    numericTemplate({
+      id: "g2_basic_kuku_repeated_add_03", level: 1, unit: "multiplication_g2",
+      concept: "kuku_groups_intro",
+      format: "{each} + {each} + {each} + {each} = ? かけ算の式で考えよう。",
+      generate: { each: { type: "integer", range: [2, 5] } },
+      answer: "each * 4",
+      hints: ["同じ数を何回たしているか数えよう。", "{each} が4つあるから、{each} × 4 だね。"],
+      explanation: "{each} × 4 = {answer} だね。"
+    }),
+    numericTemplate({
+      id: "g2_basic_kuku_missing_group_04", level: 1, unit: "multiplication_g2",
+      concept: "kuku_groups_intro", format: "{each} × □ = {product}。□に入る数は？",
+      generate: { each: { type: "integer", range: [2, 5] }, groups: { type: "integer", range: [2, 5] }, product: { formula: "each * groups" } },
+      answer: "groups",
+      hints: ["{each}ずつのまとまりを何こ作ると {product} になるかな？", "{each} の段の九九からさがそう。"],
+      explanation: "{each} × {groups} = {product} だから、□は {answer} だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_length_convert_mm_02", level: 2, unit: "length_unit",
+      concept: "length_convert_m_cm", format: "{cm}cm は 何mm？",
+      generate: { cm: { type: "integer", range: [2, 45] } },
+      answer: "cm * 10",
+      hints: ["1cm は 10mm だよ。", "{cm} を 10倍しよう。"],
+      explanation: "{cm} × 10 = {answer}mm だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_length_add_cm_03", level: 2, unit: "length_unit",
+      concept: "length_add_sub_mixed", problemType: "word_problem",
+      format: "リボンが {a}cm と {b}cm あります。つなぐと何cm？",
+      generate: { a: { type: "integer", range: [15, 75] }, b: { type: "integer", range: [12, 69] } },
+      answer: "a + b",
+      hints: ["つないだ長さは、2本の長さをたすよ。", "{a} と {b} をたそう。"],
+      explanation: "{a} + {b} = {answer}cm だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_time_elapsed_minutes_02", level: 2, unit: "time_clock_basic",
+      concept: "time_duration_across_hour",
+      format: "{hour}時{minute}分から {endHour}時{endMinute}分まで、何分間？",
+      generate: {
+        hour: { type: "integer", range: [1, 8] },
+        minute: { type: "choice", values: [15, 30, 45] },
+        duration: { type: "choice", values: [15, 30, 45], constraints: ["minute + duration >= 60"] },
+        endTotal: { formula: "minute + duration" },
+        endHour: { formula: "hour + Math.floor(endTotal / 60)" },
+        endMinute: { formula: "endTotal % 60" }
+      },
+      answer: "(endHour - hour) * 60 + endMinute - minute",
+      hints: ["時こくを分になおして、あととまえの時こくの差を出そう。", "{hour}時{minute}分から次の時までの分も考えよう。"],
+      explanation: "{hour}時{minute}分から{endHour}時{endMinute}分までは {answer}分 だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_time_duration_03", level: 2, unit: "time_clock_basic",
+      concept: "time_duration_across_hour", problemType: "word_problem",
+      format: "べんきょうを {start}分 はじめて、{end}分に おわりました。何分べんきょうした？",
+      generate: { start: { type: "integer", range: [5, 35] }, duration: { type: "integer", range: [15, 45] }, end: { formula: "start + duration" } },
+      answer: "end - start",
+      hints: ["おわった時こくから、はじめた時こくをひこう。", "{end} − {start} を計算しよう。"],
+      explanation: "{end} − {start} = {answer}分 だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_fraction_equal_parts_02", level: 2, unit: "fraction_intro",
+      concept: "fraction_denominator", format: "テープを {parts}こに同じ大きさに分けました。1つ分は全体の何分の1？ 分母を答えよう。",
+      generate: { parts: { type: "integer", range: [2, 8] } },
+      answer: "parts",
+      hints: ["同じ大きさに分けた数が、分母になるよ。", "分けた数をそのまま答えよう。"],
+      explanation: "全体を {parts}こに分けた1つ分は {parts}分の1。分母は {answer} だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_fraction_compare_same_denominator_03", level: 2, unit: "fraction_intro",
+      concept: "fraction_compare_pictures",
+      format: "{a}/{denominator} と {b}/{denominator}。大きい分数の分子を答えよう。",
+      generate: { denominator: { type: "integer", range: [4, 8] }, a: { type: "integer", range: [1, 3] }, b: { formula: "a + 1", constraints: ["b < denominator"] } },
+      answer: "b",
+      hints: ["分母が同じときは、分子をくらべよう。", "同じ大きさに分けた何こ分かをくらべるよ。"],
+      explanation: "{b}こ分のほうが大きいから、答えは {answer} だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_geometry_edges_word_01", level: 2, unit: "geometry_g2",
+      concept: "box_faces_edges_vertices",
+      format: "三角形の頂点は3こ、長方形の頂点は4こ。頂点はあわせて何こ？",
+      generate: { triangleVertices: { type: "choice", values: [3] }, rectangleVertices: { type: "choice", values: [4] } },
+      answer: "triangleVertices + rectangleVertices",
+      hints: ["それぞれの形の頂点の数をたそう。", "{triangleVertices} + {rectangleVertices} を計算しよう。"],
+      explanation: "{triangleVertices} + {rectangleVertices} = {answer}こ だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_geometry_shape_edges_02", level: 2, unit: "geometry_g2",
+      concept: "tri_quad_identify",
+      format: "三角形が {triangles}こ、四角形が {quadrilaterals}こあります。頂点はぜんぶで何こ？",
+      generate: { triangles: { type: "integer", range: [1, 4] }, quadrilaterals: { type: "integer", range: [1, 4] } },
+      answer: "triangles * 3 + quadrilaterals * 4",
+      hints: ["三角形は頂点が3こ、四角形は4こだよ。", "それぞれの頂点の数をかけてから、あわせよう。"],
+      explanation: "{triangles} × 3 + {quadrilaterals} × 4 = {answer}こ だね。"
+    }),
+    numericTemplate({
+      id: "g2_adv_geometry_box_faces_01", level: 3, unit: "geometry_g2",
+      concept: "box_faces_edges_vertices",
+      format: "はこの形が2つあります。面は1つのはこに6まい。面はぜんぶで何まい？",
+      generate: { boxes: { type: "choice", values: [2] }, faces: { type: "choice", values: [6] } },
+      answer: "boxes * faces",
+      hints: ["1つのはこの面の数を、はこの数だけたそう。", "同じ数のまとまりだから、かけ算にできるよ。"],
+      explanation: "{faces} × {boxes} = {answer}まい だね。"
+    }),
+    numericTemplate({
+      id: "g2_adv_geometry_perimeter_text_02", level: 3, unit: "geometry_g2",
+      concept: "tri_quad_grid_length",
+      format: "長方形のたては {height}cm、よこは {width}cm。まわりの長さは何cm？",
+      generate: { height: { type: "integer", range: [2, 8] }, width: { type: "integer", range: [3, 12] } },
+      answer: "2 * (height + width)",
+      hints: ["たてとよこの長さは、それぞれ向かい合う辺にもあるよ。", "たてとよこをたして、2倍しよう。"],
+      explanation: "({height} + {width}) × 2 = {answer}cm だね。"
+    }),
+    numericTemplate({
+      id: "g2_adv_geometry_square_perimeter_03", level: 3, unit: "geometry_g2",
+      concept: "tri_quad_grid_length",
+      format: "1辺が {side}cm の正方形です。まわりの長さは何cm？",
+      generate: { side: { type: "integer", range: [2, 12] } },
+      answer: "side * 4",
+      hints: ["正方形の辺は4本とも同じ長さだよ。", "{side}cm を4つ分たそう。"],
+      explanation: "{side} × 4 = {answer}cm だね。"
+    })
+  );
+
   function registerAll() {
     var reg = null;
     if (typeof window !== "undefined" && window.TemplateRegistry) reg = window.TemplateRegistry;
