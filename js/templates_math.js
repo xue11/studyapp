@@ -1867,7 +1867,7 @@ const MATH_TEMPLATES = [
       a: { formula: "a_int + a_dec * 0.1" },
       b: { formula: "b_int + b_dec * 0.1" }
     },
-    answer: { expression: "answer", normalization: "integer" },
+    answer: { expression: "answer", normalization: "decimal" },
     hintSteps: ["{a} + {b} を 計算しよう。", "小数点の 位置に 気をつけよう。"],
     explanationTemplate: "{a} + {b} ＝ {answer} だね。",
     understandingCheck: {
@@ -1900,7 +1900,7 @@ const MATH_TEMPLATES = [
       a: { formula: "a_int + a_dec * 0.1" },
       answer: { formula: "Math.round((a_int + a_dec * 0.1) * b * 10) / 10" }
     },
-    answer: { expression: "answer", normalization: "integer" },
+    answer: { expression: "answer", normalization: "decimal" },
     hintSteps: ["{a} × {b} を 計算しよう。", "小数点の 位置に 気をつけよう。"],
     explanationTemplate: "{a} × {b} ＝ {answer} だね。",
     understandingCheck: {
@@ -1997,7 +1997,7 @@ const MATH_TEMPLATES = [
       "時速 {a}kmで {b}時間 走ると なんkm 進む？"
     ],
     generate: {
-      a: { type: "integer", range: [120, 450] },
+      a: { type: "choice", values: [120, 150, 200, 250, 300, 350, 400, 450] },
       b_int: { type: "integer", range: [1, 4] },
       b_dec: { type: "integer", range: [1, 9] },
       b: { formula: "b_int + b_dec * 0.1" },

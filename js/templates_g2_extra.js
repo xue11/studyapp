@@ -352,7 +352,7 @@
       format: "{q_text}",
       generate: {
         type_idx: { type: "integer", range: [1, 3] },
-        facePair: { type: "choice", values: [2, 4, 6] },
+        facePair: { type: "choice", values: [2, 6] },
         pairs: { formula: "6 / facePair" },
         q_text: {
           formula: "type_idx === 1 ? 'はこの形を ひらいた 形（てんかいず）に すると、面は ぜんぶで いくつ ある？' : (type_idx === 2 ? 'はこの形を ひらいた 形（てんかいず）に します。同じ 大きさの 面が ' + facePair + 'まい ずつ ' + pairs + 'しゅるい あります。面は ぜんぶで いくつ ある？' : 'はこの形の 面は ぜんぶで ' + facePair * pairs + 'まい です。同じ 大きさの 面が ' + facePair + 'まい ずつ あるとき、面は なんしゅるいに わかれる？')"
@@ -867,8 +867,9 @@
       format: "同じ大きさに {denominator}こに分けたテープです。色のついた部分が多いほうの分子を答えよう。<br>A　{pictureA}　B　{pictureB}",
       generate: {
         denominator: { type: "integer", range: [3, 8] },
-        numeratorA: { type: "integer", range: [1, 7], constraints: ["numeratorA < denominator"] },
-        numeratorB: { type: "integer", range: [1, 7], constraints: ["numeratorB < denominator && numeratorB !== numeratorA"] },
+        numeratorA: { formula: "Math.floor(Math.random() * (denominator - 1)) + 1" },
+        numeratorBPick: { formula: "Math.floor(Math.random() * (denominator - 2)) + 1" },
+        numeratorB: { formula: "numeratorBPick >= numeratorA ? numeratorBPick + 1 : numeratorBPick" },
         pictureA: { formula: "'■'.repeat(numeratorA) + '□'.repeat(denominator - numeratorA)" },
         pictureB: { formula: "'■'.repeat(numeratorB) + '□'.repeat(denominator - numeratorB)" },
         answer: { formula: "Math.max(numeratorA, numeratorB)" }

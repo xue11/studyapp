@@ -145,14 +145,16 @@ function testBoxNetFaceCounts() {
   const originalRandom = Math.random;
   try {
     for (let type = 1; type <= 3; type++) {
-      for (let facePair = 2; facePair <= 6; facePair += 2) {
-        const randomValues = [(type - 0.5) / 3, ((facePair / 2) - 0.5) / 3];
+      for (const facePair of [2, 6]) {
+        const facePairIndex = facePair === 2 ? 0 : 1;
+        const randomValues = [(type - 0.5) / 3, (facePairIndex + 0.5) / 2];
         Math.random = () => randomValues.length > 0 ? randomValues.shift() : 0.1;
         const q = RuleBasedQuestionSource.generateQuestion("g2_basic_box_03", []);
         const pairs = 6 / facePair;
         assert.strictEqual(q.variables.type_idx, type);
         assert.strictEqual(q.variables.facePair, facePair);
         assert.strictEqual(q.variables.pairs, pairs);
+        assert.ok(Number.isInteger(pairs), "A face-type count must be an integer");
         assert.strictEqual(q.variables.facePair * q.variables.pairs, 6, "A cuboid must have six faces");
         assert.strictEqual(q.answer, String(type === 3 ? pairs : 6));
         if (type === 2) {
@@ -268,6 +270,9 @@ function testDeepeningTemplates() {
         assert.ok(v.endH > v.startH, "Elapsed-time problem must cross at least one hour");
         assert.strictEqual((v.endH - v.startH) * 60 + v.endM - v.startM, Number(q.answer));
       } else if (spec.id === "g2_std_fraction_compare_picture_01") {
+        assert.ok(v.numeratorA > 0 && v.numeratorA < v.denominator);
+        assert.ok(v.numeratorB > 0 && v.numeratorB < v.denominator);
+        assert.notStrictEqual(v.numeratorA, v.numeratorB);
         assert.strictEqual((v.pictureA.match(/■/g) || []).length, v.numeratorA);
         assert.strictEqual((v.pictureB.match(/■/g) || []).length, v.numeratorB);
         assert.strictEqual((v.pictureA.match(/■|□/g) || []).length, v.denominator);

@@ -25,12 +25,20 @@ assert.ok(sw.includes("keys.filter(key => key !== CACHE_NAME)"), "Activation mus
 assert.ok(index.includes("if (reg.waiting) showUpdateBar(reg.waiting)"), "Existing waiting workers must show the update banner");
 assert.ok(index.includes("nw.state === 'installed' && navigator.serviceWorker.controller"), "Installed updates must show the banner");
 assert.ok(index.includes("waiting.postMessage({ type: 'SKIP_WAITING' })"), "Update button must activate the waiting worker");
+assert.ok(index.includes("document.addEventListener('visibilitychange'"), "Returning to the app must trigger an update check");
+assert.ok(index.includes("function checkForUpdate()"), "PWA update checks must share one explicit implementation");
 
 const htmlHeaders = firebase.hosting.headers.find(header => header.source === "**/*.html");
 assert.ok(htmlHeaders, "Firebase Hosting must define HTML cache headers");
 const htmlCacheControl = htmlHeaders.headers.find(header => header.key.toLowerCase() === "cache-control");
 assert.ok(htmlCacheControl, "HTML cache-control header must be present");
 assert.ok(/no-cache/.test(htmlCacheControl.value), "HTML must be revalidated so the newest update logic is loaded");
+const rootHeaders = firebase.hosting.headers.find(header => header.source === "/");
+assert.ok(rootHeaders, "Firebase Hosting must explicitly set cache headers for the app root");
+const rootCacheControl = rootHeaders.headers.find(header => header.key.toLowerCase() === "cache-control");
+assert.ok(rootCacheControl && /no-cache/.test(rootCacheControl.value), "The app root must be revalidated");
+assert.ok(installHandler.includes("throw err"), "A failed precache must fail installation instead of succeeding partially");
+assert.ok(sw.includes("console.error('[SW] フェッチ失敗:'") && sw.includes("throw err"), "Fetch failures must remain explicit");
 
 console.log("[PASS] Service Worker cache version triggers a fresh installation");
 console.log("[PASS] Updated worker waits until the user accepts the update");

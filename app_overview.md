@@ -627,7 +627,7 @@ localStorage の QuotaExceeded → 保存失敗 → 学習データ損失に直�
     （既存ユーザーの過大データもロード時に丸める）
 
 バージョン表記は `config.js` / `migration.js` / `schema.js` / `sw.js`（CACHE_NAME =
-`arith-study-v2.9.7-g2-geometry-visual-fix`）/ `index.html` title / `test_phase1.js` /
+`arith-study-v2.9.7-math-quality-pwa-fix`）/ `index.html` title / `test_phase1.js` /
 `test_phase1.html` / 本ドキュメントを V2.9.7 に統一。
 
 

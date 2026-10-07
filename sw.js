@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.7 grade-2 geometry visual fixes)
-const CACHE_NAME = 'arith-study-v2.9.7-g2-geometry-visual-fix';
+// PWA Service Worker (V2.9.7 math quality and update fixes)
+const CACHE_NAME = 'arith-study-v2.9.7-math-quality-pwa-fix';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -50,7 +50,10 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
-      .catch(err => console.error('[SW] キャッシュ失敗:', err))
+      .catch(err => {
+        console.error('[SW] キャッシュ失敗:', err);
+        throw err;
+      })
   );
 });
 
@@ -59,7 +62,10 @@ self.addEventListener('fetch', e =>
   e.respondWith(
     caches.match(e.request)
       .then(response => response || fetch(e.request))
-      .catch(err => console.error('[SW] フェッチ失敗:', e.request.url, err))
+      .catch(err => {
+        console.error('[SW] フェッチ失敗:', e.request.url, err);
+        throw err;
+      })
   )
 );
 

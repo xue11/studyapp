@@ -105,6 +105,14 @@
         }
       }
       if ('serviceWorker' in navigator) {
+        function checkForUpdate() {
+          navigator.serviceWorker.getRegistration()
+            .then(function (reg) {
+              if (reg) return reg.update();
+              return navigator.serviceWorker.register('sw.js');
+            })
+            .catch(function (err) { console.error('[PWA] 更新確認に失敗:', err); });
+        }
         navigator.serviceWorker.register('sw.js')
           .then(function (reg) {
             console.log('[PWA] SW登録成功:', reg.scope);
@@ -121,6 +129,9 @@
             });
           })
           .catch(function (err) { console.error('[PWA] SW登録失敗:', err); });
+        document.addEventListener('visibilitychange', function () {
+          if (document.visibilityState === 'visible') checkForUpdate();
+        });
         // 新SWが有効化されたら一度だけリロード（学習中は結果画面遷移後に反映）
         navigator.serviceWorker.addEventListener('controllerchange', function () {
           if (refreshing) return;
@@ -136,13 +147,7 @@
           }
         });
         // 起動時に更新チェック
-        setInterval(function () {
-          try {
-            navigator.serviceWorker.getRegistration().then(function (reg) {
-              if (reg) reg.update().catch(function () {});
-            });
-          } catch (e) { /* ignore */ }
-        }, 60 * 60 * 1000);
+        setInterval(checkForUpdate, 60 * 60 * 1000);
       }
     })();
   </script>
@@ -163,4 +168,3 @@
   </script>
 </body>
 </html>
-

@@ -152,4 +152,26 @@ const N = 40;
   console.log("  [PASS] " + ids.length + " テンプレの生成問題がすべて valid");
 }
 
+// 5. 整数として正規化するテンプレートは整数の答えだけを生成すること
+{
+  console.log("5. 整数回答テンプレートで小数の答えが生成されないこと");
+
+  const offenders = [];
+  for (const [id, template] of Object.entries(TemplateRegistry.templates)) {
+    if (template.answerType !== "number_input" ||
+        !template.answer || template.answer.normalization !== "integer") continue;
+    for (let i = 0; i < N; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      const answer = Number(q && q.answer);
+      if (!Number.isFinite(answer) || !Number.isInteger(answer)) {
+        offenders.push(id + " answer=" + (q && q.answer));
+        break;
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    "整数回答テンプレートが小数または数値外の答えを生成しています:\n    - " + offenders.join("\n    - "));
+  console.log("  [PASS] normalization=integer のテンプレートはすべて整数の答えを生成");
+}
+
 console.log("\nANSWER SANITY TESTS PASSED");
