@@ -716,7 +716,7 @@
       grade: 2, difficultyLevel: 1,
       unitId: "geometry_g2", conceptId: "box_net_basic",
       problemType: "calculation", answerType: "number_input",
-      format: "箱の形に組み立てられる展開図は どれ？ 1・2・3の番号で答えよう。<br>1　{net1}<br>2　{net2}<br>3　{net3}",
+      format: "箱の形に組み立てられる展開図は どれ？ 図を見て、1・2・3の番号で答えよう。",
       generate: {
         correctPosition: { type: "integer", range: [1, 3] },
         validNet: { type: "choice", values: ["　□<br>□□□<br>　□<br>　□", "　□<br>　□<br>□□□<br>　□"] },
@@ -728,8 +728,11 @@
         answer: { formula: "correctPosition" }
       },
       answer: { expression: "answer", normalization: "integer" },
-      hintSteps: ["展開図は、6つの面が辺どうしでつながっているよ。", "折りたたんだとき、同じ場所に面が重ならない形をえらぼう。"],
-      explanationTemplate: "{correctPosition}ばんは、面が重ならずに箱の形に組み立てられる展開図だよ。",
+      hintSteps: [
+        "はこの形は、6まいの面でできているよ。青い点線は折り目だよ。",
+        "まんなかの面を底にして、まわりの面を立てたとき、最後の面でふたができるか考えよう。"
+      ],
+      explanationTemplate: "{correctPosition}ばんは、6まいの面を折り目で立てると、面が重ならずに箱の形になるよ。",
       understandingCheck: { enabled: false }
     },
     {

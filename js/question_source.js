@@ -300,6 +300,15 @@ class RuleBasedQuestionSource {
       similarityGroupId: template.similarityGroupId || template.templateId
     };
 
+    if (template.templateId === "g2_basic_box_04") {
+      const g2 = (typeof globalThis !== "undefined" && globalThis.FigureShapeUI_G2)
+        ? globalThis.FigureShapeUI_G2
+        : null;
+      if (g2 && typeof g2.renderBoxNetChoices === "function") {
+        instance.figureHTML = g2.renderBoxNetChoices([vars.net1, vars.net2, vars.net3]);
+      }
+    }
+
     // V2.6.3: 図形テンプレート (figure) → 図+文カード選択肢を生成して付与
     // V2.6.4: g2_shape_* は FigureShapeUI_G2、それ以外は FigureShapeUI (G1)
     // V2.8.0: 「図を出す」だけのテンプレート (figure_tap / figure_display) は

@@ -12,6 +12,7 @@ require("../js/templates_math.js");
 require("../js/templates_units_p1.js");
 require("../js/templates_units_p2.js");
 require("../js/templates_g2_extra.js");
+require("../js/templates_figures_g2.js");
 
 console.log("=== Running Grade 2 Extra Units Verification Tests ===\n");
 
@@ -216,6 +217,14 @@ function testBreadthTemplates() {
         assert.strictEqual(new Set(nets).size, 3, "Net choices must be distinct");
         assert.strictEqual(nets.filter(net => validNets.has(net)).length, 1, "Exactly one net must fold into a box");
         assert.ok(validNets.has(nets[Number(q.answer) - 1]), "Correct net number must match answer");
+        const diagrams = q.figureHTML.match(/<svg\b[\s\S]*?<\/svg>/g) || [];
+        assert.strictEqual(diagrams.length, 3, "Three net diagrams must be rendered");
+        assert.ok(diagrams.every(svg => (svg.match(/<rect\b/g) || []).length === 6),
+          "Each diagram must show all six faces");
+        assert.ok(diagrams.every(svg => (svg.match(/stroke-dasharray=/g) || []).length > 0),
+          "Shared edges must be marked as fold lines");
+        assert.ok(q.figureHTML.includes("box-net-fold-hint"), "Folding cue must be shown");
+        assert.ok(!q.questionText.includes("{net"), "Question text must not show raw net placeholders");
       } else if (spec.id === "g2_std_calcidea_03") {
         assert.strictEqual(v.a % 10 + v.c, 10, "The selected addends must make a ten");
         assert.strictEqual(Number(q.answer), v.a + v.b + v.c);

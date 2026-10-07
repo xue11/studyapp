@@ -23,8 +23,24 @@
   function createFigureSVG2(type, params) {
     params = params || {};
     var Fig = getFigureSVG();
+    if (Fig && typeof Fig.svg === "function" && type === "polygon") {
+      return Fig.svg({
+        shape: "polygon",
+        variant: params.variant || "pentagon",
+        sides: params.sides,
+        size: typeof params.size === "number" ? params.size : 96,
+        vertexMark: params.vertexMark !== false
+      }, { height: 96 });
+    }
     if (Fig && typeof Fig.toLegacy === "function") return Fig.toLegacy(type, params);
     return baseFigureSVG(type, params);
+  }
+  function figureSideCount(type, params) {
+    var Fig = getFigureSVG();
+    var shape = Fig && typeof Fig.unitShape === "function"
+      ? Fig.unitShape(type, (params || {}).variant, params || {})
+      : null;
+    return shape && shape.points ? Object.keys(shape.points).length : 0;
   }
   function shapeCardHTML2(choice, selected) {
     var G1 = (typeof globalThis !== "undefined" && globalThis.FigureShapeUI) || null;
@@ -35,9 +51,52 @@
       return '<button type="button" class="shape-card' + sel + '" data-choice-id="' + esc(choice.id) + '" ' +
         'onclick="app.toggleFigureChoice(\'' + esc(choice.id) + '\')">' +
         '<span class="shape-card-figure">' + createFigureSVG2(fig.type, fig.params) + "</span>" +
-        '<span class="shape-card-text">' + esc(label) + "</span></button>";
+        (label ? '<span class="shape-card-text">' + esc(label) + "</span>" : "") + "</button>";
     }
     return "";
+  }
+  function renderBoxNetChoices(nets) {
+    if (!Array.isArray(nets) || nets.length !== 3) return "";
+    function renderNet(net, index) {
+      var rows = String(net).split("<br>");
+      var cells = [];
+      rows.forEach(function (row, y) {
+        Array.from(row).forEach(function (char, x) {
+          if (char === "□") cells.push({ x: x, y: y });
+        });
+      });
+      if (cells.length !== 6) return "";
+      var occupied = {};
+      cells.forEach(function (cell) { occupied[cell.x + "," + cell.y] = true; });
+      var maxX = Math.max.apply(null, cells.map(function (cell) { return cell.x; }));
+      var maxY = Math.max.apply(null, cells.map(function (cell) { return cell.y; }));
+      var unit = 32, pad = 8;
+      var shapes = cells.map(function (cell) {
+        var x = pad + cell.x * unit, y = pad + cell.y * unit;
+        return '<rect x="' + x + '" y="' + y + '" width="' + unit + '" height="' + unit + '" fill="#e0f2fe"/>';
+      });
+      cells.forEach(function (cell) {
+        var x = pad + cell.x * unit, y = pad + cell.y * unit;
+        [
+          { dx: 0, dy: -1, x1: x, y1: y, x2: x + unit, y2: y },
+          { dx: 1, dy: 0, x1: x + unit, y1: y, x2: x + unit, y2: y + unit },
+          { dx: 0, dy: 1, x1: x, y1: y + unit, x2: x + unit, y2: y + unit },
+          { dx: -1, dy: 0, x1: x, y1: y, x2: x, y2: y + unit }
+        ].forEach(function (edge) {
+          var shared = !!occupied[(cell.x + edge.dx) + "," + (cell.y + edge.dy)];
+          shapes.push('<line x1="' + edge.x1 + '" y1="' + edge.y1 + '" x2="' + edge.x2 + '" y2="' + edge.y2 +
+            '" stroke="' + (shared ? "#0284c7" : "#334155") + '" stroke-width="' + (shared ? "1.5" : "2.5") + '"' +
+            (shared ? ' stroke-dasharray="4 3"' : "") + '/>');
+        });
+      });
+      var width = pad * 2 + (maxX + 1) * unit;
+      var height = pad * 2 + (maxY + 1) * unit;
+      return '<div class="box-net-option"><strong>' + (index + 1) + '</strong>' +
+        '<svg viewBox="0 0 ' + width + " " + height + '" role="img" aria-label="' + (index + 1) + 'ばんの展開図">' +
+        shapes.join("") + "</svg></div>";
+    }
+    return '<div class="box-net-choice-grid">' + nets.map(renderNet).join("") + "</div>" +
+      '<p class="box-net-fold-hint">青い点線は、折って箱にするときの折り目だよ。</p>';
   }
   function isSingleCorrect(a, b) {
     var G1 = (typeof globalThis !== "undefined" && globalThis.FigureShapeUI) || null;
@@ -59,7 +118,7 @@
       return { id: c.id, figure: { type: (c.figure || {}).type || "", params: Object.assign({}, (c.figure || {}).params || {}) }, text: c.text || "" };
     });
   }
-  var G2H = { esc: esc, createFigureSVG2: createFigureSVG2, shapeCardHTML2: shapeCardHTML2, isSingleCorrect: isSingleCorrect, isMultiCorrect: isMultiCorrect, choicesSnapshot: choicesSnapshot };
+  var G2H = { esc: esc, createFigureSVG2: createFigureSVG2, figureSideCount: figureSideCount, shapeCardHTML2: shapeCardHTML2, renderBoxNetChoices: renderBoxNetChoices, isSingleCorrect: isSingleCorrect, isMultiCorrect: isMultiCorrect, choicesSnapshot: choicesSnapshot };
   if (typeof globalThis !== "undefined") globalThis.FigureShapeUI_G2H = G2H;
   if (typeof module !== "undefined" && module.exports) module.exports = G2H;
 })();
@@ -70,14 +129,13 @@
     var tid = template.templateId;
     if (tid === "g2_tri_quad_identify") {
       // 三角形・四角形・五角形・六角形から「三角形と四角形」をすべて選ぶ
-      // V2.8.0: 図の「辺の数」を読む問題へ強化（此前は まる/三角形/四角形の3択）
       var cat = [
-        { t: "quadrilateral", p: { variant: "rectangle_wide" }, sides: 4 },
-        { t: "triangle", p: { variant: "isosceles" }, sides: 3 },
-        { t: "polygon", p: { variant: "pentagon" }, sides: 5 },
-        { t: "quadrilateral", p: { variant: "trapezoid" }, sides: 4 },
-        { t: "polygon", p: { variant: "hexagon" }, sides: 6 },
-        { t: "triangle", p: { variant: "right" }, sides: 3 }
+        { t: "quadrilateral", p: { variant: "rectangle_wide" } },
+        { t: "triangle", p: { variant: "isosceles" } },
+        { t: "polygon", p: { variant: "pentagon" } },
+        { t: "quadrilateral", p: { variant: "trapezoid" } },
+        { t: "polygon", p: { variant: "hexagon" } },
+        { t: "triangle", p: { variant: "right" } }
       ];
       var order1 = [0, 1, 2, 3, 4, 5];
       for (var si = order1.length - 1; si > 0; si--) {
@@ -87,10 +145,11 @@
       var cards1 = [], correct1 = [];
       for (var oi = 0; oi < order1.length; oi++) {
         var cc1 = cat[order1[oi]];
-        var isTgt = (cc1.sides === 3 || cc1.sides === 4);
+        var sideCount = globalThis.FigureShapeUI_G2H.figureSideCount(cc1.t, cc1.p);
+        var isTgt = sideCount === 3 || sideCount === 4;
         var idc = "c" + oi;
         if (isTgt) correct1.push(idc);
-        cards1.push({ id: idc, figure: { type: cc1.t, params: cc1.p }, text: isTgt ? "よんでOK" : "ちがう" });
+        cards1.push({ id: idc, figure: { type: cc1.t, params: cc1.p }, text: "" });
       }
       return {
         questionText: "図を 見て 三角形と 四角形を すべて えらびましょう。",
@@ -156,12 +215,12 @@
     if (tid === "g2_shape_vertices_pick") {
       // 頂点（ちょうてん）が 3つの図形（三角形）をすべて選ぶ
       var vsets = [
-        { id: "v3a", sides: 3, figure: { type: "triangle", params: { variant: "isosceles" } } },
-        { id: "v4a", sides: 4, figure: { type: "quadrilateral", params: { variant: "rectangle_tall" } } },
-        { id: "v3b", sides: 3, figure: { type: "triangle", params: { variant: "right" } } },
-        { id: "v5a", sides: 5, figure: { type: "polygon", params: { variant: "pentagon" } } },
-        { id: "v4b", sides: 4, figure: { type: "quadrilateral", params: { variant: "parallelogram" } } },
-        { id: "v6a", sides: 6, figure: { type: "polygon", params: { variant: "hexagon" } } }
+        { id: "v3a", figure: { type: "triangle", params: { variant: "isosceles" } } },
+        { id: "v4a", figure: { type: "quadrilateral", params: { variant: "rectangle_tall" } } },
+        { id: "v3b", figure: { type: "triangle", params: { variant: "right" } } },
+        { id: "v5a", figure: { type: "polygon", params: { variant: "pentagon" } } },
+        { id: "v4b", figure: { type: "quadrilateral", params: { variant: "parallelogram" } } },
+        { id: "v6a", figure: { type: "polygon", params: { variant: "hexagon" } } }
       ];
       var order4 = [0, 1, 2, 3, 4, 5];
       for (var s4 = order4.length - 1; s4 > 0; s4--) {
@@ -172,8 +231,8 @@
       for (var q4 = 0; q4 < order4.length; q4++) {
         var src = vsets[order4[q4]];
         var id4 = "c" + q4;
-        if (src.sides === 3) correct4.push(id4);
-        cards4.push({ id: id4, figure: src.figure, text: src.sides === 3 ? "よんでOK" : "ちがう" });
+        if (globalThis.FigureShapeUI_G2H.figureSideCount(src.figure.type, src.figure.params) === 3) correct4.push(id4);
+        cards4.push({ id: id4, figure: src.figure, text: "" });
       }
       return {
         questionText: "頂点（ちょうてん）が 3つの 図を すべて えらびましょう。",
@@ -381,7 +440,9 @@
   var FigureShapeUI_G2 = {
     FIGURE_TEMPLATES_G2: FIGURE_TEMPLATES_G2,
     createFigureSVG2: globalThis.FigureShapeUI_G2H.createFigureSVG2,
+    figureSideCount: globalThis.FigureShapeUI_G2H.figureSideCount,
     shapeCardHTML2: globalThis.FigureShapeUI_G2H.shapeCardHTML2,
+    renderBoxNetChoices: globalThis.FigureShapeUI_G2H.renderBoxNetChoices,
     buildProblem: globalThis.FigureShapeUI_G2BP.buildProblem,
     isSingleCorrect: globalThis.FigureShapeUI_G2H.isSingleCorrect,
     isMultiCorrect: globalThis.FigureShapeUI_G2H.isMultiCorrect,
@@ -395,4 +456,3 @@
     window.FigureShapeUI_G2 = FigureShapeUI_G2;
   }
 })();
-

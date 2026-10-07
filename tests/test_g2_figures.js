@@ -86,6 +86,49 @@ console.log("\n3. 10問生成 + Validator");
   });
 }
 
+console.log("\n3.5. 三角形・四角形の図と選択肢が一致し、正誤ラベルがないこと");
+{
+  const G2UI = globalThis.FigureShapeUI_G2;
+  const sideCountFromSVG = (html) => {
+    const match = html.match(/<polygon[^>]*points="([^"]+)"/);
+    return match ? match[1].trim().split(/\s+/).length : 0;
+  };
+  for (const id of ["g2_tri_quad_identify", "g2_shape_vertices_pick"]) {
+    let answersMatch = true;
+    let noCorrectnessText = true;
+    let renderedWithoutClues = true;
+    let renderedSidesMatch = true;
+    for (let i = 0; i < 30; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      const correctIds = q.correctChoiceIds.slice().sort();
+      const expectedIds = q.figureChoices.filter(choice => {
+        const sides = G2UI.figureSideCount(choice.figure.type, choice.figure.params);
+        return sides === 3 || (id === "g2_tri_quad_identify" && sides === 4);
+      }).map(choice => choice.id).sort();
+      if (JSON.stringify(correctIds) !== JSON.stringify(expectedIds)) answersMatch = false;
+      if (!q.figureChoices.every(choice => !choice.text || !/ちがう|よんでOK/.test(choice.text))) noCorrectnessText = false;
+      const renderedCards = q.figureChoices.map(choice => G2UI.shapeCardHTML2(choice, false));
+      const rendered = renderedCards.join("");
+      if (/ちがう|よんでOK/.test(rendered)) renderedWithoutClues = false;
+      if (!renderedCards.every((html, index) =>
+        sideCountFromSVG(html) === G2UI.figureSideCount(q.figureChoices[index].figure.type, q.figureChoices[index].figure.params)
+      )) renderedSidesMatch = false;
+    }
+    ok(answersMatch, `${id} answers match each displayed figure's side count (30 generated)`);
+    ok(noCorrectnessText, `${id} choices do not reveal right/wrong (30 generated)`);
+    ok(renderedWithoutClues, `${id} rendered cards do not show correctness labels (30 generated)`);
+    ok(renderedSidesMatch, `${id} SVG side counts match question data (30 generated)`);
+  }
+  const pentagonHtml = G2UI.shapeCardHTML2({
+    id: "pentagon", figure: { type: "polygon", params: { variant: "pentagon" } }
+  }, false);
+  const hexagonHtml = G2UI.shapeCardHTML2({
+    id: "hexagon", figure: { type: "polygon", params: { variant: "hexagon" } }
+  }, false);
+  ok(sideCountFromSVG(pentagonHtml) === 5, "五角形カードのSVGは実際に5辺");
+  ok(sideCountFromSVG(hexagonHtml) === 6, "六角形カードのSVGは実際に6辺");
+}
+
 // ---------------------------------------------------------------
 console.log("\n4. figure_tap: 正解部品が図と一致すること");
 {

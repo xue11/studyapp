@@ -58,6 +58,8 @@ index.html
 
 問題数の偏りを補う追加として、2年生はひき算Lv1・かけ算Lv1、長さ・時刻と時間・分数Lv2を中心に20型を追加し、図形Lv2/Lv3には図形表示を使わない問題も加えた。3年生は3けたのたし算・ひき算をLv1〜Lv3へ展開し、かけ算の各レベル、わり算、計算の活用Lv2/Lv3、長さ・重さLv2に計30型を追加した。
 
+2年生の図形問題では、図形の選択肢に正誤を示す文字を表示せず、図形データから辺の数を判定する。箱の展開図は6面をSVGで表示し、折り目を点線で示す。
+
 ---
 
 ## 3. エンジン仕様
@@ -625,7 +627,7 @@ localStorage の QuotaExceeded → 保存失敗 → 学習データ損失に直�
     （既存ユーザーの過大データもロード時に丸める）
 
 バージョン表記は `config.js` / `migration.js` / `schema.js` / `sw.js`（CACHE_NAME =
-`arith-study-v2.9.7-g2-g3-content-expansion`）/ `index.html` title / `test_phase1.js` /
+`arith-study-v2.9.7-g2-geometry-visual-fix`）/ `index.html` title / `test_phase1.js` /
 `test_phase1.html` / 本ドキュメントを V2.9.7 に統一。
 
 
