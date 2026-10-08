@@ -174,4 +174,64 @@ const N = 40;
   console.log("  [PASS] normalization=integer のテンプレートはすべて整数の答えを生成");
 }
 
+// 6. ヒントに {answer} が直接含まれないこと（解答前のヒントで答えが漏れる不具合の回帰防止）
+{
+  console.log("6. hintSteps に {answer} プレースホルダが直接含まれないこと");
+
+  const offenders = [];
+  for (const [id, template] of Object.entries(TemplateRegistry.templates)) {
+    const steps = Array.isArray(template.hintSteps) ? template.hintSteps : [];
+    steps.forEach((step, si) => {
+      if (typeof step === "string" && step.includes("{answer}")) {
+        offenders.push(id + "[" + si + "]: " + step);
+      }
+    });
+  }
+  assert.deepStrictEqual(offenders, [],
+    "ヒントに {answer} が直接含まれています（解答前に答えが漏れます）:\n    - " + offenders.join("\n    - "));
+  console.log("  [PASS] " + Object.keys(TemplateRegistry.templates).length + " テンプレの hintSteps に {answer} 直接参照なし");
+}
+
+// 7. V2.9.8 修正テンプレの answerType と理解確認（3択）
+{
+  console.log("7. V2.9.8 修正テンプレの answerType=number_input と understandingCheck の3択");
+  const targetIds = ["g2_adv_kuku_fill_01", "g4_adv_error_spotting_01"];
+  for (const id of targetIds) {
+    const template = TemplateRegistry.templates[id];
+    assert.ok(template, id + " が登録されていること");
+    assert.strictEqual(template.answerType, "number_input",
+      id + " の answerType は number_input（choice は UI に未実装）");
+
+    for (let i = 0; i < N; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      assert.ok(q, id + " が生成されること");
+      assert.strictEqual(q.answerType, "number_input", id + " の生成問題の answerType");
+      const uc = q.understandingCheck;
+      assert.ok(uc && uc.enabled && uc.type === "choice",
+        id + " に understandingCheck（choice）が付くこと");
+      assert.strictEqual(uc.choices.length, 3, id + " の選択肢は3つであること");
+      const choicesStr = uc.choices.map(String);
+      assert.strictEqual(new Set(choicesStr).size, 3,
+        id + " の選択肢は相異なること: " + choicesStr.join(" / "));
+      assert.ok(choicesStr.includes(String(uc.answer)),
+        id + " の正解が選択肢に含まれること: " + choicesStr.join(" / ") + " answer=" + uc.answer);
+    }
+    console.log("  [PASS] " + id + " × " + N + " 問: number_input・3択が相異で正解を含む");
+  }
+}
+
+// 8. g2_basic_bignum_04 の解決後ヒントが答えを含まないこと（V2.9.8 修正の回帰防止）
+{
+  console.log("8. g2_basic_bignum_04 の解決後ヒントが答えを含まないこと");
+  for (let i = 0; i < N; i++) {
+    const q = RuleBasedQuestionSource.generateQuestion("g2_basic_bignum_04", []);
+    assert.ok(q, "問題が生成されること");
+    const ans = String(q.answer);
+    q.hintSteps.forEach((step, hi) => {
+      assert.ok(!step.includes(ans),
+        "ヒント" + hi + " が答え " + ans + " を含む: " + step);
+    });
+  }
+  console.log("  [PASS] " + N + " 問のヒントに答えの数値なし");
+}
 console.log("\nANSWER SANITY TESTS PASSED");

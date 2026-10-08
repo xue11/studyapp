@@ -617,7 +617,7 @@
         answer: { formula: "start * 1000 + tick * 100" }
       },
       answer: { expression: "answer", normalization: "integer" },
-      hintSteps: ["100ずつ ふえる 数直線だね。", "{left} の つぎが {answer}、その つぎが {right} だよ。"],
+      hintSteps: ["100ずつ ふえる 数直線だね。", "{left} から 100 ふえた 数は いくつかな？ その つぎが {right} だよ。"],
       explanationTemplate: "{left}、{answer}、{right} のじゅんに 100ずつ ふえるね。まんなかは {answer} だよ。",
       understandingCheck: { enabled: false }
     },

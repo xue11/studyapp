@@ -282,8 +282,8 @@
         distractor_seed: { type: "integer", range: [0, 1] }
       },
       answer: { expression: "target_idx", normalization: "integer" },
-      hintSteps: ["□の マークが ある 角を 4つ さがそう。", "4つ 全部に □が あるのが 長方形だよ。"],
-      explanationTemplate: "4つの 角が すべて 直角の 四角形が 長方形だよ。正方形も 長方形の 一種だよ。",
+      hintSteps: ["□の マークが ある 角を 4つ さがそう。", "{target_idx === 1 ? 'その中で 横に 長い 四角形を さがよう。' : '4つ 全部に □が あるのが 長方形だよ。'}"],
+      explanationTemplate: "{target_idx === 1 ? '横に 長い 長方形を えらぶ 問題だったね。□が 4つ ある中で 横長の形が 正解だよ。' : '4つの 角が すべて 直角の 四角形が 長方形だよ。正方形も 長方形の 一種だよ。'}",
       understandingCheck: { enabled: false }
     },
     {

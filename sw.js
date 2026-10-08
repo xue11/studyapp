@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.7 math quality and update fixes)
-const CACHE_NAME = 'arith-study-v2.9.7-math-quality-pwa-fix';
+// PWA Service Worker (V2.9.8 content hint and figure fixes)
+const CACHE_NAME = 'arith-study-v2.9.8-content-hint-fix';
 const urlsToCache = [
   '/',
   '/index.html',

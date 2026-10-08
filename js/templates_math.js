@@ -2312,8 +2312,8 @@ const MATH_TEMPLATES = [
     templateId: "g2_adv_kuku_fill_01",
     grade: 2, difficultyLevel: 3,
     unitId: "multiplication_g2", conceptId: "kuku_advanced_groups",
-    problemType: "calculation", answerType: "choice",
-    format: "□ × {b} = {answer_val} の □ に入る数はどれ？",
+    problemType: "calculation", answerType: "number_input",
+    format: "□ × {b} = {answer_val} の □ に入る数はいくつ？",
     generate: {
       a: { type: "integer", range: [6, 9] },
       b: { type: "integer", range: [6, 9] },
@@ -2326,7 +2326,16 @@ const MATH_TEMPLATES = [
       "「？ × {b} ＝ {answer_val}」 だね。"
     ],
     explanationTemplate: "{answer} × {b} = {answer_val} だから、□に入るのは {answer} だね。",
-    understandingCheck: { enabled: false }
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "□ × {b} = {answer_val} の □ に入る数は どれ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer - 1" }
+      }
+    }
   },
   {
     templateId: "g3_word_reverse_div_01",
@@ -2366,8 +2375,8 @@ const MATH_TEMPLATES = [
     templateId: "g4_adv_error_spotting_01",
     grade: 4, difficultyLevel: 3,
     unitId: "mixed_2step", conceptId: "order_of_operations",
-    problemType: "calculation", answerType: "choice",
-    format: "次の計算には まちがい があります。正しい答えは どれ？\n「 {a} + {b} × {c} = {wrong_calc} 」",
+    problemType: "calculation", answerType: "number_input",
+    format: "次の計算には まちがい があります。正しい答えは いくつ？\n「 {a} + {b} × {c} = {wrong_calc} 」",
     generate: {
       a: { type: "integer", range: [10, 20] },
       b: { type: "integer", range: [3, 8] },
@@ -2381,7 +2390,16 @@ const MATH_TEMPLATES = [
       "かけ算（{b} × {c}）を先に計算しよう。"
     ],
     explanationTemplate: "かけ算を先に計算するので、正しくは {b} × {c} = {b*c}。それに {a} を足して {answer} が正しい答えだね。",
-    understandingCheck: { enabled: false }
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "{a} + {b} × {c} の 正しい答えは どれ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + b" },
+        wrong2: { formula: "answer - c" }
+      }
+    }
   },
   {
     templateId: "g5_std_compare_01",

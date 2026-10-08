@@ -10,8 +10,8 @@ const overview = fs.readFileSync(path.join(root, "app_overview.md"), "utf8");
 
 const cacheName = (sw.match(/const CACHE_NAME\s*=\s*'([^']+)'/) || [])[1];
 assert.ok(cacheName, "Service Worker cache name must be defined");
-assert.notStrictEqual(cacheName, "arith-study-v2.9.7-jst-history-cap", "Cache version must change to trigger an update");
-assert.ok(cacheName.startsWith("arith-study-v2.9.7-"), "Cache version must remain aligned with the app version");
+assert.notStrictEqual(cacheName, "arith-study-v2.9.7-math-quality-pwa-fix", "Cache version must change to trigger an update");
+assert.ok(cacheName.startsWith("arith-study-v2.9.8-"), "Cache version must remain aligned with the app version");
 assert.ok(overview.includes(cacheName), "App overview must document the active cache name");
 
 const installStart = sw.indexOf("self.addEventListener('install'");
