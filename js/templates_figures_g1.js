@@ -127,11 +127,24 @@
     }
     // g1_shape_compare (大小・向きの基礎比較: かならず しかくけい で比較)
     var ci = Math.min(2, Math.max(1, Number(vars.compare_idx) || 1));
-    var sizes = ci === 1 ? [70, 100, 85, 92] : [88, 88, 88, 88];
-    var rots = ci === 2 ? [0, 45, 0, 0] : [0, 0, 0, 0];
-    var labels = ci === 1
-      ? ["ちいさい しかく", "おおきい しかく", "ちゅうくらいの しかく", "もうひとつの しかく"]
-      : ["むきが おなじ", "むきが ちがう", "むきが おなじ", "むきが おなじ"];
+    // V2.9.9: 「おおきい/むきがちがう」カードの位置を figure_seed で変える。
+    // 従来は常に 2枚目 (c2) が正解だったため、位置を覚えるだけで正答できた。
+    var pos = Number(vars.figure_seed) || 0;
+    pos = ((pos % 4) + 4) % 4;
+    var sizes = [72, 66, 80, 74];
+    var rots = [0, 0, 0, 0];
+    var labels = [];
+    if (ci === 1) {
+      sizes[pos] = 100;
+      for (var si = 0; si < sizes.length; si++) {
+        labels.push(si === pos ? "おおきい しかく" : "ちいさい しかく");
+      }
+    } else {
+      rots[pos] = 45;
+      for (var ri = 0; ri < rots.length; ri++) {
+        labels.push(ri === pos ? "むきが ちがう" : "むきが おなじ");
+      }
+    }
     var cards3 = sizes.map(function (sz, idx) {
       return {
         id: "c" + (idx + 1),
@@ -139,7 +152,7 @@
         text: labels[idx]
       };
     });
-    var answerId = "c2";
+    var answerId = "c" + (pos + 1);
     return {
       questionText: ci === 1 ? "おおきい ほう を えらびましょう。" : "むきが ちがう ず を えらびましょう。",
       figureChoices: cards3,
@@ -191,7 +204,7 @@
       format: "ず を みて こたえ を えらびましょう。",
       generate: {
         compare_idx: { type: "integer", range: [1, 2] },
-        figure_seed: { type: "integer", range: [0, 2] }
+        figure_seed: { type: "integer", range: [0, 3] }
       },
       answer: { expression: "compare_idx", normalization: "integer" },
       hintSteps: ["おおきさ を くらべて みよう。", "いちばん おおきい もの を さがそう。"],

@@ -1265,6 +1265,17 @@
   function buildDisplay(spec, vars) {
     if (!spec) return null;
     var s = JSON.parse(JSON.stringify(spec));
+    // V2.9.9: figure_tap でも {変数名} を生成変数で置換できるようにした。
+    // 立体の寸法（{w}/{h}/{d}）のように、図そのものを毎回変えるための仕組み。
+    // 置換対象が無ければ spec は無変更で返る（従来挙動と同一）。
+    if (typeof fillSpecVars === "function") s = fillSpecVars(s, vars || {});
+    // 文字列になった数値フィールドを数値へ戻す（しないと x0 + w が文字列結合になる）
+    ["w", "h", "d", "radius", "pxPerUnit", "rotate", "sides"].forEach(function (k) {
+      if (typeof s[k] === "string") {
+        var n = Number(s[k]);
+        if (Number.isFinite(n)) s[k] = n;
+      }
+    });
     varySpec(s, vars);
     var tap = s.tap || {};
     // tap.kind は「どの種類の部品をタップさせるか」の指定なので、

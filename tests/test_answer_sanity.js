@@ -234,4 +234,66 @@ const N = 40;
   }
   console.log("  [PASS] " + N + " 問のヒントに答えの数値なし");
 }
+
+// 9. 固定答え・図の単調性の回帰防止（V2.9.9 修正の検収）
+{
+  const M = 120;
+  console.log("9. 全テンプレートが " + M + " 回生成で多様な答え・多様な図を出すこと");
+
+  // V2.9.9 で是正した6件（数値固定5件 + 正解カード位置固定1件）を明示的に確認
+  const FIXED_IN_V299 = [
+    "g6_basic_mixed_frac_01",
+    "g6_basic_frac_div_01",
+    "g6_std_frac_mix_01",
+    "g2_std_geometry_edges_word_01",
+    "g2_adv_geometry_box_faces_01",
+    "g1_shape_compare"
+  ];
+
+  const allIds = Object.keys(TemplateRegistry.templates);
+  const sameAnswer = [];
+  const sameFigure = [];
+  const missingRegressionTarget = [];
+
+  for (const id of allIds) {
+    const tpl = TemplateRegistry.templates[id];
+    const answers = new Set();
+    const figures = new Set();
+
+    for (let i = 0; i < M; i++) {
+      let q = null;
+      try {
+        q = RuleBasedQuestionSource.generateQuestion(id, []);
+      } catch (e) {
+        assert.fail(id + " が生成例外: " + e.message);
+      }
+      assert.ok(q, id + " が null を返す");
+      answers.add(String(q.answer));
+      // 図を伴う問題は図そのものが変わること（位置を覚えるだけで正答できないこと）
+      if (typeof q.figureHTML === "string" && q.figureHTML.length > 0) {
+        figures.add(q.figureHTML);
+      }
+    }
+
+    if (tpl.answerType !== "figure_tap" && answers.size < 2) {
+      sameAnswer.push(id + "=" + answers.size);
+    }
+    if (tpl.answerType === "figure_tap" && figures.size < 2) {
+      sameFigure.push(id + "=" + figures.size);
+    }
+    if (FIXED_IN_V299.includes(id) && answers.size < 2) {
+      missingRegressionTarget.push(id);
+    }
+  }
+
+  assert.deepStrictEqual(missingRegressionTarget, [],
+    "V2.9.9 で是正したテンプレが固定答えに戻っている: " + missingRegressionTarget.join(", "));
+  assert.deepStrictEqual(sameAnswer, [],
+    "毎回同じ答えしか出さないテンプレがある（暗記で正答できてしまう）: " + sameAnswer.join(", "));
+  assert.deepStrictEqual(sameFigure, [],
+    "図が毎回同一で位置暗記が可能な figure_tap がある: " + sameFigure.join(", "));
+
+  console.log("  [PASS] " + allIds.length + " テンプレ × " + M + " 問: 答え・図ともに多様");
+  console.log("  [PASS] V2.9.9 是正6件（固定答え）の回帰なし");
+}
 console.log("\nANSWER SANITY TESTS PASSED");

@@ -321,6 +321,7 @@
       answer: { expression: "shape_idx", normalization: "integer" },
       figureSpec: {
         shape: "quadrilateral", variant: "rectangle_wide", autoMarks: true,
+        vary: ["rotate"], rotateOptions: [0, 90, 180, 270],
         tap: { kind: "vertex", mode: "multi", select: { rightAngle: true }, hint: "□の マークの ある 頂点を すべて タップしてね。" }
       },
       hintSteps: ["□の マークが ある 頂点を さがそう。", "マークが ある 角（かく）の さきを すべて タップしてね。"],
@@ -337,6 +338,7 @@
       answer: { expression: "pattern_seed", normalization: "integer" },
       figureSpec: {
         shape: "quadrilateral", variant: "rectangle_tall", autoMarks: false,
+        vary: ["rotate"], rotateOptions: [0, 90, 180, 270],
         tap: { kind: "edge", mode: "multi", select: { all: true }, hint: " たてと よこ、4本の 辺を 全部 タップしてね。" }
       },
       hintSteps: ["たての 辺が 2本、よこの 辺が 2本 あるよ。", "4本 ぜんぶに タップしたら おわり。"],
@@ -366,10 +368,11 @@
       unitId: "geometry_g2", conceptId: "tri_quad_tap_equal",
       problemType: "figure", answerType: "figure_tap",
       format: "長さが 同じ 辺を すべて タップしてね。",
-      generate: { pattern_seed: { type: "integer", range: [0, 1] } },
+      generate: { pattern_seed: { type: "integer", range: [0, 3] } },
       answer: { expression: "pattern_seed", normalization: "integer" },
       figureSpec: {
         shape: "triangle", variant: "isosceles", autoMarks: true,
+        vary: ["rotate"], rotateOptions: [0, 90, 180, 270],
         tap: { kind: "edge", mode: "multi", select: { equalSides: true }, hint: "// の マークが ある 2本の 辺を タップしてね。" }
       },
       hintSteps: ["// の マークが ついている 辺を さがそう。", "マークが ある 辺を すべて タップしてね。"],

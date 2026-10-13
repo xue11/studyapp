@@ -941,24 +941,26 @@ const MATH_TEMPLATES = [
     grade: 6, difficultyLevel: 1,
     unitId: "fraction_mixed_same_denom", conceptId: "mixed_fraction_calc",
     problemType: "calculation", answerType: "number_input",
-    format: "1と{a}/{denom} + 2と{b}/{denom} の整数部分はいくつ？",
+    format: "{w1}と{a}/{denom} + {w2}と{b}/{denom} の整数部分はいくつ？",
     generate: {
       denom: { type: "choice", values: [5, 7, 9] },
+      w1: { type: "integer", range: [1, 4] },
+      w2: { type: "integer", range: [2, 5] },
       a: { type: "integer", range: [1, 2] },
       b: { type: "integer", range: [1, 2] },
-      answer: { formula: "3" }
+      answer: { formula: "w1 + w2" }
     },
     answer: { expression: "answer", normalization: "integer" },
-    hintSteps: ["整数部分どうし（1 + 2）を足してみよう。", "分数部分（{a}/{denom} + {b}/{denom}）はくり上がるかな？"],
-    explanationTemplate: "整数部分は 1 + 2 = {answer} だね。",
+    hintSteps: ["整数部分どうし（{w1} + {w2}）を足してみよう。", "分数部分（{a}/{denom} + {b}/{denom}）はくり上がるかな？"],
+    explanationTemplate: "整数部分は {w1} + {w2} = {answer} だね。",
     understandingCheck: {
       enabled: true, type: "choice",
       questionTemplate: "整数部分はどれ？",
       choices: ["{answer}", "{wrong1}", "{wrong2}"],
       answer: "{answer}",
       generateWrong: {
-        wrong1: { formula: "2" },
-        wrong2: { formula: "4" }
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer - 1" }
       }
     }
   },
@@ -968,22 +970,24 @@ const MATH_TEMPLATES = [
     grade: 6, difficultyLevel: 1,
     unitId: "fraction_div_basic", conceptId: "fraction_div_inverse",
     problemType: "calculation", answerType: "number_input",
-    format: "1/{denom} ÷ 2/3 は、1/{denom} × ?/2 と同じ。?に入る数は？",
+    format: "1/{denom} ÷ {b}/{c} は、1/{denom} × ?/{b} と同じ。?に入る数は？",
     generate: {
       denom: { type: "choice", values: [4, 5, 7] },
-      answer: { formula: "3" }
+      b: { type: "integer", range: [2, 5] },
+      c: { type: "integer", range: [3, 7] },
+      answer: { formula: "c" }
     },
     answer: { expression: "answer", normalization: "integer" },
-    hintSteps: ["分数のわり算は、わる数を「逆数（分母と分子をひっくり返した数）」にしてかけるよ。", "2/3 の逆数は何かな？"],
-    explanationTemplate: "2/3 の逆数は 3/2 だから、?に入る数は {answer} だね。",
+    hintSteps: ["分数のわり算は、わる数を「逆数（分母と分子をひっくり返した数）」にしてかけるよ。", "{b}/{c} の逆数は何かな？"],
+    explanationTemplate: "{b}/{c} の逆数は {c}/{b} だから、?に入る数は {answer} だね。",
     understandingCheck: {
       enabled: true, type: "choice",
       questionTemplate: "? に入る数はどれ？",
       choices: ["{answer}", "{wrong1}", "{wrong2}"],
       answer: "{answer}",
       generateWrong: {
-        wrong1: { formula: "2" },
-        wrong2: { formula: "4" }
+        wrong1: { formula: "b" },
+        wrong2: { formula: "answer + 1" }
       }
     }
   },
@@ -1019,21 +1023,24 @@ const MATH_TEMPLATES = [
     grade: 6, difficultyLevel: 2,
     unitId: "fraction_mixed_diff_denom", conceptId: "fraction_mixed_all",
     problemType: "calculation", answerType: "number_input",
-    format: "1/2 × 2/3 ÷ 1/3 = ?",
+    format: "{a}/{b} × {b}/{c} ÷ 1/{c} = ?",
     generate: {
-      answer: { formula: "1" }
+      a: { type: "integer", range: [2, 7] },
+      b: { type: "integer", range: [3, 9] },
+      c: { type: "integer", range: [3, 9] },
+      answer: { formula: "a" }
     },
     answer: { expression: "answer", normalization: "integer" },
-    hintSteps: ["÷ 1/3 を × 3/1 に直して、1つのかけ算にまとめよう。", "約分できるところを整理しよう。"],
-    explanationTemplate: "1/2 × 2/3 × 3/1 = 1 だね。",
+    hintSteps: ["÷ 1/{c} を × {c}/1 に直して、1つのかけ算にまとめよう。", "約分できるところを整理しよう。"],
+    explanationTemplate: "{a}/{b} × {b}/{c} × {c}/1 = {answer} だね。",
     understandingCheck: {
       enabled: true, type: "choice",
       questionTemplate: "計算の答えはどれ？",
       choices: ["{answer}", "{wrong1}", "{wrong2}"],
       answer: "{answer}",
       generateWrong: {
-        wrong1: { formula: "2" },
-        wrong2: { formula: "3" }
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer - 1" }
       }
     }
   },

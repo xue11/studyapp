@@ -26,11 +26,12 @@
       format: "直角（□の マーク）がある ちょう点を タップしてね。",
       figureSpec: {
         shape: "triangle", variant: "right",
+        vary: ["rotate"], rotateOptions: [0, 90, 180, 270],
         marks: { rightAngle: ["A"] },
         labels: { vertices: ["A", "B", "C"] },
         tap: { kind: "vertex", mode: "single", select: { rightAngle: true }, hint: "□の マークが ある ちょう点を タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: { pattern_seed: { type: "integer", range: [0, 3] } },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["□の マークが ある ところを探そう。", "それは 90度（まっすぐ）の 角だよ。"],
       explanationTemplate: "□の マークは 直角（90度）を 表すよ。",
@@ -44,10 +45,11 @@
       format: "長方形の 直角を すべて タップしてね。",
       figureSpec: {
         shape: "quadrilateral", variant: "rectangle",
+        vary: ["rotate"], rotateOptions: [0, 90, 180, 270],
         marks: { rightAngle: ["A", "B", "C", "D"] },
         tap: { kind: "angle", mode: "multi", select: { rightAngle: true }, hint: "かどの 内側を 4つ 全部 タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: { pattern_seed: { type: "integer", range: [0, 3] } },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["長方形は 角的（かく）いくつ あるかな。", "4つ 全部が 直角だよ。"],
       explanationTemplate: "長方形の 4つの 角は すべて 直角（90度）だよ。",
@@ -61,9 +63,10 @@
       format: "いちばん 長い 辺を タップしてね。",
       figureSpec: {
         shape: "triangle", variant: "general",
+        vary: ["rotate"], rotateOptions: [0, 75, 155, 240],
         tap: { kind: "edge", mode: "single", select: { longest: true }, hint: "3本の 辺を 比べて 、いちばん 長い 辺を タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: { pattern_seed: { type: "integer", range: [0, 3] } },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["3本の 辺を 目で くらべてみよう。", "いちばん 長く 見える 辺を タップだよ。"],
       explanationTemplate: "三角形の いちばん 長い 辺は、いちばん 大きな 角の さきに あるよ。",
@@ -78,14 +81,17 @@
       format: "方眼（こう眼）の 正方形の 4本の 辺を すべて タップしてね。",
       figureSpec: {
         shape: "quadrilateral", variant: "square",
-        pxPerUnit: 26, grid: 1,
-        labels: { edges: { AB: "4cm" } },
+        w: "{n}", h: "{n}", pxPerUnit: 26, grid: 1,
+        labels: { edges: { AB: "{n}cm" } },
         tap: { kind: "edge", mode: "multi", select: { all: true }, hint: "図の まわりに ある 4本の 線を 全部 タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: {
+        n: { type: "integer", range: [3, 6] },
+        pattern_seed: { type: "integer", range: [0, 2] }
+      },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["方眼の まわりの 線（せん）を さがそう。", "4本 全部を タップだよ。"],
-      explanationTemplate: "正方形の 面積は、たて 4マス × 4マス = 16 平方cm になるよ。",
+      explanationTemplate: "正方形の 面積は、たて {n}マス × {n}マス = {n * n} 平方cm になるよ。",
       understandingCheck: { enabled: false }
     },
     {
@@ -96,13 +102,17 @@
       format: "方眼（こう眼）の 長方形の 4本の 辺を すべて タップしてね。",
       figureSpec: {
         shape: "quadrilateral", variant: "rectangle",
-        pxPerUnit: 24, grid: 1,
+        w: "{w}", h: "{h}", pxPerUnit: 24, grid: 1,
         tap: { kind: "edge", mode: "multi", select: { all: true }, hint: "図の まわりに ある 4本の 線を 全部 タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: {
+        w: { type: "integer", range: [4, 6] },
+        h: { type: "integer", range: [2, 3] },
+        pattern_seed: { type: "integer", range: [0, 2] }
+      },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["方眼の まわりの 線（せん）を さがそう。", "4本 全部を タップだよ。"],
-      explanationTemplate: "長方形の 面積は、たてのマス数 × よこのマス数 で 求（もと）められるよ。",
+      explanationTemplate: "長方形の 面積は、たて {h}マス × よこ {w}マス = {h * w} 平方cm だよ。",
       understandingCheck: { enabled: false }
     },
     {
@@ -113,13 +123,16 @@
       format: "長さが 同じ 辺を すべて タップしてね。",
       figureSpec: {
         shape: "quadrilateral", variant: "square",
-        autoMarks: true,
+        w: "{n}", h: "{n}", pxPerUnit: 26, autoMarks: true,
         tap: { kind: "edge", mode: "multi", select: { equalSides: true }, hint: "//の マークが ある 辺を 全部 タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: {
+        n: { type: "integer", range: [3, 6] },
+        pattern_seed: { type: "integer", range: [0, 2] }
+      },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["同じ 印（じるし）が ある 辺を さがそう。", "正方形は 4本の 辺が すべて 同じ 長さだよ。"],
-      explanationTemplate: "正方形は、4本の 辺が すべて おなじ 長さ だよ。",
+      explanationTemplate: "正方形は、{n}マス角の 4本の 辺が すべて おなじ 長さ だよ。",
       understandingCheck: { enabled: false }
     },
 // ========== 単元C: solid_net_figure（立体と展開図） ==========
@@ -131,9 +144,13 @@
       format: "この立体の みえる 面（めん）を すべて タップしてね。",
       figureSpec: {
         shape: "solid", variant: "cube",
+        w: "{n}",
         tap: { kind: "face", mode: "multi", select: { all: true }, hint: "図の なかの 面（めん）を すべて タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: {
+        n: { type: "choice", values: [2.4, 3, 3.6] },
+        pattern_seed: { type: "integer", range: [0, 2] }
+      },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["図の なかの 面（めん）を さがそう。", "かくれた 3つの 面が みえるよ。"],
       explanationTemplate: "立体の 図で みえる 面は 3つ だよ（あと 3つは みえない）。",
@@ -147,9 +164,15 @@
       format: "この立体の 上の 面（めん）を タップしてね。",
       figureSpec: {
         shape: "solid", variant: "cuboid",
+        w: "{w}", h: "{h}", d: "{d}",
         tap: { kind: "face", mode: "single", select: { topFace: true }, hint: "いちばん たかい ところにある 面を タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: {
+        w: { type: "choice", values: [2.6, 3.4, 4.2] },
+        h: { type: "choice", values: [1.8, 2.4, 3.0] },
+        d: { type: "choice", values: [1.1, 1.5, 2.0] },
+        pattern_seed: { type: "integer", range: [0, 2] }
+      },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["3つの 面の うち、いちばん たかい 面は どれかな。", "上の 面（うえの めん）を タップだよ。"],
       explanationTemplate: "いちばん たかい 位置にある 面が「上の面」だよ。",
@@ -163,9 +186,15 @@
       format: "この 展開図（てんらくず）の 折りめ線（おりめせん）を すべて タップしてね。",
       figureSpec: {
         shape: "net", variant: "cuboid_net",
+        w: "{w}", h: "{h}", d: "{d}",
         tap: { kind: "edge", mode: "multi", select: { all: true }, hint: "破線（はせん）を さがして 全部 タップしてね。" }
       },
-      generate: { pattern_seed: { type: "integer", range: [0, 2] } },
+      generate: {
+        w: { type: "choice", values: [2.6, 3.2, 3.8] },
+        h: { type: "choice", values: [1.8, 2.2, 2.6] },
+        d: { type: "choice", values: [1.2, 1.5, 1.8] },
+        pattern_seed: { type: "integer", range: [0, 2] }
+      },
       answer: { expression: "pattern_seed", normalization: "integer" },
       hintSteps: ["破線（はせん）は どこにあるかな。", "折り目（おりめ）は 破線 で えがかれているよ。"],
       explanationTemplate: "展開図の 破線は 折り目（おりめ）を 表すよ。そこを 折ると 立体 になるよ。",

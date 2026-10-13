@@ -1138,11 +1138,15 @@
     numericTemplate({
       id: "g2_std_geometry_edges_word_01", level: 2, unit: "geometry_g2",
       concept: "box_faces_edges_vertices",
-      format: "三角形の頂点は3こ、長方形の頂点は4こ。頂点はあわせて何こ？",
-      generate: { triangleVertices: { type: "choice", values: [3] }, rectangleVertices: { type: "choice", values: [4] } },
-      answer: "triangleVertices + rectangleVertices",
-      hints: ["それぞれの形の頂点の数をたそう。", "{triangleVertices} + {rectangleVertices} を計算しよう。"],
-      explanation: "{triangleVertices} + {rectangleVertices} = {answer}こ だね。"
+      format: "三角形の頂点は3こ、{shape}の頂点は{n}こ。頂点はあわせて何こ？",
+      generate: {
+        shapeIdx: { type: "integer", range: [1, 3] },
+        n: { formula: "[4,5,6][shapeIdx - 1]" },
+        shape: { formula: "[\"長方形\",\"五角形\",\"六角形\"][shapeIdx - 1]" }
+      },
+      answer: "3 + n",
+      hints: ["それぞれの形の頂点の数をたそう。", "3 + {n} を計算しよう。"],
+      explanation: "3 + {n} = {answer}こ だね。"
     }),
     numericTemplate({
       id: "g2_std_geometry_shape_edges_02", level: 2, unit: "geometry_g2",
@@ -1156,8 +1160,8 @@
     numericTemplate({
       id: "g2_adv_geometry_box_faces_01", level: 3, unit: "geometry_g2",
       concept: "box_faces_edges_vertices",
-      format: "はこの形が2つあります。面は1つのはこに6まい。面はぜんぶで何まい？",
-      generate: { boxes: { type: "choice", values: [2] }, faces: { type: "choice", values: [6] } },
+      format: "はこの形が{boxes}つあります。面は1つのはこに6まい。面はぜんぶで何まい？",
+      generate: { boxes: { type: "integer", range: [2, 5] }, faces: { type: "choice", values: [6] } },
       answer: "boxes * faces",
       hints: ["1つのはこの面の数を、はこの数だけたそう。", "同じ数のまとまりだから、かけ算にできるよ。"],
       explanation: "{faces} × {boxes} = {answer}まい だね。"

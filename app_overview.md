@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.8  
+**バージョン**: V2.9.9  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -657,7 +657,56 @@ localStorage の QuotaExceeded → 保存失敗 → 学習データ損失に直�
 `test_phase1.html` / `scripts/check_version.js` / 本ドキュメントを V2.9.8 に統一。
 `schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
 
-### 10.16 今後の予定
+### 10.16 V2.9.9 固定答え・図の単調性の解消（出題多様性の質的改善）
+
+全214テンプレを各200問（計42,800問）走査し、「毎回同じ答えしか出ない」テンプレを
+機械的に検出して是正した。是正後は**数値系・選択系の固定答え0件**、
+**figure_tap 13件すべてが図のバリエーションを持つ**ことを確認している。
+
+**1. 数値テンプレの答え固定（5件）**
+変数を宣言しながら `generate.answer` が定数式になっている、あるいは問題文が完全固定だった。
+- `g6_basic_mixed_frac_01`: `1と{a}/{denom} + 2と{b}/{denom}` → 整数部分が常に3。
+  整数部を `{w1}`/`{w2}`（1〜4 / 2〜5）で変数化し答えを 3〜9 に拡大。
+- `g6_basic_frac_div_01`: わる数が常に `2/3` で答えが常に3。`{b}/{c}` で変数化。
+- `g6_std_frac_mix_01`: 問題文 `1/2 × 2/3 ÷ 1/3 = ?` が**変数ゼロの完全固定**。
+  `{a}/{b} × {b}/{c} ÷ 1/{c}` に変更し答えを 2〜7 に。
+- `g2_std_geometry_edges_word_01`: 「三角形3 + 長方形4 = 7」が常に7。
+  第2の図形を `{shape}`（長方形/五角形/六角形）で変数化し答えを 7/8/9 に。
+- `g2_adv_geometry_box_faces_01`: はこの数が `choice: [2]` の1値固定。
+  `range: [2, 5]` に変更し答えを 12/18/24/30 に（面6まいは立体の事実なので固定が正しい）。
+
+**2. 選択位置の固定（1件）**
+- `g1_shape_compare`: 正解カードが `var answerId = "c2"` で**常に2枚目**。
+  未使用だった `figure_seed` を使い、大きい/向きが違うカードの位置を1〜4枚目で分散。
+  答えは `c1`〜`c4` の4通りに。
+
+**3. figure_tap の図が毎回同一（12件）**
+部品IDは回転しても不変（`varySpec` の設計）だが、**描画される図自体が同一**だと
+位置を覚えるだけで正答できてしまう。以下を追加。
+- 回転ゆらぎ `vary: ["rotate"]` を長方形・三角形系へ追加:
+  `g2_tap_right_vertex` / `g2_tap_all_edges` / `g2_tap_equal_sides` /
+  `g3_angle_right_vertex` / `g3_angle_rect_right_all` / `g3_tri_longest_side`。
+- 方眼図は回転すると方眼が斜めになるため、**寸法変化**で対応:
+  `g3_area_square_sides` / `g3_area_rect_sides` / `g3_area_square_equal_sides`。
+- 立体・展開図も等角投影が崩れるため寸法変化で対応:
+  `g3_solid_cube_faces` / `g3_solid_cuboid_top_face` / `g3_net_cuboid_fold_lines`。
+
+**4. `figure_tap` 経路での `{変数}` 置換の有効化（仕組みの拡張）**
+`FigureSVG.buildDisplay` は従来 `varySpec` のみで `fillSpecVars` を呼んでおらず、
+figure_tap では `w: "{n}"` のような指定が効かなかった。`buildDisplay` 内で
+`fillSpecVars` を呼ぶよう変更し、置換後の文字列を数値へ戻す変換を追加した
+（`x0 + w` が文字列結合になるのを防ぐ）。置換対象が無ければ従来と同一挙動。
+
+**検証**: 固定答えスキャン（214×200問）で数値・選択系 FIXED=0、
+figure_tap 13件の `figureHTML` バリエーション=全件VARIED、例外0。
+`npm run verify` 全27テストPASS。
+
+**バージョン統一**: `config.js` / `migration.js` / `schema.js` / `sw.js`（CACHE_NAME =
+`arith-study-v2.9.9-question-variety-fix`）/ `index.html` title / `test_phase1.js` /
+`test_phase1.html` / `scripts/check_version.js` / 本ドキュメントを V2.9.9 に統一。
+`schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
+
+### 10.17 今後の予定
 
 | リリース | 内容 |
 |----------|------|
