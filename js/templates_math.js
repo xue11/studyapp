@@ -2431,7 +2431,12 @@ const MATH_TEMPLATES = [
       "{num1} は 小数になおすと いくつになるかな？"
     ],
     explanationTemplate: "{num1} は小数で {frac_val} だね。{dec} とくらべると... だから答えは {answer} だね。",
-    understandingCheck: { enabled: false }
+    // V2.9.11: 誤答は _buildWrongChoices が自動生成する（数値問題の理解確認を有効化）
+    understandingCheck: {
+    enabled: true, type: "choice",
+    choices: ["{answer}", "{wrong1}", "{wrong2}"],
+    answer: "{answer}"
+    }
   },
   {
     templateId: "g6_challenge_ratio_01",
@@ -2461,8 +2466,10 @@ const MATH_TEMPLATES = [
       choices: ["{b * unit_val}", "{a * unit_val}", "{total}"],
       answer: "{b * unit_val}",
       generateWrong: {
-        wrong1: { formula: "b * unit_val" },
-        wrong2: { formula: "a * unit_val" }
+        // V2.9.11: wrong1 が正解（b * unit_val）と同一だった不具合を修正。
+        // 兄の分（a * unit_val）と合計（total）を誤答にする。
+        wrong1: { formula: "a * unit_val" },
+        wrong2: { formula: "total" }
       }
     },
     story: { structureId: "ratio_distribution", contextId: "c_g6_chal_ratio_01", entityId: "e_g6_chal_ratio_01", actionId: "distribute" },
@@ -2491,7 +2498,12 @@ const MATH_TEMPLATES = [
       "入れた数を {a}倍 して、{b} を足してみて！"
     ],
     explanationTemplate: "この魔法の箱は「入れた数を {a}倍 して {b} を足す」ルールでした。だから {q_in} × {a} + {b} = {answer} だね。",
-    understandingCheck: { enabled: false }
+    // V2.9.11: 誤答は _buildWrongChoices が自動生成する（数値問題の理解確認を有効化）
+    understandingCheck: {
+    enabled: true, type: "choice",
+    choices: ["{answer}", "{wrong1}", "{wrong2}"],
+    answer: "{answer}"
+    }
   },
   {
     templateId: "g2_puzzle_reverse_story_01",
@@ -2514,7 +2526,12 @@ const MATH_TEMPLATES = [
       "「乗ってきた {on}人」を引いて、「降りた {off}人」を戻して（足して）あげよう。"
     ],
     explanationTemplate: "時間を戻すので、今の {current}人 から {on}人引いて、{off}人足すよ。 {current} - {on} + {off} = {answer}人だね。",
-    understandingCheck: { enabled: false }
+    // V2.9.11: 誤答は _buildWrongChoices が自動生成する（数値問題の理解確認を有効化）
+    understandingCheck: {
+    enabled: true, type: "choice",
+    choices: ["{answer}", "{wrong1}", "{wrong2}"],
+    answer: "{answer}"
+    }
   },
   {
     templateId: "g4_puzzle_coins_01",
@@ -2535,7 +2552,12 @@ const MATH_TEMPLATES = [
       "もし全部が 10円玉だったら、10円 × {coins}枚 ＝ {coins*10}円 になるね。そこから少しずつ 50円玉に変えていこう。"
     ],
     explanationTemplate: "50円玉が {answer}枚（{answer*50}円）、10円玉が {coins - answer}枚（{(coins - answer)*10}円）だと、ぴったり {total}円 になるね。",
-    understandingCheck: { enabled: false }
+    // V2.9.11: 誤答は _buildWrongChoices が自動生成する（数値問題の理解確認を有効化）
+    understandingCheck: {
+    enabled: true, type: "choice",
+    choices: ["{answer}", "{wrong1}", "{wrong2}"],
+    answer: "{answer}"
+    }
   },
   {
     templateId: "g3_puzzle_symbol_01",
@@ -2554,7 +2576,12 @@ const MATH_TEMPLATES = [
       "かけ算九九の表を 思い出してみよう。同じ数を かけた 列を なぞってみよう。"
     ],
     explanationTemplate: "{answer} × {answer} = {sq} だから、★には {answer} が入るね。",
-    understandingCheck: { enabled: false }
+    // V2.9.11: 誤答は _buildWrongChoices が自動生成する（数値問題の理解確認を有効化）
+    understandingCheck: {
+    enabled: true, type: "choice",
+    choices: ["{answer}", "{wrong1}", "{wrong2}"],
+    answer: "{answer}"
+    }
   },
   {
     templateId: "g4_puzzle_symbol_02",
@@ -2575,7 +2602,12 @@ const MATH_TEMPLATES = [
       "■ が {box} だとわかったら、下の式は「 {box} × ▲ ＝ {prod} 」になるね。"
     ],
     explanationTemplate: "■ は {box} だね。{box} × {answer} ＝ {prod} なので、▲ は {answer} になるよ。",
-    understandingCheck: { enabled: false }
+    // V2.9.11: 誤答は _buildWrongChoices が自動生成する（数値問題の理解確認を有効化）
+    understandingCheck: {
+    enabled: true, type: "choice",
+    choices: ["{answer}", "{wrong1}", "{wrong2}"],
+    answer: "{answer}"
+    }
   }
 ];
 
@@ -2595,7 +2627,12 @@ function createGrade3NumericTemplate(options) {
     answer: { expression: "answer", normalization: "integer" },
     hintSteps: options.hints,
     explanationTemplate: options.explanation,
-    understandingCheck: { enabled: false }
+    // V2.9.11: 理解確認（3択）を有効化。誤答は _buildWrongChoices が正解から自動生成する。
+    // options.uCheck を渡せば個別の questionTemplate / generateWrong で上書きできる。
+    understandingCheck: Object.assign(
+      { enabled: true, type: "choice", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}" },
+      options.uCheck || {}
+    )
   };
 }
 

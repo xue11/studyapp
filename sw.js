@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.10 grade3 fraction meaning templates)
-const CACHE_NAME = 'arith-study-v2.9.10-grade3-fraction-meaning';
+// PWA Service Worker (V2.9.11 understandingCheck mass enablement)
+const CACHE_NAME = 'arith-study-v2.9.11-understandingcheck-enable';
 const urlsToCache = [
   '/',
   '/index.html',

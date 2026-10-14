@@ -16,7 +16,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["1cm は 10mm だよ。", "{a}cm は {a} × 10 で求めよう。"],
       explanationTemplate: "{a}cm は {a} × 10 = {answer}mm だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_basic_length_02",
@@ -65,7 +70,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["1m は 100cm、1km は 1000m だよ。", "かけ算で求めよう。"],
       explanationTemplate: "{q_text} の答えは {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_volume_unit_01",
@@ -82,7 +92,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["1L は 10dL、1dL は 100mL だよ。", "倍数をかけて求めよう。"],
       explanationTemplate: "{q_text} の答えは {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_volume_02",
@@ -140,7 +155,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["1kg は 1000g だよ。", "kg を g に直してから足そう。"],
       explanationTemplate: "{q_text} の答えは {answer}g だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g3_std_time_01",
@@ -158,7 +178,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["1時間は60分、1分は60秒だよ。", "時計を思い浮かべて進めよう。"],
       explanationTemplate: "{q_text} の答えは {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
 
     // ==========================================

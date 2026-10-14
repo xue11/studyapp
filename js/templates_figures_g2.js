@@ -392,7 +392,12 @@
       figureSpec: { shape: "polygon", sides: "{sides}", radius: 2.3, autoMarks: false, vertexMark: true },
       hintSteps: ["角の さき（●の ところ）を 1こずつ 数えよう。", "3つなら 三角形、4つ なら 四角形だよ。"],
       explanationTemplate: "頂点の 数が 図の 形を あらわすよ。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_disp_count_angles",
@@ -406,7 +411,12 @@
       figureSpec: { shape: "polygon", sides: "{sides}", radius: 2.3, autoMarks: false, vertexMark: true },
       hintSteps: ["角（かく）の さきにある ●が 頂点（ちょうてん）だ。", "角の 数は 頂点の 数と 同じになるよ。"],
       explanationTemplate: "角の 数は 頂点の 数と同じなので、それぞれ 3 / 4 / 5 個 だよ。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_disp_grid_sides",
@@ -420,7 +430,12 @@
       figureSpec: { shape: "quadrilateral", w: "{n}", h: "{n}", pxPerUnit: 26, grid: 1, autoMarks: false, labels: { edges: { AB: "{n}cm" } } },
       hintSteps: ["方眼の 1マスずつ よこの 辺を 数えよう。", "1マスにつき 1つ と 数えるよ。"],
       explanationTemplate: "方眼の 図は、1マスを 1として 辺の 長さを かぞえるよ。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_disp_square_perimeter",
@@ -434,7 +449,12 @@
       figureSpec: { shape: "quadrilateral", w: "{n}", h: "{n}", pxPerUnit: 26, grid: 1, autoMarks: false, labels: { edges: { AB: "{n}cm" } } },
       hintSteps: ["1つの 辺が 何cm かを 図から よみ取ろう。", "4つの 辺を ぜんぶ たすと 周の 長さになるよ。"],
       explanationTemplate: "正方形の 周は 1つの 辺の 長さ × 4 で 求められるよ。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     }
   ];
   function registerAll() {

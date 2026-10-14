@@ -19,7 +19,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["長方形は たて×よこ、正方形は 辺×辺だよ。", "かけ算で求めよう。"],
       explanationTemplate: "答えは {answer}平方cm だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g5_basic_volume_01",
@@ -36,7 +41,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["直方体は たて×よこ×高さだよ。", "順にかけ算しよう。"],
       explanationTemplate: "たて{a}×よこ{b}×高さ{c} = {answer}立方cm だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g6_std_circle_01",
@@ -53,7 +63,12 @@
       answer: { expression: "answer", normalization: "decimal" },
       hintSteps: ["円周は 直径×3.14、面積は 半径×半径×3.14だよ。", "小数のかけ算に気をつけよう。"],
       explanationTemplate: "{q_text} の答えは {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     }
   ];
   function registerAll() {

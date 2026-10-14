@@ -585,7 +585,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["一のくらいを たすと 10以上に なるか 見よう。", "{a % 10} + {b % 10} は くり上がりが あるね。十のくらいにも 1を たそう。"],
       explanationTemplate: "一のくらいで くり上がるから、{a} + {b} = {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_word_sub_borrow_01",
@@ -601,7 +606,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["一のくらいで ひけるか 見よう。", "十のくらいから 1つ くり下げて、{a % 10} に 10を たしてから ひこう。"],
       explanationTemplate: "十のくらいから 1つ くり下げると、{a} - {b} = {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_basic_bignum_04",
@@ -619,7 +629,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["100ずつ ふえる 数直線だね。", "{left} から 100 ふえた 数は いくつかな？ その つぎが {right} だよ。"],
       explanationTemplate: "{left}、{answer}、{right} のじゅんに 100ずつ ふえるね。まんなかは {answer} だよ。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_basic_length_03",
@@ -637,7 +652,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["まず cm を mm に なおそう。1cm は 10mm だよ。", "{a}cm は {a * 10}mm、{c}cm は {c * 10}mm。mmどうしも あわせよう。"],
       explanationTemplate: "{a * 10} + {b} + {c * 10} + {d} = {answer}mm だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_basic_time_04",
@@ -654,7 +674,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["{h}時から{h + 1}時までは 60分だよ。", "{h}時{m}分から{h + 1}時までの分と、そのあと{endM}分を あわせよう。"],
       explanationTemplate: "60 - {m} + {endM} = {answer}分 いたね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_basic_fraction_03",
@@ -672,7 +697,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["■ が いくつあるか かぞえよう。", "分子は、色をぬった部分の数だよ。"],
       explanationTemplate: "■ は {shaded}こ あるから、分数の分子は {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_word_kuku_array_01",
@@ -689,7 +719,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["同じ数のまとまりが {groups}つ あるね。", "{perGroup} + {perGroup} を {groups}つ分。かけ算の式にしてみよう。"],
       explanationTemplate: "{perGroup} × {groups} = {answer}こ だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_volume_compare_mixed_01",
@@ -709,7 +744,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["1L は 10dL だから、まず L を dL に なおそう。", "{leftL}L {leftDL}dL は {left}dL、{rightL}L {rightDL}dL は {right}dL だね。"],
       explanationTemplate: "{left}dL と {right}dL をくらべると、多いほうは {answer}dL だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_basic_box_04",
@@ -733,7 +773,12 @@
         "まんなかの面を底にして、まわりの面を立てたとき、最後の面でふたができるか考えよう。"
       ],
       explanationTemplate: "{correctPosition}ばんは、6まいの面を折り目で立てると、面が重ならずに箱の形になるよ。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_calcidea_03",
@@ -750,7 +795,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: ["{a} の一のくらいは {a % 10}。{c} をたすと 10のまとまりになるよ。", "{a} + {c} を先に計算してから、{b} をたそう。"],
       explanationTemplate: "{a} + {c} = {a + c}。それに {b} をたして {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_inverse_add_sub_01",
@@ -778,7 +828,12 @@
         "{type_idx === 1 ? total + ' から ' + a + ' を ひくと、もらった数が 分かるよ。' : a + ' から ' + remaining + ' を ひくと、あげた数が 分かるよ。'}"
       ],
       explanationTemplate: "{type_idx === 1 ? total + ' - ' + a + ' = ' + answer + ' まい だね。' : a + ' - ' + remaining + ' = ' + answer + ' まい だね。'}",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_length_add_diff_01",
@@ -805,7 +860,12 @@
         "{a}cm {b}mm は {left}mm、{c}cm {d}mm は {right}mm だよ。"
       ],
       explanationTemplate: "{left}mm と {right}mm を {operation === 1 ? 'あわせる' : 'くらべる'}と、答えは {answer}mm だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_volume_add_diff_01",
@@ -832,7 +892,12 @@
         "{a}L {b}dL は {left}dL、{c}L {d}dL は {right}dL だね。"
       ],
       explanationTemplate: "{left}dL と {right}dL を {operation === 1 ? 'あわせる' : 'くらべる'}と、答えは {answer}dL だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_time_elapsed_hour_01",
@@ -857,7 +922,12 @@
         "{startM}分から 60分までの分と、{endM}分を あわせよう。"
       ],
       explanationTemplate: "(60 - {startM}) + {endM} を計算すると、{answer}分 だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_std_fraction_compare_picture_01",
@@ -880,7 +950,12 @@
         "■の数が多いテープの分子を答えよう。"
       ],
       explanationTemplate: "分けた数が同じときは、色のついた部分が多いほうが大きい分数だよ。答えは {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_adv_kuku_reverse_story_01",
@@ -900,7 +975,12 @@
         "{perGroup} × □ = {total} になる □ をさがそう。"
       ],
       explanationTemplate: "{perGroup} × {answer} = {total} だから、{answer}ふくろ できるね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_adv_3terms_make100_01",
@@ -921,7 +1001,12 @@
         "{a} + {c} で100をつくってから、{b} をたそう。"
       ],
       explanationTemplate: "{a} + {c} = 100。100 + {b} = {answer} だから、答えは {answer} だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_adv_2step_story_02",
@@ -946,7 +1031,12 @@
         "{type_idx === 1 ? start + ' + ' + gained + ' - ' + used + ' のじゅんに計算しよう。' : final + ' + ' + used + ' - ' + gained + ' のじゅんに、はじめの数をもとめよう。'}"
       ],
       explanationTemplate: "{type_idx === 1 ? start + ' + ' + gained + ' - ' + used + ' = ' + final + ' だね。' : final + ' + ' + used + ' - ' + gained + ' = ' + answer + ' だね。'}",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     },
     {
       templateId: "g2_adv_rectangle_perimeter_01",
@@ -972,7 +1062,12 @@
         "{width}cm と {height}cm の辺が2本ずつあるね。"
       ],
       explanationTemplate: "{width} + {height} + {width} + {height} = {answer}cm だね。",
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     }
   ];
 
@@ -992,7 +1087,12 @@
       answer: { expression: "answer", normalization: "integer" },
       hintSteps: options.hints,
       explanationTemplate: options.explanation,
-      understandingCheck: { enabled: false }
+      // V2.9.11: 誤答は _buildWrongChoices が正解から自動生成する
+      understandingCheck: {
+        enabled: true, type: "choice",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}"
+      }
     };
   }
 

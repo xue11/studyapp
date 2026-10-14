@@ -204,6 +204,102 @@ class RuleBasedQuestionSource {
   }
 
   /**
+   * V2.9.11: 数値答えに対する誤答候補を2件、相異かつ正解と異なるように選ぶ。
+   *
+   * 児童が実際に犯しやすい誤りを優先度順に候補化する:
+   *   1. 桁ずれ（×10 / ÷10）      → 単位換算や位取りの誤り
+   *   2. 一の位と十の位の入れ違い   → 2桁以上の場合
+   *   3. ±1 / ±2                  → 計算の最終桁の誤り
+   *   4. 先頭桁の置き換え           → 上記で足りない場合の予備
+   *
+   * @param {number} ans 正解（数値）
+   * @returns {Array<string>} [wrong1, wrong2] 常に相異で、正解とも異なる
+   */
+  static _buildWrongChoices(ans) {
+    const cands = [];
+    const push = (v) => {
+      if (v === null || !Number.isFinite(v)) return;
+      if (v < 0) return; // 数値テンキーに入力不可能な負値は誤答にしない
+      if (v === ans) return; // 正解と同一は不可
+      const s = String(v);
+      if (cands.indexOf(s) >= 0) return; // 既出は不可
+      cands.push(s);
+    };
+
+    // 桁ずれ候補は「同じ桁数帯」のものだけを採用する。
+    // 例: ans=12 に 120 を足すと桁が飛びすぎて明らかな誤答になり学習効果が薄いため、
+    //     桁数が ans と同じ（12→21 の位入れ違い）か、±1桁の範囲に収まるものに限る。
+    const digits = Math.max(1, String(Math.floor(Math.abs(ans))).length);
+    const inBand = (v) => {
+      const d = String(Math.floor(Math.abs(v))).length;
+      return d === digits || d === digits - 1 || d === digits + 1;
+    };
+    const pushBanded = (v) => { if (inBand(v)) push(v); };
+
+    // 1. 位の入れ違い（2桁以上）: 同じ桁数帯なので自然な誤答
+    if (Number.isInteger(ans) && ans >= 10 && ans % 10 !== 0) {
+      const ones = ans % 10;
+      const rest = Math.floor(ans / 10);
+      pushBanded(ones * 10 + rest);
+    }
+
+    // 2. ±1 / ±2: 計算の最終桁の誤り（桁をまたがない範囲）
+    pushBanded(ans + 1);
+    pushBanded(ans - 1);
+    pushBanded(ans + 2);
+    pushBanded(ans - 2);
+    pushBanded(ans + 10);
+    pushBanded(ans - 10);
+
+    // 3. 桁ずれ（×10 / ÷10）: 単位換算や位取りの誤り。候補が足りない場合の自然な誤答
+    if (cands.length < 2 && Number.isInteger(ans)) {
+      pushBanded(ans * 10);
+      pushBanded(ans % 10 === 0 ? ans / 10 : Math.floor(ans / 10));
+    }
+
+    // 4. それでも足りない場合（小さな答え・0・小数）は帯域を気にせず埋める
+    if (cands.length < 2) {
+      push(ans + 1); push(ans - 1);
+      push(ans + 2); push(ans - 2);
+    }
+    if (cands.length < 2 && Number.isInteger(ans)) {
+      push(ans * 10);
+      push(ans % 10 === 0 ? ans / 10 : Math.floor(ans / 10));
+    }
+    if (cands.length < 2) {
+      push(ans + 3); push(ans + 4); push(ans + 5);
+      push(ans + 10); push(ans + 100);
+    }
+
+    // 5. 絶対に2件揃う保証（極端ケース）
+    for (let k = 1; cands.length < 2 && k < 100; k++) {
+      push(ans + k);
+      push(ans - k);
+    }
+    let n = 1;
+    while (cands.length < 2) {
+      if (cands.indexOf(String(n)) < 0 && n !== ans) cands.push(String(n));
+      n++;
+      if (n > 1000) break;
+    }
+
+    return [cands[0], cands[1]];
+  }
+
+  /**
+   * V2.9.11: 正解から offset ずらした値で、負にならない誤答候補を返す。
+   * generateWrong の式（例: answer - 10）が負値を出す場合の保護に使う。
+   * @param {number} ans 正解
+   * @param {number} offset ずらす量
+   * @returns {number} 非負の誤答値
+   */
+  static _pickNonNegative(ans, offset) {
+    if (!Number.isFinite(ans)) return offset;
+    if (ans - offset >= 0) return ans - offset;
+    return ans + offset;
+  }
+
+  /**
    * テンプレートと変数から questionInstance を組み立てる
    */
   static _assembleInstance(template, vars, previousInstances, options) {
@@ -228,6 +324,12 @@ class RuleBasedQuestionSource {
     }
     const answerStr = String(answerVal);
 
+    // V2.9.11: understandingCheck 等の {answer} プレースホルダが解決できるよう、
+    // 確定した答えを vars に反映する（generate.answer を持たないテンプレでは
+    // template.answer.expression からの算出値を使うため、未注入だと
+    // "{answer}" の式評価が "answer is not defined" で失敗していた）
+    if (typeof vars.answer === "undefined") vars.answer = answerVal;
+
     // ヒントの置換 (2段階以上)
     const hintSteps = (template.hintSteps || []).map(h => this._resolvePlaceholders(h, vars));
 
@@ -238,8 +340,15 @@ class RuleBasedQuestionSource {
     let understandingCheck = null;
     if (template.understandingCheck && template.understandingCheck.enabled) {
       const uCheckDef = template.understandingCheck;
-      const uQuestion = this._resolvePlaceholders(uCheckDef.questionTemplate, vars);
-      const uAnswer = this._resolvePlaceholders(uCheckDef.answer, vars);
+      // V2.9.11: questionTemplate 未定義でも汎用文で成立させる（数値問題の一括有効化のため）
+      const uQuestionTemplate = (typeof uCheckDef.questionTemplate === "string" && uCheckDef.questionTemplate.length > 0)
+        ? uCheckDef.questionTemplate
+        : "つぎの問題の答え（こたえ）は どれ？<br>" + questionText;
+      const uQuestion = this._resolvePlaceholders(uQuestionTemplate, vars);
+      const uAnswerExpr = (typeof uCheckDef.answer === "string" && uCheckDef.answer.length > 0)
+        ? uCheckDef.answer
+        : "answer";
+      const uAnswer = this._resolvePlaceholders(uAnswerExpr, vars);
 
       // wrong1, wrong2 の生成
       let wrong1 = null;
@@ -256,12 +365,31 @@ class RuleBasedQuestionSource {
       }
 
       // フォールバック誤答生成（重複回避: 第7.4.2章）
+      // V2.9.11: 誤答が答えと重複・互いに重複する場合は次の候補へ巡回する
+      // （従来は wrong2 が wrong1 と衝突したまま残り、3択にならない不具合があった）
       const numAns = parseFloat(uAnswer);
-      if (wrong1 === null || wrong1 === uAnswer) {
-        wrong1 = !isNaN(numAns) ? String(numAns + 1) : uAnswer + "A";
-      }
-      if (wrong2 === null || wrong2 === uAnswer || wrong2 === wrong1) {
-        wrong2 = !isNaN(numAns) ? String(numAns > 1 ? numAns - 1 : numAns + 2) : uAnswer + "B";
+      if (!isNaN(numAns) && !uCheckDef.generateWrong) {
+        // 誤答指定が無い数値問題のみ、候補を巡回して相異な2件を選ぶ
+        const cands = this._buildWrongChoices(numAns);
+        wrong1 = cands[0];
+        wrong2 = cands[1];
+      } else if (isNaN(numAns)) {
+        // 非数値（図形部品ID等）は従来の接尾辞フォールバックを維持
+        if (wrong1 === null || wrong1 === uAnswer) wrong1 = uAnswer + "A";
+        if (wrong2 === null || wrong2 === uAnswer || wrong2 === wrong1) wrong2 = uAnswer + "B";
+      } else {
+        // 誤答指定ありで重複が残った場合の後処理
+        // V2.9.11: 負値（テンキーで入力不可能）と重複を避けて候補を巡回する。
+        // 従来は generateWrong の式が answer - 10 等で負値を出すとそのまま採用され、
+        // 児童が絶対に選べない誤答が表示されていた（g2_basic_sub_01 で answer=5 → -5）。
+        if (wrong1 === null || wrong1 === uAnswer || Number(wrong1) < 0) {
+          wrong1 = String(this._pickNonNegative(numAns, 2));
+        }
+        if (wrong2 === null || wrong2 === uAnswer || wrong2 === wrong1 || Number(wrong2) < 0) {
+          let cand = this._pickNonNegative(numAns, 3);
+          if (String(cand) === wrong1) cand = this._pickNonNegative(numAns, 4);
+          wrong2 = String(cand);
+        }
       }
 
       // 選択肢のシャッフル

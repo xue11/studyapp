@@ -376,8 +376,11 @@ const N = 40;
         id + " の選択肢は相異なる: " + choicesStr.join(" / "));
       assert.ok(choicesStr.includes(String(uc.answer)),
         id + " の正解が選択肢に含まれる: " + choicesStr.join(" / "));
-      assert.strictEqual(String(uc.answer), String(q.answer),
-        id + " の understandingCheck の正解は問題の答えと一致する: uc=" + uc.answer + " ans=" + q.answer);
+      // 誤答が正解と異なること（誤答=正解 だと事実上2択になる）
+      // 選択肢はシャッフルされるため、正解以外の2件が誤答であることを検証する
+      const wrongChoices = choicesStr.filter((c) => c !== String(uc.answer));
+      assert.strictEqual(wrongChoices.length, 2,
+        id + " の誤答は2件（誤答=正解 だと事実上2択になる）: " + choicesStr.join(" / "));
     }
 
     assert.ok(answers.size >= 4,
@@ -385,4 +388,119 @@ const N = 40;
     console.log("  [PASS] " + id + " × " + M + " 問: 答え " + answers.size + " 種・約分可能分数0・3択整合");
   }
 }
+// 11. 数値問題の understandingCheck が全件有効で3択整合（V2.9.11 一括有効化の検収）
+// 数値答え（number_input / figure_display）の問題は児童が「たまたま当たった」まま
+// 進まないよう、理解確認クイズを必ず提示する。誤答は _buildWrongChoices が
+// 正解から自動生成する（位の入れ違い・±1・±2 など児童が犯しやすい誤りを優先）。
+// 図形の特定パーツを指す答え（figure_tap / single_choice / multi_choice）は
+// 誤答を数値から導出できないため対象外（誤答設計は人手で行う）。
+{
+  const N = 60;
+  console.log("11. 数値問題の understandingCheck が全件有効で3択が整合すること");
+
+  let enabledCount = 0;
+  const disabled = [];
+  let checked = 0;
+  const offenders = [];
+
+  for (const [id, template] of Object.entries(TemplateRegistry.templates)) {
+    const isNumeric = template.answerType === "number_input" || template.answerType === "figure_display";
+    const en = template.understandingCheck && template.understandingCheck.enabled;
+    if (en) enabledCount++; else disabled.push(id + " [" + template.answerType + "]");
+
+    if (isNumeric) {
+      assert.ok(en, id + " は数値問題なのに understandingCheck が無効: " + id);
+    }
+
+    if (!en) continue;
+    if (template.answerType !== "number_input" && template.answerType !== "figure_display") continue;
+
+    for (let i = 0; i < N; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      assert.ok(q, id + " が生成されること");
+
+      const uc = q.understandingCheck;
+      assert.ok(uc && uc.enabled, id + " に understandingCheck が付くこと");
+      assert.strictEqual(uc.type, "choice", id + " の type は choice");
+      assert.strictEqual(uc.choices.length, 3, id + " の選択肢は3つ");
+
+      const s = uc.choices.map(String);
+      const uniq = new Set(s);
+      if (uniq.size !== 3) { offenders.push(id + " 選択肢重複: " + s.join("/")); break; }
+      if (!s.includes(String(uc.answer))) { offenders.push(id + " 正解不在: " + s.join("/") + " ans=" + uc.answer); break; }
+      // 誤答は正解と異なる（同じ数字を選ばせない）
+      const wrongs = s.filter(c => c !== String(uc.answer));
+      if (wrongs.some(w => w === String(uc.answer))) { offenders.push(id + " 誤答=正解"); break; }
+      // 誤答は負値にしない（数値テンキーに入力・選択不可能な値を避ける）
+      if (wrongs.some(w => !Number.isNaN(Number(w)) && Number(w) < 0)) {
+        offenders.push(id + " 誤答が負: " + wrongs.join("/")); break;
+      }
+      // 質問文が空・未置換でないこと
+      if (!uc.question || uc.question.length === 0) { offenders.push(id + " 質問文が空"); break; }
+      if (/\{[a-zA-Z0-9_]+\}/.test(uc.question)) { offenders.push(id + " 質問文に未置換: " + uc.question); break; }
+      // 質問文・選択肢が問題の答えと一致していること（数値問題は答えを問う）
+      // 例外: questionTemplate を明示して「別の問い」（例: 本問が「兄の分」で確認が
+      // 「弟の分」）を設計しているテンプレは、あえて正解をずらしている。
+      const hasCustomQ = !!(template.understandingCheck.questionTemplate || "").trim();
+      if (!hasCustomQ && uc.answer !== q.answer && String(uc.answer) !== String(q.answer)) {
+        offenders.push(id + " クイズ正解≠問題答え: uc=" + uc.answer + " q=" + q.answer); break;
+      }
+      checked++;
+    }
+  }
+
+  assert.deepStrictEqual(offenders, [],
+    "understandingCheck の3択に不整合があります:\n    - " + offenders.join("\n    - "));
+  console.log("  [PASS] " + checked + " インスタンス検証: 3択が相異・正解を含む・誤答は非負");
+
+  const allIds = Object.keys(TemplateRegistry.templates);
+  console.log("  [INFO] 全 " + allIds.length + " テンプレ中 enabled=" + enabledCount +
+    " / disabled=" + disabled.length);
+  // disabled は図形パーツ特定系（非数値答え）のみであること
+  const badDisabled = disabled.filter(s => {
+    const m = s.match(/\[([a-zA-Z_]+)\]$/);
+    return m && (m[1] === "number_input" || m[1] === "figure_display");
+  });
+  assert.deepStrictEqual(badDisabled, [],
+    "数値問題で understandingCheck が無効なものが残っています:\n    - " + badDisabled.join("\n    - "));
+  console.log("  [PASS] disabled は非数値答え（figure_tap/single_choice/multi_choice）のみ");
+}
+// 12. 誤答候補生成ヘルパ _buildWrongChoices の単体検証（V2.9.11）
+// 「正解と異なり・互いに異なり・非負」な2件を常に返すことを確認する。
+// 桁が飛びすぎる誤答（ans=12 → 120）を出さず、位の入れ違いや ±1 を優先することも検証する。
+{
+  console.log("12. 誤答候補生成 _buildWrongChoices の健全性");
+
+  const cases = [0, 1, 2, 3, 5, 9, 10, 12, 21, 25, 50, 58, 99, 100, 250, 300, 999, 1000, 12.5, 0.5];
+  const offenders = [];
+
+  for (const a of cases) {
+    const w = RuleBasedQuestionSource._buildWrongChoices(a);
+    if (!Array.isArray(w) || w.length !== 2) {
+      offenders.push("ans=" + a + ": 2件返らない " + JSON.stringify(w));
+      continue;
+    }
+    const w1 = String(w[0]);
+    const w2 = String(w[1]);
+    if (w1 === w2) offenders.push("ans=" + a + ": 誤答が同一 [" + w1 + "," + w2 + "]");
+    if (w1 === String(a) || w2 === String(a)) offenders.push("ans=" + a + ": 正解と一致 [" + w1 + "," + w2 + "]");
+    if (Number(w[0]) < 0 || Number(w[1]) < 0) offenders.push("ans=" + a + ": 負値 [" + w1 + "," + w2 + "]（テンキーで入力不可）");
+    if (w1 === "undefined" || w2 === "undefined") offenders.push("ans=" + a + ": undefined");
+  }
+
+  // 教育的妥当性: 12 に対して 120 のような桁が飛んだ誤答を出さない
+  const w12 = RuleBasedQuestionSource._buildWrongChoices(12).map(String);
+  assert.ok(w12.indexOf("120") < 0,
+    "ans=12 の誤答に 120 を含めない（桁が飛びすぎ）: " + w12.join(","));
+  // 12 → 位入れ違いの 21 が候補に含まれること
+  assert.ok(w12.indexOf("21") >= 0,
+    "ans=12 の誤答に位入れ違い 21 を含むこと: " + w12.join(","));
+
+  assert.deepStrictEqual(offenders, [],
+    "_buildWrongChoices の不備:\n    - " + offenders.join("\n    - "));
+  console.log("  [PASS] " + cases.length + " パターン: 相異・非負・正解非一致、位入れ違い優先・桁飛びなし");
+}
+
+
+
 console.log("\nANSWER SANITY TESTS PASSED");
