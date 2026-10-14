@@ -14,7 +14,7 @@ const assert = require("assert");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const { TemplateRegistry } = require(path.join(ROOT, "js/registries.js"));
+const { TemplateRegistry, UnitRegistry } = require(path.join(ROOT, "js/registries.js"));
 [
   "templates_math",
   "templates_units_p1",
@@ -295,5 +295,94 @@ const N = 40;
 
   console.log("  [PASS] " + allIds.length + " テンプレ × " + M + " 問: 答え・図ともに多様");
   console.log("  [PASS] V2.9.9 是正6件（固定答え）の回帰なし");
+}
+
+// 10. 3年「分数の意味と表し方」3テンプレの健全性（V2.9.10 追加分の検収）
+// 学習指導要領（解説 平成29年告示）3年 A(6) 対応。答えは「上の数/下の数」の整数に限定し、
+// 約分・異分母・帯分数は扱わない（3年範囲外）。2年の fraction_intro（図による識別）との
+// 差別化として、分子・分母が何を表すか／単位分数の幾つ分／同分母加減の分子を問う。
+{
+  const M = 120;
+  console.log("10. 3年 分数の意味と表し方3テンプレが " + M + " 問で健全であること");
+
+  const FRACTION_MEANING_IDS = [
+    "g3_basic_fraction_01",
+    "g3_basic_fraction_02",
+    "g3_basic_fraction_03"
+  ];
+
+  for (const id of FRACTION_MEANING_IDS) {
+    const template = TemplateRegistry.templates[id];
+    assert.ok(template, id + " が登録されていること");
+    assert.strictEqual(template.unitId, "fraction_meaning",
+      id + " の unitId は fraction_meaning");
+    assert.strictEqual(template.grade, 3, id + " は3年");
+    assert.strictEqual(template.answerType, "number_input",
+      id + " の answerType は number_input（分子・分母の整数を答える）");
+
+    // 単元がレジストリに登録され、このテンプレで空プールになっていないこと
+    const units = UnitRegistry.getUnitsForLevel("math", 3, 2);
+    assert.ok(units.some(u => u.id === "fraction_meaning"),
+      "3年 Lv2 に fraction_meaning 単元が登録されていること");
+    assert.ok(TemplateRegistry.getByUnit("math", 3, 2, "fraction_meaning").length > 0,
+      "fraction_meaning のプールが空でないこと");
+
+    const answers = new Set();
+    for (let i = 0; i < M; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      assert.ok(q, id + " が生成されること");
+
+      // 答えは正の整数（numpad で入力可能）
+      const num = Number(q.answer);
+      assert.ok(Number.isInteger(num) && num > 0,
+        id + " の答えは正の整数: " + q.answer + " / " + q.questionText);
+
+      answers.add(String(q.answer));
+
+      // 問題文に「なん分のいくつ」の分数表記が含まれ、未置換プレースホルダがないこと
+      assert.ok(/\d+\/\d+/.test(q.questionText) || q.variables.type_idx !== undefined,
+        id + " の問題文に分数表記があること: " + q.questionText);
+      assert.strictEqual(/\{[a-zA-Z0-9_]+\}/.test(q.questionText), false,
+        id + " の問題文に未置換プレースホルダがないこと: " + q.questionText);
+      assert.strictEqual(q.questionText.includes("NaN"), false,
+        id + " の問題文に NaN がないこと");
+      assert.strictEqual(q.questionText.includes("undefined"), false,
+        id + " の問題文に undefined がないこと");
+
+      // 約分が必要な分数（分子と分母が1以外の公約数を持つ）を出していないこと
+      // 3年 A(6) は約分を扱わないため、既約でない分数は教育上不適切
+      const denom = Number(q.variables.denom);
+      if (denom && /(\d+)\/(\d+)/.test(q.questionText)) {
+        const fracs = q.questionText.match(/(\d+)\/(\d+)/g) || [];
+        for (const f of fracs) {
+          const [fn, fd] = f.split("/").map(Number);
+          assert.ok(fn < fd, id + " は仮分数（分子≧分母）を出さない: " + f + " / " + q.questionText);
+          for (let d = 2; d < fd; d++) {
+            if (fd % d === 0) {
+              assert.ok(fn % d !== 0,
+                id + " は約分可能な分数を出さない: " + f + "（" + d + " で約分できる）/ " + q.questionText);
+            }
+          }
+        }
+      }
+
+      // understandingCheck は3択で相異・正解を含む
+      const uc = q.understandingCheck;
+      assert.ok(uc && uc.enabled && uc.type === "choice",
+        id + " に understandingCheck（choice）が付くこと");
+      assert.strictEqual(uc.choices.length, 3, id + " の選択肢は3つ");
+      const choicesStr = uc.choices.map(String);
+      assert.strictEqual(new Set(choicesStr).size, 3,
+        id + " の選択肢は相異なる: " + choicesStr.join(" / "));
+      assert.ok(choicesStr.includes(String(uc.answer)),
+        id + " の正解が選択肢に含まれる: " + choicesStr.join(" / "));
+      assert.strictEqual(String(uc.answer), String(q.answer),
+        id + " の understandingCheck の正解は問題の答えと一致する: uc=" + uc.answer + " ans=" + q.answer);
+    }
+
+    assert.ok(answers.size >= 4,
+      id + " は " + M + " 問で4種類以上の答えを出す（暗記不可）: " + answers.size + " 種");
+    console.log("  [PASS] " + id + " × " + M + " 問: 答え " + answers.size + " 種・約分可能分数0・3択整合");
+  }
 }
 console.log("\nANSWER SANITY TESTS PASSED");

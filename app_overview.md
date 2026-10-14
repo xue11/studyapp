@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.9  
+**バージョン**: V2.9.10  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -706,9 +706,72 @@ figure_tap 13件の `figureHTML` バリエーション=全件VARIED、例外0。
 `test_phase1.html` / `scripts/check_version.js` / 本ドキュメントを V2.9.9 に統一。
 `schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
 
-### 10.17 今後の予定
+### 10.17 V2.9.10 3年「分数の意味と表し方」の追加（学習指導要領3年 A(6) 対応）
+
+3年生の分数が**完全な空白**だった（2年で図による 1/2・1/4 の識別に触れた後、5年の同分母
+加減まで1.5年何も出題されない）ため、学習指導要領（解説 平成29年告示）3年 A(6)
+「単位分数及びそれを幾つか集えた分数について，その意味と表し方について理解し，簡単な
+場合について，分数の加法・減法の計算ができるようにする」に該当する3問を追加した。
+
+**1. 新規単元 `fraction_meaning`（3年 Lv2）**
+
+`registries.js` の 3年 Lv2 に `fraction_meaning`（分数の意味と表し方）を登録。
+concept は `fraction_num_den_meaning` / `unit_fraction_count` /
+`fraction_add_same_denom_intro` の3つ。
+
+**2. 追加3テンプレ（`templates_units_p1.js`）**
+
+| templateId | 問う内容 | 答えの例 |
+|------------|----------|----------|
+| `g3_basic_fraction_01` | 分子・分母が何を表すか（「n/d の n と d は何か」） | 上の数 / 下の数 |
+| `g3_basic_fraction_02` | 単位分数を幾つ集めたか（「1/4 を3つ = 3/4」の合成） | あつめた数 / 分母 |
+| `g3_basic_fraction_03` | 同分母の簡単な加減の「こたえの上の数」 | 分子の和・差 |
+
+**3. 設計上の判断**
+
+- `answerType: "number_input"` + `normalization: "integer"`。答えは「上の数（分子）」
+  または「下の数（分母）」という**整数**に限定した。タッチテンキーに `/` キーは存在するが
+  採点 `_checkAnswer` は `parseFloat` による数値比較のため、`3/4` のような分数表記を
+  文字列一致させる採点は成立しない。5年 `g5_basic_frac_add_01` と同じ規約に揃えた
+  （新規の `normalization: "fraction"` 実装は不要）。
+- `answerType: "single_choice"`（テキスト選択肢）は使用していない。既存の
+  `single_choice` は `problemType: "figure"`（`figureChoices`）専用で、テキスト選択肢では
+  `_renderFigureChoices` → `_renderNumpad` にフォールバックして選択肢が表示されないため。
+- **既約分数のみを出題**。3年 A(6) は約分を扱わないため、`2/6` や `6/9 − 3/9 = 3/9`
+  のような約分可能な分数は教育的に不適切。`constraints` にインライン IIFE による
+  最大公約数判定（`((x,y)=>{...})(a,denom)===1`）を入れ、分子・分母・計算結果の
+  すべてが互いに素であることを保証している。制約式は完成後の `vars` で評価されるため、
+  `formula` 依存の条件も正しく判定できる（`question_source.js` の
+  `_constraintsSatisfied`）。
+- 仮分数（分子 ≧ 分母）と答え 0（`a === b` による `x/y − x/y`）も制約で除外。
+- `understandingCheck` は3問とも `enabled: true`。誤答は「分子と分母を取り違える」
+  （`wrong1`）と「±1」（`wrong2`）で、児童が実際に犯しやすい誤解に対応。
+
+**4. 検証**
+
+- 追加した回帰テスト `test_answer_sanity.js` §10（120問×3テンプレ）で、
+  答えが正の整数・未置換プレースホルダなし・仮分数0・約分可能分数0・
+  understandingCheck の3択が相異かつ正解を含み問題の答えと一致することを確認。
+- 個別に1000問×3テンプレを走査し、既約性違反0・答え0件を確認。
+  出題多様性は `g3_basic_fraction_01` が問題文48種/答え8種、
+  `g3_basic_fraction_02` が27種/7種、`g3_basic_fraction_03` が88種/10種。
+- `npm run verify` 全28テストPASS。テンプレ総数は 214 → **217**。
+
+**副作用**: 3年 Lv2 の必要単元数が 4 → 5 に増えるため、既存の3年 Lv2 到達児童は
+Lv3 までにあと1単元必要になる。テンプレ追加と同時に単元を登録したため、
+`test_phase3.js` / `test_diversity.js` の「全単元×全Lv に最低1テンプレ」保証は満たす。
+
+**バージョン統一**: `config.js` / `migration.js` / `schema.js` / `sw.js`（CACHE_NAME =
+`arith-study-v2.9.10-grade3-fraction-meaning`）/ `index.html` title /
+`test_phase1.js` / `test_phase1.html` / `scripts/check_version.js` /
+`tests/test_service_worker_update.js` / 本ドキュメントを V2.9.10 に統一。
+
+`schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
+
+### 10.18 今後の予定
 
 | リリース | 内容 |
 |----------|------|
+| V2.9.11 | understandingCheck `enabled:false` 59件の有効化（誤答の自動生成） |
 | V2.10.0 | `hissan_input`：桁マス専用入力（最終答え行のみ採点） |
 | V2.11.0 | 繰り上がりマス・途中積まで入力を拡張 |

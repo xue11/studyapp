@@ -157,7 +157,10 @@ class UnitRegistry {
           { id: "calc_application_g3", name: "計算の活用", concepts: ["choose_multiplication_or_division"], learningGroupId: "calculation_application" },
           { id: "length_unit", name: "長さの単位（m・cm・km）", concepts: ["length_convert_m_km"] },
           { id: "weight_unit", name: "重さの単位（kg・g）", concepts: ["weight_convert_basic"] },
-          { id: "time_unit", name: "時間の単位（時・分・秒）", concepts: ["time_convert_calc", "clock_read_24h", "clock_time_after_h", "clock_duration_hm", "clock_to_minutes"] }
+          { id: "time_unit", name: "時間の単位（時・分・秒）", concepts: ["time_convert_calc", "clock_read_24h", "clock_time_after_h", "clock_duration_hm", "clock_to_minutes"] },
+          // V2.9.10: 分数の意味と表し方（3年 A(6)）。2年の図による識別から、分子・分母の
+          // 記号レイヤー（「n/d の n と d が何を意味するか」＋単位分数の合成）へ進める。
+          { id: "fraction_meaning", name: "分数の意味と表し方", concepts: ["fraction_num_den_meaning", "unit_fraction_count", "fraction_add_same_denom_intro"] }
         ],
         3: [
           { id: "add_sub_3digit", name: "3けたのたし算・ひき算", concepts: ["add_sub_3digit_inverse", "add_sub_3digit_two_step", "add_sub_3digit_word_problem"], learningGroupId: "addition_subtraction" },

@@ -159,6 +159,128 @@
       hintSteps: ["1時間は60分、1分は60秒だよ。", "時計を思い浮かべて進めよう。"],
       explanationTemplate: "{q_text} の答えは {answer} だね。",
       understandingCheck: { enabled: false }
+    },
+
+    // ==========================================
+    // fraction_meaning (3年 Lv2): 分数の意味と表し方
+    // V2.9.10: 学習指導要領（解説 平成29年告示）3年 A(6) 対応。
+    // 「単位分数及びそれを幾つか集めた分数について，その意味と表し方について理解し，
+    //  簡単な場合について，分数の加法・減法の計算ができるようにする」
+    // 2年の fraction_intro（図で 1/2・1/4 を識別）から一歩進み、
+    // 分子・分母が何を表すか／単位分数を幾つ集めたか／同分母の加減の「上の数」を問う。
+    // ※ answerType は number_input（integer）。numpad に "/" キーはあるが採点は数値比較
+    //   （_checkAnswer は parseFloat）なので、答えは「上の数（分子）」だけに限定する。
+    //   5年 g5_basic_frac_add_01 と同じ規約。
+    // ==========================================
+    {
+      templateId: "g3_basic_fraction_01",
+      grade: 3, difficultyLevel: 2,
+      unitId: "fraction_meaning", conceptId: "fraction_num_den_meaning",
+      problemType: "calculation", answerType: "number_input",
+      format: "{q_text}",
+      generate: {
+        type_idx: { type: "integer", range: [1, 3] },
+        denom: { type: "choice", values: [2, 3, 4, 5, 6, 8, 10] },
+        // 3年 A(6) は約分を扱わないため、既約分数（分子と分母が互いに素）のみ出題する
+        numer: { type: "integer", range: [1, 5], constraints: ["numer < denom", "((x,y)=>{while(y){const t=y;y=x%y;x=t;}return x;})(numer,denom)===1"] },
+        ask_part: { formula: "type_idx === 3 ? '下の数（分母）' : '上の数（分子）'" },
+        q_text: {
+          formula: "type_idx === 1 ? 'ぜんぶを 同じ 大きさに ' + denom + 'こに 分けて、そのうち ' + numer + 'こ 分を とりました。この 分数を 表すと「' + numer + '/' + denom + '」です。' + ask_part + ' は いくつ？' : (type_idx === 2 ? '「' + numer + '/' + denom + '」の ' + ask_part + ' は いくつ？' : '「' + numer + '/' + denom + '」の ' + ask_part + ' は なんこに 分けたか を 表しています。いくつ？')"
+        },
+        answer: { formula: "type_idx === 3 ? denom : numer" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "分数の 上の数は「なんこ 分を とったか」、下の数は「なんこに 分けたか」を 表しているよ。",
+        "「{numer}/{denom}」は {denom}こに 分けて {numer}こ 分を とった 分数だね。"
+      ],
+      explanationTemplate: "「{numer}/{denom}」の 上の数は {numer}、下の数は {denom}。だから {ask_part} は {answer} だね。",
+      understandingCheck: {
+        enabled: true, type: "choice",
+        questionTemplate: "「{numer}/{denom}」の {ask_part} は どれ？",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}",
+        generateWrong: {
+          wrong1: { formula: "type_idx === 3 ? numer : denom" },
+          wrong2: { formula: "answer + 1" }
+        }
+      }
+    },
+    {
+      templateId: "g3_basic_fraction_02",
+      grade: 3, difficultyLevel: 2,
+      unitId: "fraction_meaning", conceptId: "unit_fraction_count",
+      problemType: "calculation", answerType: "number_input",
+      format: "{q_text}",
+      generate: {
+        type_idx: { type: "integer", range: [1, 3] },
+        denom: { type: "choice", values: [2, 3, 4, 5, 6, 8, 10] },
+        // 既約分数のみ（約分は3年範囲外）。1/2 を1つ = 1 になるので count は2以上
+        count: { type: "integer", range: [2, 5], constraints: ["count < denom", "((x,y)=>{while(y){const t=y;y=x%y;x=t;}return x;})(count,denom)===1"] },
+        ask_part: { formula: "type_idx === 3 ? '下の数（分母）' : '上の数（分子）'" },
+        q_text: {
+          formula: "type_idx === 1 ? '1/' + denom + ' を ' + count + 'つ あつめました。なん分の いくつ ですか。' + ask_part + ' は いくつ？' : (type_idx === 2 ? 'ぜんぶを ' + denom + 'こに 分けると 1こ 分は 1/' + denom + ' です。これを ' + count + 'こ 分 あつめると ' + ask_part + ' は いくつ？' : '1/' + denom + ' を ' + count + 'つ あつめると、なん分の いくつ に なりますか。' + ask_part + ' は いくつ？')"
+        },
+        answer: { formula: "type_idx === 3 ? denom : count" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "単位分数 1/{denom} を なんこ あつめたかが そのまま 上の数に なるよ。",
+        "下の数は ぜんぶを なんこに 分けたか なので、あつめても 変わらないよ。"
+      ],
+      explanationTemplate: "1/{denom} を {count}つ あつめると {count}/{denom}。上の数は {count}、下の数は {denom}。だから {ask_part} は {answer} だね。",
+      understandingCheck: {
+        enabled: true, type: "choice",
+        questionTemplate: "1/{denom} を {count}つ あつめた 分数の {ask_part} は どれ？",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}",
+        generateWrong: {
+          wrong1: { formula: "type_idx === 3 ? count : denom" },
+          wrong2: { formula: "answer + 1" }
+        }
+      }
+    },
+    {
+      templateId: "g3_basic_fraction_03",
+      grade: 3, difficultyLevel: 2,
+      unitId: "fraction_meaning", conceptId: "fraction_add_same_denom_intro",
+      problemType: "calculation", answerType: "number_input",
+      format: "{q_text}",
+      generate: {
+        type_idx: { type: "integer", range: [1, 2] },
+        // 分母は分子（1〜4）と互いに素な値のみ。a・b・a±b が分母と互いに素である既約性を
+        // 下の constraint で保証する（約分は3年範囲外）
+        denom: { type: "choice", values: [5, 6, 7, 8, 9, 10, 11, 12] },
+        a: { type: "integer", range: [1, 6], constraints: ["a < denom", "((x,y)=>{while(y){const t=y;y=x%y;x=t;}return x;})(a,denom)===1"] },
+        b: { type: "integer", range: [1, 6], constraints: [
+          "b < denom",
+          "a !== b",
+          "((x,y)=>{while(y){const t=y;y=x%y;x=t;}return x;})(b,denom)===1",
+          "type_idx === 1 ? a + b < denom : a > b",
+          "type_idx === 1 ? ((x,y)=>{while(y){const t=y;y=x%y;x=t;}return x;})(a+b,denom)===1 : ((x,y)=>{while(y){const t=y;y=x%y;x=t;}return x;})(a-b,denom)===1"
+        ] },
+        op: { formula: "type_idx === 1 ? '+' : '−'" },
+        q_text: {
+          formula: "a + '/' + denom + ' ' + op + ' ' + b + '/' + denom + ' の こたえは なん分の いくつ ですか。こたえの 上の数（分子）は いくつ？'"
+        },
+        answer: { formula: "type_idx === 1 ? a + b : a - b" }
+      },
+      answer: { expression: "answer", normalization: "integer" },
+      hintSteps: [
+        "下の数（分母）が 同じ 分数どうしの 計算は、下の数は そのまま だよ。",
+        "上の数 どうしを {op} しよう。"
+      ],
+      explanationTemplate: "下の数は そのまま 上の数 どうしを 計算すると {a} {op} {b} = {answer}。だから こたえは {answer}/{denom} だね。",
+      understandingCheck: {
+        enabled: true, type: "choice",
+        questionTemplate: "{a}/{denom} {op} {b}/{denom} の こたえの 上の数 は どれ？",
+        choices: ["{answer}", "{wrong1}", "{wrong2}"],
+        answer: "{answer}",
+        generateWrong: {
+          wrong1: { formula: "type_idx === 1 ? a : a + b" },
+          wrong2: { formula: "answer + 1" }
+        }
+      }
     }
   ];
   function registerAll() {
