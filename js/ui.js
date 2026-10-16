@@ -595,30 +595,17 @@ class AppUI {
       unitName = q.unitId || "";
     }
 
-    // V2.9.13: 回答に集中するため、単元名・出題種別・Lv・とっくんバッジは
-    // 既定で折りたたむ。ⓘボタン、または問題文エリアのタップで表示/非表示を切り替える。
-    const metaOpen = !!(this.session && this.session.metaOpen);
-    const badgesHtml = `${isPracticeMode ? '<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.75rem;">🎯 とっくん</span>' : ''}<span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}`;
-
     return `
       <div class="question-meta">
-        <span><b>第 ${progress} 問</b> <span id="session-timer" style="color:var(--text-muted); font-weight:normal;">⏱ ${formatElapsed(0)}</span>
-          <button type="button" class="qmeta-toggle${metaOpen ? " qmeta-toggle--on" : ""}"
-            id="qmeta-toggle"
-            onclick="app.toggleQuestionMeta(event)"
-            aria-expanded="${metaOpen ? "true" : "false"}"
-            aria-label="くわしい情報（単元・レベル）の表示切替"
-            title="タップで単元・レベルを表示/かくす">${metaOpen ? "✕" : "ⓘ"}</button>
-        </span>
-        <span class="question-meta__badges${metaOpen ? "" : " question-meta__badges--hidden"}"
-          id="question-meta-badges">${badgesHtml}</span>
+        <span><b>第 ${progress} 問</b> <span id="session-timer" style="color:var(--text-muted); font-weight:normal;">⏱ ${formatElapsed(0)}</span></span>
+        <span>${isPracticeMode ? '<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.75rem;">🎯 とっくん</span> ' : ''}<span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
       </div>
 
       <div class="progress-container">
         <div class="progress-bar" style="width: ${((this.session.currentIndex) / this.session.totalCount) * 100}%;"></div>
       </div>
 
-      <div class="question-display" onclick="app.toggleQuestionMeta(event)">
+      <div class="question-display">
         <div class="question-text">${q.questionText}</div>
         ${q.clockHTML ? `<div class="clock-stage">${q.clockHTML}</div>` : (q.hissanHTML ? `<div class="hissan-stage">${q.hissanHTML}</div>` : (q.figureHTML ? q.figureHTML : ""))}
         <div class="answer-input-display" id="answer-display">
@@ -643,34 +630,6 @@ class AppUI {
       <div id="modal-container"></div>
     `;
   }
-  /**
-   * V2.9.13: 学習画面のメタ情報（単元名・出題種別・Lv・とっくんバッジ）の
-   * 表示/非表示を切り替える。
-   * - 操作方法: ⓘボタン、または問題文エリアのタップ
-   * - 回答操作（テンキー・時計入力・図形タップ部品・選択肢ボタン等）では
-   *   メタ表示を切り替えない（回答操作を優先する）
-   */
-  toggleQuestionMeta(e) {
-    if (!this.session) return;
-    if (e && e.target && e.target.closest && e.currentTarget) {
-      // インタラクティブ要素（button / input / fig-part / onclick付き要素）を
-      // タップした場合はトグルしない。ただし ⓘボタン自身は currentTarget 一致で許可。
-      const interactive = e.target.closest("button, input, select, textarea, a, .fig-part, [onclick]");
-      if (interactive && interactive !== e.currentTarget) return;
-    }
-    const open = !this.session.metaOpen;
-    this.session.metaOpen = open;
-    const badges = document.getElementById("question-meta-badges");
-    if (badges) badges.classList.toggle("question-meta__badges--hidden", !open);
-    const btn = document.getElementById("qmeta-toggle");
-    if (btn) {
-      btn.classList.toggle("qmeta-toggle--on", open);
-      btn.textContent = open ? "✕" : "ⓘ";
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-    }
-  }
-
-
 
   _renderNumpad(submitAction, submitLabel) {
     return `

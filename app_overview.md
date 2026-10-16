@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.13  
+**バージョン**: V2.9.12  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -853,29 +853,7 @@ Lv3 までにあと1単元必要になる。テンプレ追加と同時に単元
   `test_service_worker_update.js` / `scripts/check_version.js` /
   本ドキュメントを V2.9.12 に統一。`schemaVersion` 2.5.6 は変更なし。
 
-### 10.20 V2.9.13 学習画面メタ情報のトグル表示
-
-学習画面（`_renderLearningScreen`）のメタ情報（単元名・出題種別・Lv・🎯とっくん
-バッジ）を**既定非表示**とし、回答に集中できるようにした。
-
-- 操作方法（A案）: 右上の **ⓘボタン**、または**問題文エリアのタップ**で
-  表示/非表示を切り替える（`AppUI.toggleQuestionMeta()`）。
-- 進捗表示（第 X 問）とタイマーは常時表示のまま。フォントサイズも従来どおり
-  （縮小しない）。
-- 回答操作要素（テンキー・時計入力・図形タップ部品 `.fig-part`・選択肢ボタン等）の
-  タップではトグルしない（`closest()` で検出し回答操作を優先）。
-- 表示状態は `session.metaOpen` に保持し、同一セッション内の次問以降も維持。
-- CSS: `.qmeta-toggle` / `.question-meta__badges` / `--hidden` を追加。
-  `.question-meta` に `flex-wrap: wrap` を追加し、狭い画面でもバッジが折り返せる。
-- `tests/test_learning_meta_toggle.js` を追加（初期非表示・トグル・回答操作の
-  優先・表示状態の維持を検証）。
-- バージョン統一: `config.js` / `migration.js` / `schema.js` /
-  `sw.js`（CACHE_NAME = `arith-study-v2.9.13-learning-meta`）/
-  `index.html` title / `test_phase1.js` / `test_phase1.html` /
-  `test_service_worker_update.js` / `scripts/check_version.js` /
-  本ドキュメントを V2.9.13 に統一。`schemaVersion` 2.5.6 は変更なし。
-
-### 10.21 今後の予定
+### 10.20 今後の予定
 
 | リリース | 内容 |
 |----------|------|
