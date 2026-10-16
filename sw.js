@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.11 understandingCheck mass enablement)
-const CACHE_NAME = 'arith-study-v2.9.11-understandingcheck-enable';
+// PWA Service Worker (V2.9.12 unit-status-badges)
+const CACHE_NAME = 'arith-study-v2.9.12-unit-status';
 const urlsToCache = [
   '/',
   '/index.html',

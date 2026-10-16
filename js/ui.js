@@ -1527,20 +1527,43 @@ class AppUI {
         ? Math.round(stats.accuracy * 100) : null;
       const icon = getUnitIcon(u);
 
+      // V2.9.12: 単元の学習状態を「色 + ラベル」で一目表示する
+      // 判定優先順位: ふくしゅう(期限到来) > ふくしゅう予定 > 未学習 > 正解率
+      const today = this._todayKey();
+      const reviewItems = (profile.reviewQueue || []).filter(r =>
+        r && r.status === "active" && r.grade === viewGrade && r.unitId === u.id
+      );
+      const reviewDue = reviewItems.some(r => r.dueAt && r.dueAt <= today);
+
+      let state = "ok";
+      if (reviewDue) state = "review";
+      else if (reviewItems.length > 0) state = "planned";
+      else if (attempts === 0) state = "new";
+      else if (accuracy !== null && accuracy < 60) state = "weak";
+      else if (accuracy !== null && accuracy >= 80) state = "mastered";
+
+      const stateMeta = {
+        review:   { icon: "🔁", label: "ふくしゅう" },
+        planned:  { icon: "📅", label: "ふくしゅう よてい" },
+        new:      { icon: "✨", label: "みてみる" },
+        weak:     { icon: "💪", label: "にがて" },
+        ok:       { icon: "👍", label: "だいたいOK" },
+        mastered: { icon: "⭐", label: "バッチリ" }
+      }[state];
+
       let accuracyBadge = '';
       if (accuracy !== null) {
         if (accuracy >= 80) accuracyBadge = `<span class="badge success">正解率 ${accuracy}%</span>`;
         else if (accuracy >= 60) accuracyBadge = `<span class="badge" style="background:#fef3c7; color:#b45309;">正解率 ${accuracy}%</span>`;
         else accuracyBadge = `<span class="badge warn">正解率 ${accuracy}% (にがて)</span>`;
-      } else {
-        accuracyBadge = `<span class="badge" style="background:var(--bg); color:var(--text-muted);">未学習</span>`;
       }
 
       return `
-        <div style="border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; background:var(--card-bg); box-shadow:var(--shadow-sm);">
+        <div class="unit-card unit-card--${state}">
           <div style="font-weight:bold; font-size:0.95rem; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
             <span style="font-size:1.2rem;">${icon}</span>
-            <span>${u.name}</span>
+            <span style="flex:1;">${u.name}</span>
+            <span class="unit-state-badge unit-state-badge--${state}">${stateMeta.icon} ${stateMeta.label}</span>
           </div>
 
           <div style="display:flex; gap:6px; align-items:center; font-size:0.8rem; color:var(--text-muted); margin-bottom:10px; flex-wrap:wrap;">
@@ -1587,6 +1610,15 @@ class AppUI {
               ${g}年 ${g === currentGrade ? '★' : ''}
             </button>
           `).join("")}
+        </div>
+
+        <!-- V2.9.12: 色の凡例 -->
+        <div style="display:flex; gap:6px; flex-wrap:wrap; font-size:0.72rem; margin-bottom:12px; padding:8px 10px; background:var(--bg); border-radius:var(--radius-md);">
+          <span class="unit-state-badge unit-state-badge--review">🔁 ふくしゅう</span>
+          <span class="unit-state-badge unit-state-badge--new">✨ みてみる</span>
+          <span class="unit-state-badge unit-state-badge--weak">💪 にがて</span>
+          <span class="unit-state-badge unit-state-badge--ok">👍 だいたいOK</span>
+          <span class="unit-state-badge unit-state-badge--mastered">⭐ バッチリ</span>
         </div>
 
         <!-- 単元一覧リスト -->

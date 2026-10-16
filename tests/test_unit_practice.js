@@ -210,4 +210,74 @@ const resultHTML = mockUI._renderSessionResultScreen({
 check("特訓完了タイトルが含まれる", resultHTML.includes("時こくと時間 特訓完了！"));
 check("別の単元をえらぶボタンが含まれる", resultHTML.includes("別の単元をえらぶ"));
 
+// -------------------------------------------------------------
+// 8. 単元選択画面の学習状態 色分け表示 (V2.9.12)
+// -------------------------------------------------------------
+console.log("\n8. 単元選択画面の学習状態 色分け表示 (未学習/学習済み/要復習)");
+
+const stateToday = mockUI._todayKey ? mockUI._todayKey() : "2026-01-01";
+{
+  const stProfile = createNewProfile("p_state", "状態太郎", 2);
+  const gp2 = stProfile.skill.subject.gradeProgress.grade2;
+  stProfile.reviewQueue = [];
+
+  // (a) 未学習 / (b) 高正答率 -> mastered / (c) 中程度 -> ok / (d) 苦手 -> weak
+  gp2.unitStats = {
+    time_clock_basic: { attempts: 10, correct: 9, accuracy: 0.9 },
+    length_unit: { attempts: 10, correct: 7, accuracy: 0.7 },
+    multiplication_g2: { attempts: 10, correct: 4, accuracy: 0.4 }
+  };
+  // (e) 要復習(期限到来) -> review  ※正答率が高くても復習が最優先
+  stProfile.reviewQueue.push({
+    reviewId: "rev_state_1", subjectId: "math", grade: 2,
+    unitId: "fraction_intro", status: "active",
+    dueAt: stateToday, registeredAt: stateToday, failCount: 1, successCount: 0
+  });
+  // (f) 復習予定(未来) -> planned
+  stProfile.reviewQueue.push({
+    reviewId: "rev_state_2", subjectId: "math", grade: 2,
+    unitId: "geometry_g2", status: "active",
+    dueAt: "2099-12-31", registeredAt: stateToday, failCount: 1, successCount: 0
+  });
+  // (g) 他の学年の復習は2年ビューの対象外
+  stProfile.reviewQueue.push({
+    reviewId: "rev_state_3", subjectId: "math", grade: 3,
+    unitId: "multiplication_g3", status: "active",
+    dueAt: stateToday, registeredAt: stateToday, failCount: 1, successCount: 0
+  });
+
+  const stUI = Object.create(AppUI.prototype);
+  stUI.getActiveProfile = () => stProfile;
+  stUI.state = { activeProfileId: "p_state", profiles: [stProfile] };
+  stUI.navigate = () => {};
+
+  const html = stUI._renderUnitSelectScreen({ grade: 2 });
+
+  check("要復習(期限到来)の単元に unit-card--review が付く",
+    html.includes('class="unit-card unit-card--review"'));
+  check("未学習の単元に unit-card--new が付く",
+    html.includes('class="unit-card unit-card--new"'));
+  check("苦手の単元に unit-card--weak が付く",
+    html.includes('class="unit-card unit-card--weak"'));
+  check("だいたいOKの単元に unit-card--ok が付く",
+    html.includes('class="unit-card unit-card--ok"'));
+  check("バッチリの単元に unit-card--mastered が付く",
+    html.includes('class="unit-card unit-card--mastered"'));
+  check("復習予定の単元に unit-card--planned が付く",
+    html.includes('class="unit-card unit-card--planned"'));
+
+  check("状態ラベル ふくしゅう / みてみる / バッチリ / にがて が表示される",
+    html.includes("🔁 ふくしゅう") && html.includes("✨ みてみる") &&
+    html.includes("⭐ バッチリ") && html.includes("💪 にがて"));
+  check("色の凡例が表示される",
+    html.includes("unit-state-badge--review") && html.includes("unit-state-badge--mastered"));
+
+  check("3年ビューでは他学年の復習が review として出る",
+    stUI._renderUnitSelectScreen({ grade: 3 }).includes('class="unit-card unit-card--review"'));
+
+  check("状態表示後も 5問/10問 の特訓ボタンが維持される",
+    html.includes("app.startUnitPracticeSession('addition_2digit', 5, 2") &&
+    html.includes("app.startUnitPracticeSession('addition_2digit', 10, 2"));
+}
+
 console.log("\n=== ALL UNIT PRACTICE TESTS PASSED! ===");
