@@ -303,9 +303,51 @@ body {
 .question-meta {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: 12px;
+}
+
+/* ===== V2.9.13: メタ情報のトグル表示 ===== */
+/* 回答に集中するため単元名・Lv等は既定で非表示。ⓘボタン/問題文タップで開閉。
+   フォントサイズは従来どおり（縮小しない）。 */
+.qmeta-toggle {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  margin-left: 6px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.qmeta-toggle:active {
+  background: var(--primary-light);
+}
+.qmeta-toggle--on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.question-meta__badges {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.question-meta__badges--hidden {
+  display: none;
 }
 
 .question-text {

@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.12 unit-status-badges)
-const CACHE_NAME = 'arith-study-v2.9.12-unit-status';
+// PWA Service Worker (V2.9.13 learning-meta-toggle)
+const CACHE_NAME = 'arith-study-v2.9.13-learning-meta';
 const urlsToCache = [
   '/',
   '/index.html',
