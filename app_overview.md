@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.12  
+**バージョン**: V2.9.13  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -853,7 +853,30 @@ Lv3 までにあと1単元必要になる。テンプレ追加と同時に単元
   `test_service_worker_update.js` / `scripts/check_version.js` /
   本ドキュメントを V2.9.12 に統一。`schemaVersion` 2.5.6 は変更なし。
 
-### 10.20 今後の予定
+### 10.20 V2.9.13 回答処理のガードとモバイル表示の修正
+
+P1 修正要件 3 件（回答処理のガード・空白画面の修正・モバイル表示のピンチズーム許可）を行った。
+
+**P1-1: 回答処理のガード**
+- `submitLearningAnswer()` はセッション未開始・不正な状態（`session` が null / `questions` が無い / `currentIndex` が null）のときは処理を受け付けず、即座に return する。
+- 誤タップや画面遷移直前のタップで `currentAttemptCount` が増えたり、採点・保存が発生したりするのを防ぐ。
+- 副作用（attemptCount の加算・採点・保存）を一切発生させない。
+- テスト: `tests/test_p1_guard_v2913.js`（17 チェック PASS）。
+
+**P1-2: 空白画面の修正（render() の再入）**
+- `render()` の中で `_renderLearningScreen()` などが `navigate()` を呼ぶと `render()` が入れ子で呼ばれ、内側の描画が外側の `container.innerHTML = html` で上書きされる。
+- その結果 `<main>` が空の空白画面になり、ホームへ遷移したのに画面が真っ白になる不具合があった。
+- `render()` に再入ガード（`_rendering` フラグ）を入れ、描画中に画面が切り替わっていた場合は新しい画面を描き直すようにした。
+
+**P1-3: モバイル表示のピンチズーム許可**
+- `index.html` の viewport meta から `maximum-scale=1.0, user-scalable=no` を削除し、スマートフォンでのピンチズーム（拡大縮小）を許可した。
+- 児童が問題文を拡大して読みやすいようにする。
+
+**バージョン統一**
+- `config.js` / `migration.js` / `schema.js` / `sw.js`（CACHE_NAME = `arith-study-v2.9.13-unit-status`）/ `index.html` title / `test_phase1.js` / `test_phase1.html` / `test_service_worker_update.js` / `scripts/check_version.js` / 本ドキュメントを V2.9.13 に統一。
+- `schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
+
+### 10.21 今後の予定
 
 | リリース | 内容 |
 |----------|------|

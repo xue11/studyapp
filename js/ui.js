@@ -97,6 +97,26 @@ class AppUI {
   }
 
   render(params = {}) {
+    // V2.9.13: render() の再入を防ぐ。
+    // _renderLearningScreen() が画面遷移 (navigate) を呼ぶと render() が入れ子で呼ばれ、
+    // 内側の描画が外側の "container.innerHTML = html" で上書きされ、
+    // <main> が空の空白画面になってしまうため、
+    // 入れ子になった描画は破棄し、外側の描画で正しい画面に一本化する。
+    if (this._rendering) return;
+    this._rendering = true;
+    try {
+      this._renderInner(params);
+    } finally {
+      this._rendering = false;
+    }
+  }
+
+  _renderInner(params = {}) {
+    // V2.9.13: switch 実行中に画面遷移 (navigate) された場合に備える。
+    // _renderLearningScreen() などは描画中に navigate() を呼ぶため、
+    // そのままでは <main> が空の空白画面のまま 확정されてしまう。
+    // 描画後に currentScreen が変わっていれば、新しい画面を描き直す。
+    const screenAtStart = this.currentScreen;
     const container = document.getElementById("app-container");
     if (!container) return;
 
@@ -156,6 +176,14 @@ class AppUI {
     html += `</main>`;
 
     container.innerHTML = html;
+    // V2.9.13: 描画中に navigate() されて画面が変わった場合は描き直す。
+    // (空白画面のまま確定させるのを防ぐ)
+    if (this.currentScreen !== screenAtStart) {
+      this._rendering = false;
+      this.render(params);
+      this._rendering = true;
+      return;
+    }
     this._attachEventHandlers();
   }
 
@@ -1049,6 +1077,10 @@ class AppUI {
 
   // 通常学習の回答処理フロー (第4.4章)
   submitLearningAnswer() {
+    // ガード: セッション未開始・不正な状態での誤タップを防ぐ
+    if (!this.session || !Array.isArray(this.session.questions) || this.session.currentIndex == null) {
+      return;
+    }
     const q = this.session.questions[this.session.currentIndex];
     // V2.6.3: 図形選択問題 (figureChoices) は選択済みカードIDを回答として扱う
     // V2.7.0: 図形タップ問題 (figureParts) はタップ済み部品IDを回答として扱う
