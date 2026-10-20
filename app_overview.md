@@ -876,7 +876,28 @@ P1 修正要件 3 件（回答処理のガード・空白画面の修正・モ�
 - `config.js` / `migration.js` / `schema.js` / `sw.js`（CACHE_NAME = `arith-study-v2.9.13-unit-status`）/ `index.html` title / `test_phase1.js` / `test_phase1.html` / `test_service_worker_update.js` / `scripts/check_version.js` / 本ドキュメントを V2.9.13 に統一。
 - `schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
 
-### 10.21 今後の予定
+### 10.21 コアエンジンの単体テスト追加（テスト強化・製品コード変更なし）
+
+既存フェーズテスト（`test_phase1`〜`test_phase8`）では到達しにくかった
+コアエンジンの仕様を、エンジン単位の単体テストで固定した。
+
+| テスト | 対象 | 検証内容 |
+|--------|------|---------|
+| `tests/test_date_utils.js` | `DateUtils` | JST 固定・月末/年末/うるう年の境界、日付演算、不正入力 |
+| `tests/test_learning_engine.js` | `LearningEngine` | `unitStats` 更新、`masteryScore` 算出、入力非破壊性、デイリーストリーク |
+| `tests/test_review_engine.js` | `ReviewEngine` | 登録/重複維持/卒業再活性化、一意キー、間隔（1→3→7→14日）、失敗リセット |
+| `tests/test_unit_selector.js` | `UnitSelector` | 復習優先、Coverage/Weakness フェーズ、弱点重み付け、ローテーションバッグ、figure 切替 |
+| `tests/test_session_coordinator.js` | `SessionCoordinator` | 正解/不正解の両経路、原子性（`appState` 不変）、保存失敗・例外時のロールバック |
+
+- 計 343 アサーション（49 / 53 / 82 / 66 / 93）。
+  いずれも Node 標準の `assert` と単独の `check()` カウンタで実装し、
+  外部テストフレームワークへの依存は追加していない。
+- `UnitSelector` のみ `Math.random` を決定論的なモックに差し替え、検証後は必ず復元する。
+- 製品コード（`js/`）・配信物（`dist/`）・バージョン表記・`schemaVersion` は**変更なし**。
+  したがってマイグレーションは不要で、Service Worker のキャッシュ名も据え置き。
+- `npm run verify` 全33テストPASS（既存28 + 新規5）。
+
+### 10.22 今後の予定
 
 | リリース | 内容 |
 |----------|------|
