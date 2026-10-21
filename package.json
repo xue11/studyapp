@@ -1,8 +1,11 @@
 {
+  "name": "math-study-app",
+  "version": "2.9.13",
   "scripts": {
     "test": "node scripts/run_tests.js",
     "build": "node scripts/build_dist.js",
     "check:version": "node scripts/check_version.js",
+    "gen:version": "node scripts/gen_version.js",
     "verify": "node scripts/run_tests.js && node scripts/build_dist.js && node scripts/check_version.js",
     "coverage": "c8 node scripts/run_tests.js && c8 report --reporter=html --reporter=text"
   },

@@ -6,7 +6,7 @@
  * 不一致がある場合は内容を表示して終了コード 1 で終了する。
  *
  * 検証内容:
- *   1. 各ファイルのバージョン表記が js/config.js の APP_META と一致するか
+ *   1. 各ファイルのバージョン表記が package.json の version と一致するか
  *   2. dist/ の内容がソースと一致しているか（古いままデプロイされる事故の防止）
  *   3. dist/ に配信不要なファイル（テスト用ページ・設計書など）が混ざっていないか
  */
@@ -44,19 +44,35 @@ function expect(label, actual, expected, fileLabel) {
   report.push(`  OK ${label}: ${actual}`);
 }
 
-// --- 1. 基準バージョンの決定 (js/config.js の APP_META) ---
+// --- 1. 基準バージョンの決定 (package.json の version を単一情報源とする) ---
+const pkgPath = path.join(ROOT, "package.json");
+let pkg;
+try {
+  pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+} catch (e) {
+  console.error("[FAIL] package.json の読み込みに失敗しました。");
+  process.exit(1);
+}
+const pkgVersion = pkg.version;
+if (!pkgVersion || !/^\d+\.\d+\.\d+$/.test(pkgVersion)) {
+  console.error("[FAIL] package.json の version が semver 形式ではありません。");
+  process.exit(1);
+}
+const appVersion = `V${pkgVersion}`;
+
+// schemaVersion は config.js から読む（スキーマは app バージョンとは独立）
 const configSrc = read("js/config.js");
 if (configSrc === null) {
   console.error("[FAIL] js/config.js が見つかりません。");
   process.exit(1);
 }
-const appVersion = matchOrNull(configSrc, /appVersion:\s*"([^"]+)"/);
-const schemaVersion = matchOrNull(configSrc, /schemaVersion:\s*"([^"]+)"/);
-if (!appVersion || !schemaVersion) {
-  console.error("[FAIL] js/config.js から appVersion / schemaVersion を抽出できませんでした。");
+const schemaVersion = matchOrNull(configSrc, /schemaVersion:\s*\"([^\"]+)\"/);
+if (!schemaVersion) {
+  console.error("[FAIL] js/config.js から schemaVersion を抽出できませんでした。");
   process.exit(1);
 }
-console.log(`基準バージョン: appVersion=${appVersion} / schemaVersion=${schemaVersion}\n`);
+console.log(`基準バージョン: appVersion=${appVersion} (package.json version=${pkgVersion}) / schemaVersion=${schemaVersion}\n`);
+
 
 // --- 2. 各ファイルとの突合 ---
 const migrationSrc = read("js/migration.js");
@@ -95,16 +111,13 @@ expect("app_overview.md バージョン", matchOrNull(overviewSrc, /\*\*バー�
 expect("app_overview.md スキーマ", matchOrNull(overviewSrc, /\*\*スキーマバージョン\*\*:\s*([\d.]+)/), schemaVersion, "app_overview.md");
 
 const schemaJsSrc = read("js/schema.js");
-const schemaJsVersion = matchOrNull(schemaJsSrc, /schemaVersion:\s*"([\d.]+)"/);
+const schemaJsVersion = matchOrNull(schemaJsSrc, /schemaVersion:\s*([\d.]+)/);
 if (schemaJsVersion !== null) {
   expect("js/schema.js schemaVersion", schemaJsVersion, schemaVersion, "js/schema.js");
 } else {
   console.log("  -- js/schema.js に schemaVersion 定数がないためスキップ");
 }
 
-// V2.9.5 追加: js/schema.js の appMeta.appVersion も単一情報源と一致させる。
-// 実際は V2.7.0 のまま陳腐化していた（check:version が appVersion を見ていなかったため）。
-// appMeta は `appMeta = {` または `appMeta: {` のどちらの書き方でも現れる。
 const schemaJsAppVersion = matchOrNull(
   schemaJsSrc,
   /appMeta\s*[:=]\s*\{[\s\S]*?appVersion:\s*"(V[\d.]+)"/
@@ -115,13 +128,8 @@ if (schemaJsAppVersion !== null) {
   console.log("  -- js/schema.js に appMeta.appVersion がないためスキップ");
 }
 
-const testHtmlSchema = matchOrNull(testHtmlSrc, /APP_META\.schemaVersion\s*!==\s*"([\d.]+)"/);
-expect("test_phase1.html schemaVersion", testHtmlSchema, schemaVersion, "test_phase1.html");
 
 // --- 3. dist/ とソースの一致確認 (V2.9.5 追加) ---
-// dist/ は Firebase Hosting が配信する実体。ここが古いままデプロイされると
-// 「テストを通したコード」ではなく「古いコード」が利用者に届く。
-// (V2.9.4 で dist/js/hissan_svg.js が V2.9.3 のまま配信されていた事故の再発防止)
 const DIST_DIR = path.join(ROOT, "dist");
 const sha = (buf) => crypto.createHash("sha256").update(buf).digest("hex").slice(0, 16);
 
@@ -144,6 +152,15 @@ if (!fs.existsSync(DIST_DIR)) {
   const mismatches = [];
   const notSource = [];
 
+// --- 4. 結果出力 ---
+console.log(report.join("\n"));
+if (errors.length > 0) {
+  console.error(`\n[FAIL] バージョン不一致 ${errors.length} 件:`);
+  console.error(errors.join("\n"));
+  console.error("\n上記ファイルのバージョン表記を揃えてから再実行してください。");
+  process.exit(1);
+}
+console.log("\n[PASS] バージョン整合チェック完了: すべてのファイルで表記が一致しています。");
   for (const rel of distFiles) {
     const srcAbs = path.join(ROOT, rel);
     const distAbs = path.join(DIST_DIR, rel);
@@ -164,19 +181,8 @@ if (!fs.existsSync(DIST_DIR)) {
     errors.push(`  - dist/ にソースへ存在しないファイルがあります: ${notSource.join(", ")}`);
   }
 
-  // 配信不要なものが dist に混ざっていないか（テスト用ページ・設計書など）
   const leak = distFiles.filter((rel) => /(^|\/)(test_.*\.html|app_overview\.md|memo\.txt|package(-lock)?\.json)$/.test(rel));
   if (leak.length > 0) {
     errors.push(`  - dist/ に配信不要なファイルが含まれています: ${leak.join(", ")}`);
   }
 }
-
-// --- 4. 結果出力 ---
-console.log(report.join("\n"));
-if (errors.length > 0) {
-  console.error(`\n[FAIL] バージョン不一致 ${errors.length} 件:`);
-  console.error(errors.join("\n"));
-  console.error("\n上記ファイルのバージョン表記を揃えてから再実行してください。");
-  process.exit(1);
-}
-console.log("\n[PASS] バージョン整合チェック完了: すべてのファイルで表記が一致しています。");

@@ -691,6 +691,34 @@ localStorage の QuotaExceeded → 保存失敗 → 学習データ損失に直�
 - 立体・展開図も等角投影が崩れるため寸法変化で対応:
   `g3_solid_cube_faces` / `g3_solid_cuboid_top_face` / `g3_net_cuboid_fold_lines`。
 
+### 10.23 リリースチェックリスト
+
+リリース時は以下の手順を順に実施し、すべて OK を確認してからデプロイする。
+
+| 項目 | コマンド / 確認内容 | 合格基準 |
+|------|-------------------|---------|
+| 1. テスト実行 | `npm run verify` | 全テストファイル PASS / dist/ とソース一致 / バージョン表記一致 |
+| 2. カバレッジ測定 | `npm run coverage` | ステートメントカバレッジ 90% 以上（目標値） |
+| 3. バージョン単一ソース | `package.json` の `version` を更新 | `npm run gen:version` で各ファイル（config.js / sw.js / index.html / schema.js / migration.js）が自動更新される |
+| 4. バージョン整合チェック | `npm run check:version` | すべてのファイルで表記が一致 |
+| 5. dist/ ビルド | `npm run build` | dist/ がソースから再生成される（手動コピー禁止） |
+| 6. Firebase デプロイ | `npx firebase deploy --only hosting` | デプロイ成功。ライブ配信（https://exciting-study.web.app/）と dist/ がバイト単位で一致することを確認 |
+| 7. PWA 動作確認 | ブラウザでサイトを開き、オフライン時もアプリが動作すること | Service Worker がキャッシュからリソースを返す |
+| 8. 新版反映確認 | バージョンアップ後、ブラウザで更新バーが表示され、更新ボタンで新版が適用される | SKIP_WAITING フローが正常動作 |
+| 9. コミット | `git commit` + `git push origin main` | 作業ツリーが clean。CI（GitHub Actions）で `npm run verify` が PASS |
+
+**製品コード（`js/`）を変更しない場合:**
+- Firebase デプロイは不要（dist/ への影響なし）。
+- `npm run verify` のみ実施し、コミット・push で完了。
+
+**製品コードを変更する場合:**
+- 上記チェックリストをすべて実施し、Firebase デプロイまで完了させる。
+
+**Rollback 手順（緊急時）:**
+- `git revert <コミットハッシュ>` または直前のタグ（例: `V2.9.13`）へのデプロイで前バージョンに戻す。
+- Firebase Hosting は「リリース」機能でロールバック可能。
+
+
 **4. `figure_tap` 経路での `{変数}` 置換の有効化（仕組みの拡張）**
 `FigureSVG.buildDisplay` は従来 `varySpec` のみで `fillSpecVars` を呼んでおらず、
 figure_tap では `w: "{n}"` のような指定が効かなかった。`buildDisplay` 内で
