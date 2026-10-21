@@ -30,7 +30,7 @@ class AppUI {
     this.session = null; // 通常学習・テスト進行中のセッション状態
     this.currentInput = "";
     this.parentState = null; // 保護者モードの状態 ({ step: "locked" | "setup1" | "setup2" | "dashboard" })
-    this._isOnline = typeof navigator !== "undefined" ? navigator.onLine : true; // V2.9.14: オンライン/オフライン状態
+    this._isOnline = typeof navigator !== "undefined" ? navigator.onLine : true; // V2.9.15: オンライン/オフライン状態
     this.characterAvatars = {
       cat: "🐱",
       dog: "🐶",
@@ -47,7 +47,7 @@ class AppUI {
     // テーマの初期適用 (ダークモード / ライトモード / OS連携)
     this._applyTheme();
 
-    // オンライン/オフライン状態の初期化とイベントリスナ登録 (V2.9.14)
+    // オンライン/オフライン状態の初期化とイベントリスナ登録 (V2.9.15)
     this._isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
     if (typeof window !== "undefined" && window.addEventListener) {
       window.addEventListener("online", () => this._updateOnlineStatus(true));
@@ -101,7 +101,7 @@ class AppUI {
   }
 
   // ==========================================
-  // オンライン/オフライン状態 (V2.9.14)
+  // オンライン/オフライン状態 (V2.9.15)
   // ==========================================
 
   /**
@@ -1974,7 +1974,7 @@ class AppUI {
   }
 
   // ==========================================
-  // プロファイル削除 (V2.9.14)
+  // プロファイル削除 (V2.9.15)
   // ==========================================
 
   /**

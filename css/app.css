@@ -155,7 +155,7 @@
   background: var(--bg);
 }
 
-/* オンライン/オフライン表示バッジ (V2.9.14) */
+/* オンライン/オフライン表示バッジ (V2.9.15) */
 .status-badge {
   font-size: 0.75rem;
   font-weight: bold;
