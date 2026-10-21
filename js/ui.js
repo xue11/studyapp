@@ -30,6 +30,7 @@ class AppUI {
     this.session = null; // 通常学習・テスト進行中のセッション状態
     this.currentInput = "";
     this.parentState = null; // 保護者モードの状態 ({ step: "locked" | "setup1" | "setup2" | "dashboard" })
+    this._isOnline = typeof navigator !== "undefined" ? navigator.onLine : true; // V2.9.14: オンライン/オフライン状態
     this.characterAvatars = {
       cat: "🐱",
       dog: "🐶",
@@ -45,6 +46,13 @@ class AppUI {
 
     // テーマの初期適用 (ダークモード / ライトモード / OS連携)
     this._applyTheme();
+
+    // オンライン/オフライン状態の初期化とイベントリスナ登録 (V2.9.14)
+    this._isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+    if (typeof window !== "undefined" && window.addEventListener) {
+      window.addEventListener("online", () => this._updateOnlineStatus(true));
+      window.addEventListener("offline", () => this._updateOnlineStatus(false));
+    }
 
     // 初回起動時またはプロファイル未作成時はオンボーディング画面へ
     if (loadRes.isNew || !this.state.profiles || this.state.profiles.length === 0) {
@@ -90,6 +98,19 @@ class AppUI {
 
     this._applyTheme();
     this.navigate("settings");
+  }
+
+  // ==========================================
+  // オンライン/オフライン状態 (V2.9.14)
+  // ==========================================
+
+  /**
+   * オンライン/オフライン状態を更新し、画面を再描画する
+   * @param {boolean} online
+   */
+  _updateOnlineStatus(online) {
+    this._isOnline = online;
+    this.render();
   }
 
   /**
@@ -240,6 +261,8 @@ class AppUI {
     if (!profile) return "";
     const currentGrade = profile.skill.subject.currentGrade;
     const gp = profile.skill.subject.gradeProgress[`grade${currentGrade}`];
+    const onlineClass = this._isOnline ? "online" : "offline";
+    const onlineText = this._isOnline ? "オンライン" : "オフライン";
     return `
       <header class="app-header">
         <div class="app-title">
@@ -249,6 +272,7 @@ class AppUI {
         <div class="header-badges">
           <span class="header-badge">Lv${gp.difficultyLevel}</span>
           <span class="header-badge">⭐ ${profile.points.total}pt</span>
+          <span class="header-badge status-badge ${onlineClass}">${onlineText}</span>
         </div>
       </header>
     `;
@@ -1932,6 +1956,7 @@ class AppUI {
                 </div>
               </div>
               <span class="badge ${p.identity.id === this.state.activeProfileId ? 'success' : ''}">${p.identity.id === this.state.activeProfileId ? '選択中' : '選ぶ'}</span>
+              <button class="btn btn-outline" style="min-height:32px; padding:2px 8px; font-size:0.75rem; margin-left:8px;" onclick="event.stopPropagation(); app.deleteProfile('${p.identity.id}')">🗑️</button>
             </div>
           `).join("")}
         </div>
@@ -1946,6 +1971,64 @@ class AppUI {
     if (!this._saveOrAlert()) return;
     Sound.playClick();
     this.navigate("home");
+  }
+
+  // ==========================================
+  // プロファイル削除 (V2.9.14)
+  // ==========================================
+
+  /**
+   * プロファイルを削除する (確認モーダル表示後)
+   * アクティブプロファイルを削除した場合は、残りのプロファイルに自動切替。
+   * プロファイルが0件になったらオンボーディング画面へ。
+   * @param {string} profileId
+   */
+  deleteProfile(profileId) {
+    const profile = this.state.profiles.find(p => p.identity.id === profileId);
+    if (!profile) return;
+
+    const nickname = profile.identity.nickname || profile.identity.name || "このプロフィール";
+
+    this._showModal(
+      "プロフィールを削除しますか？",
+      `${nickname} さんのプロフィールと、これまでの学習データをすべて削除します。<br>元に戻すことはできません。`,
+      [
+        { text: "削除する", action: `app.confirmDeleteProfile('${profileId}')` },
+        { text: "やめる", action: "app.closeModal()" }
+      ]
+    );
+  }
+
+  /**
+   * プロファイル削除を確定して実行する
+   * @param {string} profileId
+   */
+  confirmDeleteProfile(profileId) {
+    this.closeModal();
+    Sound.playClick();
+
+    const isActive = profileId === this.state.activeProfileId;
+    this.state.profiles = this.state.profiles.filter(p => p.identity.id !== profileId);
+
+    // activeProfileId を確定させてから保存する
+    // （0件時の activeProfileId = null も確実に永続化させるため）
+    if (this.state.profiles.length === 0) {
+      this.state.activeProfileId = null;
+    } else if (isActive) {
+      // アクティブだった場合は最初のプロファイルに切替
+      this.state.activeProfileId = this.state.profiles[0].identity.id;
+    }
+
+    if (!this._saveOrAlert()) return;
+
+    if (this.state.profiles.length === 0) {
+      // プロファイルが0件になったらオンボーディングへ
+      this.navigate("onboarding");
+    } else if (isActive) {
+      this.navigate("home");
+    } else {
+      this.navigate("profile_select");
+    }
   }
 
   // ==========================================

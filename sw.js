@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.14 dark-mode)
-const CACHE_NAME = 'arith-study-v2.9.14-dark-mode';
+// PWA Service Worker (V2.9.15 online-offline-profile-delete)
+const CACHE_NAME = 'arith-study-v2.9.15-online-offline';
 const urlsToCache = [
   '/',
   '/index.html',

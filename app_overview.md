@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.14  
+**バージョン**: V2.9.15  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -948,4 +948,30 @@ P1 修正要件 3 件（回答処理のガード・空白画面の修正・モ�
 
 **バージョン統一**
 - `config.js` / `migration.js` / `schema.js` / `sw.js`（`CACHE_NAME = arith-study-v2.9.14-dark-mode`）/ `index.html` title / `test_phase1.js` / `test_phase1.html` / `test_service_worker_update.js` / `scripts/check_version.js` / 本ドキュメントを V2.9.14 に統一。
+- `schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
+
+### 10.24 V2.9.15 オンライン/オフライン表示・プロファイル削除 UI
+
+オンライン/オフライン表示バッジとプロファイル削除機能を追加した。
+
+**仕様**
+- オンライン/オフライン表示:
+  - ヘッダーに `status-badge` を表示（オンライン：緑、オフライン：赤/オレンジ）
+  - `navigator.onLine` と `online`/`offline` イベントでリアルタイム更新
+  - `profile.settings` には保存しない（単純なUI状態のため）
+- プロファイル削除:
+  - プロフィール選択画面に「🗑️」削除ボタンを追加（`event.stopPropagation` で選択と衝突しない）
+  - 削除前に確認モーダルを表示（「学習データもすべて消えます」と明記）
+  - アクティブプロファイル削除時は残りのプロファイルに自動切替
+  - プロファイルが0件になったらオンボーディング画面へ
+  - `activeProfileId` は**保存前に確定**させる（0件時の `null` も確実に永続化）
+
+**変更ファイル**
+- `css/app.css`: `.status-badge` クラス（オンライン/オフライン用、ダークモード対応）を追加
+- `js/ui.js`: `_isOnline` プロパティ、`_updateOnlineStatus()` を追加。`init()` で `online`/`offline` イベントリスナ登録。`_renderHeader()` にステータスバッジを追加。`_renderProfileSelectScreen()` に削除ボタンを追加。`deleteProfile()`、`confirmDeleteProfile()` を追加
+- `tests/test_online_offline_v2915.js`: 新規。5 アサーション
+- `tests/test_profile_delete_v2915.js`: 新規。17 アサーション
+
+**バージョン統一**
+- `config.js` / `migration.js` / `schema.js` / `sw.js`（`CACHE_NAME = arith-study-v2.9.15-online-offline`）/ `index.html` title / `test_phase1.js` / `test_phase1.html` / `test_service_worker_update.js` / `test_service_worker_dynamic.js` / `scripts/check_version.js` / `scripts/gen_version.js` / 本ドキュメントを V2.9.15 に統一。
 - `schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
