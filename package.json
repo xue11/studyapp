@@ -3,9 +3,13 @@
     "test": "node scripts/run_tests.js",
     "build": "node scripts/build_dist.js",
     "check:version": "node scripts/check_version.js",
-    "verify": "node scripts/run_tests.js && node scripts/build_dist.js && node scripts/check_version.js"
+    "verify": "node scripts/run_tests.js && node scripts/build_dist.js && node scripts/check_version.js",
+    "coverage": "c8 node scripts/run_tests.js && c8 report --reporter=html --reporter=text"
   },
   "dependencies": {
     "firebase-tools": "^15.29.0"
+  },
+  "devDependencies": {
+    "c8": "^10.1.2"
   }
 }

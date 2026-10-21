@@ -1,5 +1,6 @@
 # Build artifacts
 dist/
+coverage/
 .firebase/
 .vscode/
 node_modules/
