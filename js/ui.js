@@ -43,6 +43,9 @@ class AppUI {
     const loadRes = this.storage.loadState();
     this.state = loadRes.state;
 
+    // テーマの初期適用 (ダークモード / ライトモード / OS連携)
+    this._applyTheme();
+
     // 初回起動時またはプロファイル未作成時はオンボーディング画面へ
     if (loadRes.isNew || !this.state.profiles || this.state.profiles.length === 0) {
       this.navigate("onboarding");
@@ -53,6 +56,40 @@ class AppUI {
 
   getActiveProfile() {
     return this.state.profiles.find(p => p.identity.id === this.state.activeProfileId) || this.state.profiles[0];
+  }
+
+  // ==========================================
+  // ダークモード / テーマ設定 (V2.9.14)
+  // ==========================================
+
+  /**
+   * 現在のプロファイル設定に基づいて data-theme 属性を適用する
+   * "auto" の場合は prefers-color-scheme メディアクエリに委ねる (CSS側で制御)
+   * "light" / "dark" の場合は明示的に data-theme を設定する
+   */
+  _applyTheme() {
+    const profile = this.getActiveProfile();
+    const mode = profile?.settings?.darkMode || "auto";
+    const root = document.documentElement;
+    root.setAttribute("data-theme", mode);
+  }
+
+  /**
+   * テーマモードを切り替える (auto → light → dark → auto のサイクル)
+   * 設定画面のボタンから呼ばれることを想定
+   * @param {string} mode "auto" | "light" | "dark"
+   */
+  setDarkMode(mode) {
+    const profile = this.getActiveProfile();
+    if (!profile) return;
+    if (!profile.settings) profile.settings = {};
+
+    profile.settings.darkMode = mode;
+    if (!this._saveOrAlert()) return;
+    Sound.playClick();
+
+    this._applyTheme();
+    this.navigate("settings");
   }
 
   /**
@@ -1773,6 +1810,17 @@ class AppUI {
           <button class="btn ${(profile.settings && profile.settings.figureEnabled === false) ? 'btn-primary' : 'btn-outline'}" style="flex:1; min-height:40px;" onclick="app.toggleFigureEnabled(false)">出さない</button>
         </div>
         <p style="font-size:0.8rem; color:var(--text-muted);">※ OFFにすると学習・テストに図形問題が出なくなります。いつでも戻せます。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌙 画面の明るさ</div>
+        <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:6px;">テーマをえらぶ:</label>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <button class="btn ${(profile.settings && profile.settings.darkMode === 'auto') ? 'btn-primary' : 'btn-outline'}" style="flex:1; min-height:40px; font-size:0.85rem;" onclick="app.setDarkMode('auto')">じどうしゃ</button>
+          <button class="btn ${(profile.settings && profile.settings.darkMode === 'light') ? 'btn-primary' : 'btn-outline'}" style="flex:1; min-height:40px; font-size:0.85rem;" onclick="app.setDarkMode('light')">てるてる</button>
+          <button class="btn ${(profile.settings && profile.settings.darkMode === 'dark') ? 'btn-primary' : 'btn-outline'}" style="flex:1; min-height:40px; font-size:0.85rem;" onclick="app.setDarkMode('dark')">よるもーど</button>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-muted);">※「じどうしゃ」にすると、スマホやパソコンの設定に合わせてかわります。</p>
       </div>
 
       <div class="card">

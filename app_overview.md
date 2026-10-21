@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.13  
+**バージョン**: V2.9.14  
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -931,3 +931,21 @@ P1 修正要件 3 件（回答処理のガード・空白画面の修正・モ�
 |----------|------|
 | V2.10.0 | `hissan_input`：桁マス専用入力（最終答え行のみ採点） |
 | V2.11.0 | 繰り上がりマス・途中積まで入力を拡張 |
+
+### 10.23 V2.9.14 ダークモード / テーマ設定
+
+設定画面に「画面の明るさ」を追加し、ライト・ダーク・OS連携（auto）の3モードから選択可能にした。
+
+**仕様**
+- 保存先: `profile.settings.darkMode`（`"auto"` / `"light"` / `"dark"`、デフォルト `"auto"`）
+- `data-theme` 属性を `<html>` 要素に設定し、CSS変数を切り替える
+- `prefers-color-scheme` メディアクエリにより、OS/ブラウザのダークモード設定と自動連携（`auto`モード時）
+- 設定画面の「🌙 画面の明るさ」カードから「じどうしゃ / てるてる / よるもーど」を選択
+
+**変更ファイル**
+- `css/app.css`: `:root` 変数の後に `[data-theme="dark"]`、`[data-theme="light"]`、`@media (prefers-color-scheme: dark)` 用の変数を追加。固定色要素（吹き出し・問題表示・テンキー・モーダル等）をダーク時用に上書き
+- `js/ui.js`: `_applyTheme()`、`setDarkMode(mode)` を追加。`init()` で `_applyTheme()` を呼び出し。`_renderSettingsScreen()` にテーマ選択UIを追加
+
+**バージョン統一**
+- `config.js` / `migration.js` / `schema.js` / `sw.js`（`CACHE_NAME = arith-study-v2.9.14-dark-mode`）/ `index.html` title / `test_phase1.js` / `test_phase1.html` / `test_service_worker_update.js` / `scripts/check_version.js` / 本ドキュメントを V2.9.14 に統一。
+- `schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。

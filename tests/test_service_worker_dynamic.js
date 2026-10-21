@@ -34,7 +34,7 @@ console.log("1. Service Worker キャッシュ名とバージョン整合");
   const cacheName = (sw.match(/const CACHE_NAME\s*=\s*'([^']+)'/) || [])[1];
   check("CACHE_NAME が定義されている", !!cacheName);
   check("CACHE_NAME が arith-study-v プレフィクスを含む", cacheName.startsWith("arith-study-v"));
-  check("CACHE_NAME が現行バージョン (2.9.13) を含む", cacheName.includes("2.9.13"));
+  check("CACHE_NAME が現行バージョン (2.9.14) を含む", cacheName.includes("2.9.14"));
   check("古いキャッシュ名 (v2.9.7) とは異なる", cacheName !== "arith-study-v2.9.7-math-quality-pwa-fix");
 }
 

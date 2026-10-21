@@ -28,6 +28,133 @@
   --font-base: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
 }
 
+/* ================================================================
+   ダークテーマ (V2.9.14)
+   [data-theme="dark"]     : ユーザーがダーク固定を選択
+   [data-theme="light"]    : ユーザーがライト固定を選択
+   [data-theme="auto"]     : OS/ブラウザ設定に連携 (prefers-color-scheme)
+   ================================================================ */
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --primary-light: #1e3a8a;
+  --secondary-light: #451a03;
+  --success-light: #064e3b;
+  --danger-light: #450a0a;
+  --purple-light: #3b0764;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --bg: #0f172a;
+    --card-bg: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: #334155;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+    --primary-light: #1e3a8a;
+    --secondary-light: #451a03;
+    --success-light: #064e3b;
+    --danger-light: #450a0a;
+    --purple-light: #3b0764;
+  }
+}
+
+[data-theme="light"] {
+  --bg: #f0f4f8;
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* ダークモード時の固定色要素を上書き */
+[data-theme="dark"] .speech-bubble {
+  background: #334155;
+  border-color: #475569;
+  color: var(--text-main);
+}
+[data-theme="dark"] .speech-bubble::before {
+  border-color: transparent #334155 transparent transparent;
+}
+[data-theme="dark"] .question-display {
+  background: #334155;
+  border-color: #475569;
+}
+[data-theme="dark"] .answer-input-display {
+  background: #334155;
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+[data-theme="dark"] .progress-container {
+  background: #334155;
+}
+[data-theme="dark"] .numpad-btn {
+  background: #334155;
+  color: var(--text-main);
+  border-color: #475569;
+}
+[data-theme="dark"] .numpad-btn:active {
+  background: #475569;
+}
+[data-theme="dark"] .numpad-btn.action-btn {
+  background: #475569;
+  color: #94a3b8;
+}
+[data-theme="dark"] .clock-pad-btn {
+  background: #334155;
+  color: var(--text-main);
+  border-color: #475569;
+}
+[data-theme="dark"] .clock-pad-btn:active {
+  background: #475569;
+}
+[data-theme="dark"] .clock-pad-btn.action-btn {
+  background: #475569;
+  color: #94a3b8;
+}
+[data-theme="dark"] .clock-field.active {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+}
+[data-theme="dark"] .modal-card {
+  background: #1e293b;
+  color: var(--text-main);
+}
+[data-theme="dark"] .header-badge {
+  background: rgba(255, 255, 255, 0.15);
+}
+[data-theme="dark"] .character-section {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+}
+[data-theme="dark"] .btn-outline {
+  background: #1e293b;
+  color: var(--text-main);
+  border-color: #475569;
+}
+[data-theme="dark"] .btn-outline:hover {
+  background: #334155;
+}
+[data-theme="dark"] .card {
+  background: var(--card-bg);
+  border-color: var(--border);
+}
+[data-theme="dark"] .app-content {
+  background: var(--bg);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
