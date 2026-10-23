@@ -1951,6 +1951,7 @@ class AppUI {
         </div>
         <button class="btn btn-primary" onclick="app.navigate('onboarding', { step: 1 })">➕ 新しいプロフィールを作る</button>
         <button class="btn btn-outline" onclick="app.navigate('home')">🏠 もどる</button>
+      <div id="modal-container"></div>
       </div>
     `;
   }
