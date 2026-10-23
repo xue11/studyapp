@@ -72,31 +72,71 @@ class AppUI {
 
   /**
    * 現在のプロファイル設定に基づいて data-theme 属性を適用する
-   * "auto" の場合は prefers-color-scheme メディアクエリに委ねる (CSS側で制御)
+   * "system" の場合は prefers-color-scheme メディアクエリに委ねる (CSS側で制御)
    * "light" / "dark" の場合は明示的に data-theme を設定する
    */
   _applyTheme() {
-    // テーマ選択は無効化（常にライトモード）
     const root = document.documentElement;
-    root.setAttribute("data-theme", "light");
+    const profile = this.getActiveProfile();
+    const theme = profile && profile.settings && ["system", "light", "dark"].includes(profile.settings.theme)
+      ? profile.settings.theme
+      : "system";
+    root.setAttribute("data-theme", theme);
+
+    const media = typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia("(prefers-color-scheme: dark)")
+      : null;
+    const applyBrowserThemeColor = () => {
+      const activeProfile = this.getActiveProfile();
+      const activeTheme = activeProfile && activeProfile.settings &&
+        ["system", "light", "dark"].includes(activeProfile.settings.theme)
+        ? activeProfile.settings.theme
+        : "system";
+      const dark = activeTheme === "dark" || (activeTheme === "system" && media && media.matches);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute("content", dark ? "#0f172a" : "#4a90d9");
+    };
+    applyBrowserThemeColor();
+
+    if (media && !this._themeMediaListenerAttached) {
+      const onChange = () => {
+        const activeProfile = this.getActiveProfile();
+        const activeTheme = activeProfile && activeProfile.settings && activeProfile.settings.theme;
+        if (!["light", "dark"].includes(activeTheme)) {
+          applyBrowserThemeColor();
+        }
+      };
+      if (media.addEventListener) media.addEventListener("change", onChange);
+      else if (media.addListener) media.addListener(onChange);
+      this._themeMediaListenerAttached = true;
+    }
   }
 
   /**
-   * テーマモードを切り替える (auto → light → dark → auto のサイクル)
+   * テーマモードを切り替える
    * 設定画面のボタンから呼ばれることを想定
-   * @param {string} mode "auto" | "light" | "dark"
+   * @param {string} theme "system" | "light" | "dark"
    */
-  setDarkMode(mode) {
+  setTheme(theme) {
     const profile = this.getActiveProfile();
     if (!profile) return;
+    if (!["system", "light", "dark"].includes(theme)) {
+      throw new Error("Invalid theme: " + theme);
+    }
     if (!profile.settings) profile.settings = {};
 
-    profile.settings.darkMode = mode;
+    profile.settings.theme = theme;
+    delete profile.settings.darkMode;
     if (!this._saveOrAlert()) return;
     Sound.playClick();
 
     this._applyTheme();
     this.navigate("settings");
+  }
+
+  setDarkMode(mode) {
+    const theme = mode === "auto" ? "system" : mode;
+    return this.setTheme(theme);
   }
 
   // ==========================================
@@ -303,16 +343,16 @@ class AppUI {
       </div>
 
       ${activeDueReviews.length > 0 ? `
-        <div class="card" style="background: #fffbeb; border-color: #fde68a;">
-          <div style="font-weight:bold; color: #92400e; margin-bottom:4px;">⏰ ふくしゅうのじかん</div>
-          <div style="font-size:0.9rem; color:#b45309;">${activeDueReviews.length}件の復習問題があります。</div>
+        <div class="card notice-card--review">
+          <div class="notice-card__title" style="font-weight:bold; margin-bottom:4px;">⏰ ふくしゅうのじかん</div>
+          <div class="notice-card__message" style="font-size:0.9rem;">${activeDueReviews.length}件の復習問題があります。</div>
         </div>
       ` : ""}
 
       ${showMaxLevelNotice ? `
-        <div class="card" style="background: #f0fdf4; border-color: #bbf7d0;">
-          <div style="font-weight:bold; color: #166534; margin-bottom:4px;">🌟 最高レベル到達！</div>
-          <div style="font-size:0.85rem; color:#15803d; margin-bottom:8px;">「もっとむずかしい問題に挑戦してみる？」</div>
+        <div class="card notice-card--mastered">
+          <div class="notice-card__title" style="font-weight:bold; margin-bottom:4px;">🌟 最高レベル到達！</div>
+          <div class="notice-card__message" style="font-size:0.85rem; margin-bottom:8px;">「もっとむずかしい問題に挑戦してみる？」</div>
           <button class="btn btn-outline" style="min-height:36px; padding:6px 12px; font-size:0.85rem;" onclick="app.navigate('settings')">⚙️ 学年・レベル設定へ</button>
         </div>
       ` : ""}
@@ -340,7 +380,7 @@ class AppUI {
             ${done >= goal ? '<span style="color:var(--success); font-weight:bold;">達成！🎉</span>' : `<span style="color:var(--text-muted);">あと ${goal - done}問</span>`}
           </div>
           <div class="progress-container" style="height:8px;">
-            <div class="progress-bar" style="width: ${Math.min(100, pct)}%; background:${done >= goal ? 'var(--success)' : 'linear-gradient(90deg, #3b82f6, #10b981)'};"></div>
+            <div class="progress-bar" style="width: ${Math.min(100, pct)}%; background:${done >= goal ? 'var(--success-gradient)' : 'var(--progress-gradient)'};"></div>
           </div>`;
         })()}
       </div>
@@ -348,7 +388,7 @@ class AppUI {
       <div style="margin-top:auto;">
         <button class="btn btn-primary" onclick="app.startLearningSession()">🚀 学習をはじめる（10問）</button>
         <button class="btn btn-secondary" onclick="app.navigate('unit_select')">🎯 たんげんをえらんで練習</button>
-        <button class="btn btn-secondary" style="background:linear-gradient(135deg, #10b981, #059669);" onclick="app.startTestSession()">📝 テストを受ける（10問）</button>
+        <button class="btn btn-success" onclick="app.startTestSession()">📝 テストを受ける（10問）</button>
         <button class="btn btn-purple" onclick="app.navigate('review_history')">📚 ふくしゅう・きろく (${profile.reviewQueue?.filter(r=>r.status==='active').length || 0})</button>
         <button class="btn btn-outline" onclick="app.navigate('settings')">⚙️ せってい・学年変更</button>
         ${(typeof APP_CONFIG !== "undefined" && APP_CONFIG.features && APP_CONFIG.features.parentMode) ? `
@@ -386,7 +426,7 @@ class AppUI {
           <h2>ニックネームをえらぼう</h2>
           <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:8px;">なまえを入れてね（12もじまで・あとで かえられるよ）</p>
           <input type="text" id="onboarding-nickname" maxlength="12" placeholder="例: はなちゃん"
-            style="width:80%; max-width:280px; padding:10px 12px; font-size:1rem; border:2px solid var(--primary, #6366f1); border-radius:var(--radius-md, 12px); text-align:center; margin-bottom:16px;">
+            style="width:80%; max-width:280px; padding:10px 12px; font-size:1rem; border:2px solid var(--primary); border-radius:var(--radius-md); text-align:center; margin-bottom:16px;">
           <h2 style="margin-top:8px;">パートナーキャラクターをえらぼう</h2>
           <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-top:14px;">
             ${Object.entries(this.characterAvatars).map(([key, emoji]) => `
@@ -412,6 +452,7 @@ class AppUI {
     this.state.profiles.push(newProf);
     this.state.activeProfileId = newProf.identity.id;
     if (!this._saveOrAlert()) return;
+    this._applyTheme();
     Sound.playFanfare();
     this.navigate("home");
   }
@@ -686,7 +727,7 @@ class AppUI {
     return `
       <div class="question-meta">
         <span><b>第 ${progress} 問</b> <span id="session-timer" style="color:var(--text-muted); font-weight:normal;">⏱ ${formatElapsed(0)}</span></span>
-        <span>${isPracticeMode ? '<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.75rem;">🎯 とっくん</span> ' : ''}<span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
+        <span>${isPracticeMode ? '<span class="badge warn" style="font-size:0.75rem;">🎯 とっくん</span> ' : ''}<span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
       </div>
 
       <div class="progress-container">
@@ -1190,7 +1231,7 @@ class AppUI {
         Sound.playHint();
         this._showModal("💡 ヒント", `
           <div style="text-align:left; font-size:0.95rem;">
-            ${q.hintSteps.map((h, i) => `<div style="background:#fffbeb; padding:8px; border-radius:6px; margin-bottom:6px;"><b>ヒント${i+1}:</b> ${h}</div>`).join("")}
+            ${q.hintSteps.map((h, i) => `<div style="background:var(--hint-bg); color:var(--hint-text); border:1px solid var(--hint-border); padding:8px; border-radius:6px; margin-bottom:6px;"><b>ヒント${i+1}:</b> ${h}</div>`).join("")}
             ${q.hissanHintHTML ? `<div class="hissan-stage" style="justify-content:flex-start;">${q.hissanHintHTML}</div>` : ""}
           </div>
         `, [
@@ -1253,7 +1294,7 @@ class AppUI {
       let bodyHtml = `
         <div style="font-size:1.1rem; font-weight:bold; margin-bottom:8px;">正解: ${q.clockAnswerLabel || q.answer} ${ptsBadge}</div>
         ${q.hissanSolutionHTML ? `<div class="hissan-stage" style="justify-content:flex-start; margin:0 0 10px;">${q.hissanSolutionHTML}</div>` : ""}
-        <div style="background:#eff6ff; padding:10px; border-radius:8px; text-align:left; font-size:0.9rem; margin-bottom:12px;">
+        <div class="explanation-box" style="padding:10px; border-radius:8px; text-align:left; font-size:0.9rem; margin-bottom:12px;">
           <b>📖 解説:</b><br>${q.explanation}
         </div>
       `;
@@ -1262,8 +1303,8 @@ class AppUI {
       if (isCorrect && q.understandingCheck && q.understandingCheck.enabled) {
         const uc = q.understandingCheck;
         bodyHtml += `
-          <div style="background:#fdf4ff; border:1px solid #e9d5ff; padding:10px; border-radius:8px; text-align:left; margin-bottom:12px;">
-            <div style="font-weight:bold; color:#7e22ce; font-size:0.9rem; margin-bottom:6px;">💡 理解確認ミニクイズ</div>
+          <div class="understanding-box" style="padding:10px; border-radius:8px; text-align:left; margin-bottom:12px;">
+            <div class="understanding-box__title" style="font-weight:bold; font-size:0.9rem; margin-bottom:6px;">💡 理解確認ミニクイズ</div>
             <div style="font-size:0.85rem; margin-bottom:8px;">${uc.question}</div>
             <div>
               ${uc.choices.map(c => `
@@ -1286,10 +1327,10 @@ class AppUI {
     if (!fb) return;
     if (selected === correct) {
       Sound.playCorrect();
-      fb.innerHTML = "<span style='color:#16a34a;'>🎉 その通り！バッチリ理解できてるね！</span>";
+      fb.innerHTML = "<span class='feedback-correct'>🎉 その通り！バッチリ理解できてるね！</span>";
     } else {
       Sound.playIncorrect();
-      fb.innerHTML = `<span style='color:#dc2626;'>もう一歩！正解は ${correct} だよ。</span>`;
+      fb.innerHTML = `<span class='feedback-incorrect'>もう一歩！正解は ${correct} だよ。</span>`;
     }
   }
 
@@ -1514,7 +1555,7 @@ class AppUI {
         <div style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:16px;">
           <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
             ${record.details.map((d, i) => `
-              <tr style="border-bottom:1px solid var(--border); background:${d.isCorrect ? '#f0fdf4' : '#fef2f2'};">
+              <tr class="${d.isCorrect ? 'result-row--correct' : 'result-row--incorrect'}" style="border-bottom:1px solid var(--border);">
                 <td style="padding:6px 8px;">${d.isCorrect ? '⭕' : '❌'} 問${i+1}</td>
                 <td style="padding:6px 8px;">${d.questionText}</td>
                 <td style="padding:6px 8px; text-align:right;">${d.isCorrect ? this._formatAnswerLabel(d.userAnswer, d.figureChoices, d.clockFormat, d.partLabels) : `${this._formatAnswerLabel(d.userAnswer, d.figureChoices, d.clockFormat, d.partLabels)} (正: ${this._formatAnswerLabel(d.correctAnswer, d.figureChoices, d.clockFormat, d.partLabels)})`}</td>
@@ -1646,7 +1687,7 @@ class AppUI {
       let accuracyBadge = '';
       if (accuracy !== null) {
         if (accuracy >= 80) accuracyBadge = `<span class="badge success">正解率 ${accuracy}%</span>`;
-        else if (accuracy >= 60) accuracyBadge = `<span class="badge" style="background:#fef3c7; color:#b45309;">正解率 ${accuracy}%</span>`;
+        else if (accuracy >= 60) accuracyBadge = `<span class="badge accuracy-badge--medium">正解率 ${accuracy}%</span>`;
         else accuracyBadge = `<span class="badge warn">正解率 ${accuracy}% (にがて)</span>`;
       }
 
@@ -1799,10 +1840,27 @@ class AppUI {
         <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:6px;">いまのなまえ: <span style="color:var(--primary);">${displayName}</span> さん</label>
         <div style="display:flex; gap:8px; margin-bottom:6px;">
           <input type="text" id="settings-nickname" maxlength="12" placeholder="あたらしいニックネーム (12もじまで)"
-            style="flex:1; padding:10px 12px; font-size:0.95rem; border:2px solid var(--border-color, #e5e7eb); border-radius:var(--radius-md, 12px);">
+            style="flex:1; padding:10px 12px; font-size:0.95rem; border:2px solid var(--border); border-radius:var(--radius-md);">
           <button class="btn btn-primary" style="min-width:80px;" onclick="app.saveNickname()">保存</button>
         </div>
         <p style="font-size:0.8rem; color:var(--text-muted);">※ 空のまま保存すると、デフォルトのなまえに戻ります。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌙 画面のテーマ</div>
+        <p class="settings-description">画面の明るさをえらべます。</p>
+        <div class="theme-options" role="group" aria-label="画面のテーマ">
+          <button class="btn ${profile.settings && profile.settings.theme === 'system' ? 'btn-primary' : 'btn-outline'}"
+            aria-pressed="${!!(profile.settings && profile.settings.theme === 'system')}"
+            onclick="app.setTheme('system')">じどう</button>
+          <button class="btn ${profile.settings && profile.settings.theme === 'light' ? 'btn-primary' : 'btn-outline'}"
+            aria-pressed="${!!(profile.settings && profile.settings.theme === 'light')}"
+            onclick="app.setTheme('light')">ライト</button>
+          <button class="btn ${profile.settings && profile.settings.theme === 'dark' ? 'btn-primary' : 'btn-outline'}"
+            aria-pressed="${!!(profile.settings && profile.settings.theme === 'dark')}"
+            onclick="app.setTheme('dark')">ダーク</button>
+        </div>
+        <p class="settings-description">「じどう」は、スマートフォンやパソコンの設定に合わせて変わります。</p>
       </div>
 
       <div class="card">
@@ -1915,6 +1973,7 @@ class AppUI {
       const res = this.storage.importStateJSON(e.target.result);
       if (res.success) {
         this.state = res.state;
+        this._applyTheme();
         Sound.playFanfare();
         alert("データの読み込みが完了しました！");
         this.navigate("home");
@@ -1960,6 +2019,7 @@ class AppUI {
     this.state.activeProfileId = id;
     if (!this._saveOrAlert()) return;
     Sound.playClick();
+    this._applyTheme();
     this.navigate("home");
   }
 
@@ -2189,7 +2249,7 @@ class AppUI {
           <div class="unit-progress-row" style="flex-direction:column; align-items:stretch; gap:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
               <div class="unit-name">${w.name} <span style="color:var(--text-muted); font-weight:normal;">（小学${w.grade}年）</span></div>
-              <div style="font-size:0.8rem; color:#991b1b; font-weight:bold;">正答率 ${fmtPct(w.accuracy)}</div>
+              <div style="font-size:0.8rem; color:var(--danger-text); font-weight:bold;">正答率 ${fmtPct(w.accuracy)}</div>
             </div>
             <!-- V2.6.12: 苦手単元からそのまま特訓へ -->
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -2258,7 +2318,7 @@ class AppUI {
     }
 
     const buttons = ["all", "learning", "test"].map(mode =>
-      `<button class="btn btn-outline" style="flex:1; min-height:34px; padding:6px; font-size:0.8rem; margin:0;" onclick="app.switchGraphMode('${mode}')" data-graph-mode="${mode}">${seriesNames[mode]}</button>`
+      `<button class="btn btn-outline graph-mode-button" style="flex:1; min-height:34px; padding:6px; font-size:0.8rem; margin:0;" onclick="app.switchGraphMode('${mode}')" data-graph-mode="${mode}">${seriesNames[mode]}</button>`
     ).join("");
 
     // サマリー: 全モード合算の合計・平均
@@ -2312,15 +2372,15 @@ class AppUI {
       const x = padL + slot * i + (slot - barW) / 2;
       const h = r.attempts > 0 ? Math.max(2, (r.attempts / maxAttempts) * chartH) : 1;
       const y = padT + chartH - h;
-      const color = r.attempts === 0 ? "#e2e8f0"
-        : (r.accuracy !== null && r.accuracy >= 0.8 ? "#10b981"
-          : (r.accuracy !== null && r.accuracy >= 0.5 ? "#f59e0b" : "#ef4444"));
+      const color = r.attempts === 0 ? "var(--chart-empty)"
+        : (r.accuracy !== null && r.accuracy >= 0.8 ? "var(--chart-good)"
+          : (r.accuracy !== null && r.accuracy >= 0.5 ? "var(--chart-warning)" : "var(--chart-danger)"));
       const label = n <= 14 ? r.date.slice(5) : ""; // MM-DD を表示 (多い時は省略)
       return `
         <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${color}" opacity="0.85">
           <title>${r.date}: ${r.attempts}問 / 正答率 ${r.accuracy !== null ? Math.round(r.accuracy * 100) : "-"}%</title>
         </rect>
-        ${label ? `<text x="${(x + barW / 2).toFixed(1)}" y="${height - 6}" font-size="8" fill="#64748b" text-anchor="middle">${label}</text>` : ""}`;
+        ${label ? `<text x="${(x + barW / 2).toFixed(1)}" y="${height - 6}" font-size="8" fill="var(--chart-label)" text-anchor="middle">${label}</text>` : ""}`;
     }).join("");
 
     // 正答率の折線 (学習ありの日のみプロット)
@@ -2338,16 +2398,16 @@ class AppUI {
 
     return `
       <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto;" role="img" aria-label="学習推移グラフ">
-        <text x="${padL}" y="${padT - 4}" font-size="9" fill="#94a3b8">問題数</text>
+        <text x="${padL}" y="${padT - 4}" font-size="9" fill="var(--chart-muted-label)">問題数</text>
         ${bars}
-        ${linePath ? `<path d="${linePath}" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.8"/>` : ""}
-        ${linePath ? linePoints.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="#3b82f6"/>`).join("") : ""}
+        ${linePath ? `<path d="${linePath}" fill="none" stroke="var(--chart-line)" stroke-width="2" opacity="0.8"/>` : ""}
+        ${linePath ? linePoints.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="var(--chart-line)"/>`).join("") : ""}
       </svg>
       <div style="display:flex; gap:10px; font-size:0.7rem; color:var(--text-muted); margin-top:4px;">
-        <span>■ <span style="color:#10b981;">正答率80%〜</span></span>
-        <span>■ <span style="color:#f59e0b;">50%〜</span></span>
-        <span>■ <span style="color:#ef4444;">50%未満</span></span>
-        <span>■ <span style="color:#e2e8f0;">学習なし</span></span>
+        <span style="color:var(--chart-good);">■ 正答率80%〜</span>
+        <span style="color:var(--chart-warning);">■ 50%〜</span>
+        <span style="color:var(--chart-danger);">■ 50%未満</span>
+        <span style="color:var(--chart-legend-empty);">■ 学習なし</span>
         <span style="margin-left:auto;">— 正答率(青)</span>
       </div>`;
   }
@@ -2369,8 +2429,8 @@ class AppUI {
     const buttons = document.querySelectorAll("[data-graph-mode]");
     buttons.forEach(btn => {
       const isActive = btn.getAttribute("data-graph-mode") === mode;
-      btn.style.background = isActive ? "#3b82f6" : "";
-      btn.style.color = isActive ? "#fff" : "";
+      if (isActive) btn.classList.add("is-active");
+      else btn.classList.remove("is-active");
     });
   }
 

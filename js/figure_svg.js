@@ -45,15 +45,15 @@
   var LEGACY_TO_VIEW = VIEW / LEGACY_BOX;
 
   var COLORS = {
-    line: "#1e293b",
-    vertex: "#1e293b",
-    mark: "#1e293b",
-    grid: "#cbd5e1",
-    guide: "#94a3b8",
-    dashed: "#64748b",
+    line: "var(--svg-line)",
+    vertex: "var(--svg-vertex)",
+    mark: "var(--svg-mark)",
+    grid: "var(--svg-grid)",
+    guide: "var(--svg-guide)",
+    dashed: "var(--svg-dashed)",
     fill: "none",
-    label: "#1e293b",
-    labelSmall: "#475569"
+    label: "var(--svg-label)",
+    labelSmall: "var(--svg-label-small)"
   };
 
   // ---------------------------------------------------------------- 数学ヘルパー

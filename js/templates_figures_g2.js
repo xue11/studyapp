@@ -73,7 +73,7 @@
       var unit = 32, pad = 8;
       var shapes = cells.map(function (cell) {
         var x = pad + cell.x * unit, y = pad + cell.y * unit;
-        return '<rect x="' + x + '" y="' + y + '" width="' + unit + '" height="' + unit + '" fill="#e0f2fe"/>';
+        return '<rect x="' + x + '" y="' + y + '" width="' + unit + '" height="' + unit + '" fill="var(--net-face)"/>';
       });
       cells.forEach(function (cell) {
         var x = pad + cell.x * unit, y = pad + cell.y * unit;
@@ -85,7 +85,7 @@
         ].forEach(function (edge) {
           var shared = !!occupied[(cell.x + edge.dx) + "," + (cell.y + edge.dy)];
           shapes.push('<line x1="' + edge.x1 + '" y1="' + edge.y1 + '" x2="' + edge.x2 + '" y2="' + edge.y2 +
-            '" stroke="' + (shared ? "#0284c7" : "#334155") + '" stroke-width="' + (shared ? "1.5" : "2.5") + '"' +
+            '" stroke="' + (shared ? "var(--net-fold)" : "var(--net-outline)") + '" stroke-width="' + (shared ? "1.5" : "2.5") + '"' +
             (shared ? ' stroke-dasharray="4 3"' : "") + '/>');
         });
       });

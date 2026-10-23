@@ -1,163 +1,141 @@
 /**
- * V2.9.14 regression tests: ダークモード / テーマ設定
+ * Regression tests for theme settings and legacy migration.
  *
- * Covered items:
- *  - _applyTheme() が profile.settings.darkMode に基づいて data-theme を設定する
- *  - setDarkMode() で保存・適用・画面遷移が行える
- *  - デフォルト値は "auto"
- *
- * Run with: npm test  (or node tests/test_dark_mode_v2914.js)
+ * Run with: node tests/test_dark_mode_v2914.js
  */
 
 const assert = require("assert");
-const fs = require("fs");
-const path = require("path");
+const { migrateAppState } = require("../js/migration.js");
 
-const ROOT = path.resolve(__dirname, "..");
-
-let passCount = 0;
-function check(label, cond) {
-  assert.ok(cond, "FAIL: " + label);
-  passCount += 1;
-  console.log("  [PASS] " + label);
-}
-
-// Minimal DOM stub
-if (typeof global.window === "undefined") {
-  global.window = global;
-  global.document = {
-    documentElement: { setAttribute: () => {}, getAttribute: () => null },
-    getElementById: () => null,
-    createElement: () => ({ style: {}, classList: { add() {}, remove() {} } }),
-    addEventListener: () => {},
-    querySelectorAll: () => [],
-    querySelector: () => null,
-  };
-  global.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
-}
-global.scrollTo = global.scrollTo || (() => {});
-global.Sound = global.Sound || {
-  playClick: () => {}, playCorrect: () => {}, playIncorrect: () => {},
-  playHint: () => {}, playFanfare: () => {}, playWrong: () => {},
+const rootAttributes = {};
+const themeMeta = {
+  content: "",
+  setAttribute(name, value) {
+    if (name === "content") this.content = value;
+  }
 };
-global.StorageManager = global.StorageManager || class {
-  constructor() {}
+const mediaListeners = [];
+const colorScheme = {
+  matches: false,
+  addEventListener(event, listener) {
+    if (event === "change") mediaListeners.push(listener);
+  }
+};
+
+global.window = global;
+global.document = {
+  documentElement: {
+    setAttribute(name, value) { rootAttributes[name] = value; },
+    getAttribute(name) { return rootAttributes[name] || null; }
+  },
+  querySelector(selector) {
+    return selector === 'meta[name="theme-color"]' ? themeMeta : null;
+  },
+  getElementById() { return null; },
+  createElement() { return { style: {}, classList: { add() {}, remove() {} } }; },
+  addEventListener() {},
+  querySelectorAll() { return []; }
+};
+global.matchMedia = () => colorScheme;
+global.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
+global.scrollTo = () => {};
+global.Sound = {
+  playClick() {}, playCorrect() {}, playIncorrect() {},
+  playHint() {}, playFanfare() {}, playWrong() {}
+};
+global.StorageManager = class {
   loadState() { return { state: null, isNew: true }; }
   saveState() { return { success: true }; }
 };
-global.window = global;
 
-require(path.join(ROOT, "js/config.js"));
-const { AppUI } = require(path.join(ROOT, "js/ui.js"));
+require("../js/config.js");
+const { AppUI } = require("../js/ui.js");
 
-console.log("1. _applyTheme() - デフォルト値は \"auto\"");
-{
-  const ui = new AppUI();
-  ui.state = {
-    profiles: [{
-      identity: { id: "p1", nickname: "T", name: "T", character: "cat" },
-      points: { total: 0 },
-      skill: { subject: { currentGrade: 1, gradeProgress: { grade1: { difficultyLevel: 1 } } } },
-      settings: {},
-      stats: {},
-    }],
-    activeProfileId: "p1",
+function profile(settings) {
+  return {
+    identity: { id: "p1", nickname: "T", name: "T", character: "cat" },
+    points: { total: 0 },
+    skill: { subject: { currentGrade: 1, gradeProgress: { grade1: { difficultyLevel: 1 } } } },
+    settings: settings || {},
+    stats: {}
   };
-  let captured = null;
-  ui._applyTheme = function () {
-    const profile = this.getActiveProfile();
-    const mode = profile?.settings?.darkMode || "auto";
-    captured = mode;
-    const root = document.documentElement;
-    root.setAttribute("data-theme", mode);
-  };
-  ui._applyTheme();
-  check("darkMode未設定時は \"auto\" が適用される", captured === "auto");
 }
 
-console.log("2. _applyTheme() - 各モードの適用");
-{
+function createUI(settings) {
   const ui = new AppUI();
-  const modes = ["auto", "light", "dark"];
-  for (const mode of modes) {
-    ui.state = {
-      profiles: [{
-        identity: { id: "p1", nickname: "T", name: "T", character: "cat" },
-        points: { total: 0 },
-        skill: { subject: { currentGrade: 1, gradeProgress: { grade1: { difficultyLevel: 1 } } } },
-        settings: { darkMode: mode },
-        stats: {},
-      }],
-      activeProfileId: "p1",
-    };
-    let captured = null;
-    ui._applyTheme = function () {
-      const profile = this.getActiveProfile();
-      captured = profile?.settings?.darkMode || "auto";
-      const root = document.documentElement;
-      root.setAttribute("data-theme", captured);
-    };
-    ui._applyTheme();
-    check(`darkMode="${mode}" が正しく適用される`, captured === mode);
+  ui.state = { profiles: [profile(settings)], activeProfileId: "p1" };
+  return ui;
+}
+
+console.log("1. _applyTheme() applies actual theme settings and OS preference");
+{
+  const ui = createUI();
+  ui._applyTheme();
+  assert.strictEqual(rootAttributes["data-theme"], "system", "missing theme defaults to system");
+  assert.strictEqual(themeMeta.content, "#4a90d9", "system light uses light browser theme color");
+
+  colorScheme.matches = true;
+  mediaListeners[0]();
+  assert.strictEqual(themeMeta.content, "#0f172a", "OS dark preference updates browser theme color");
+
+  ui.getActiveProfile().settings.theme = "light";
+  ui._applyTheme();
+  assert.strictEqual(rootAttributes["data-theme"], "light");
+  assert.strictEqual(themeMeta.content, "#4a90d9");
+
+  ui.getActiveProfile().settings.theme = "dark";
+  ui._applyTheme();
+  assert.strictEqual(rootAttributes["data-theme"], "dark");
+  assert.strictEqual(themeMeta.content, "#0f172a");
+  colorScheme.matches = false;
+}
+
+console.log("2. setTheme() persists and applies themes");
+{
+  const ui = createUI({ darkMode: "auto" });
+  let savedState = null;
+  let navigatedTo = null;
+  ui.storage = { saveState(state) { savedState = state; return { success: true }; } };
+  ui.navigate = screen => { navigatedTo = screen; };
+
+  ui.setTheme("dark");
+  assert.strictEqual(ui.getActiveProfile().settings.theme, "dark");
+  assert.strictEqual(ui.getActiveProfile().settings.darkMode, undefined);
+  assert.strictEqual(savedState, ui.state);
+  assert.strictEqual(rootAttributes["data-theme"], "dark");
+  assert.strictEqual(navigatedTo, "settings");
+
+  ui.setDarkMode("auto");
+  assert.strictEqual(ui.getActiveProfile().settings.theme, "system", "legacy alias maps auto to system");
+}
+
+console.log("3. Migration normalizes old and invalid theme settings");
+{
+  const cases = [
+    [{ darkMode: "auto" }, "system"],
+    [{ darkMode: "light" }, "light"],
+    [{ darkMode: "dark" }, "dark"],
+    [{ theme: "auto" }, "system"],
+    [{ theme: "default", darkMode: "dark" }, "dark"],
+    [{ theme: "invalid", darkMode: "invalid" }, "system"]
+  ];
+  for (const [settings, expected] of cases) {
+    const migrated = migrateAppState({
+      schemaVersion: "2.5.6",
+      profiles: [profile(settings)],
+      activeProfileId: "p1"
+    });
+    assert.strictEqual(migrated.profiles[0].settings.theme, expected);
+    assert.strictEqual(migrated.profiles[0].settings.darkMode, undefined);
   }
 }
 
-console.log("3. setDarkMode() - モード切替と保存");
+console.log("4. Invalid theme values are rejected");
 {
-  const ui = new AppUI();
-  ui.state = {
-    profiles: [{
-      identity: { id: "p1", nickname: "T", name: "T", character: "cat" },
-      points: { total: 0 },
-      skill: { subject: { currentGrade: 1, gradeProgress: { grade1: { difficultyLevel: 1 } } } },
-      settings: { darkMode: "auto" },
-      stats: {},
-    }],
-    activeProfileId: "p1",
-  };
-  let savedState = null;
-  ui.storage = { saveState: (s) => { savedState = s; return { success: true }; } };
-
-  // setDarkMode は navigate を呼ぶため、navigate をスタブ
-  let navigatedTo = null;
-  ui.navigate = (screen) => { navigatedTo = screen; };
-
-  ui.setDarkMode("dark");
-  const profile = ui.getActiveProfile();
-  check("darkMode が \"dark\" に変更される", profile.settings.darkMode === "dark");
-  check("saveState が呼ばれる", savedState === ui.state);
-  check("settings 画面に遷移する", navigatedTo === "settings");
+  const ui = createUI();
+  assert.throws(() => ui.setTheme("sepia"), /Invalid theme/);
+  ui.state.profiles = [];
+  assert.doesNotThrow(() => ui.setTheme("dark"));
 }
 
-console.log("4. setDarkMode() - 保存失敗時はメモリ上は変更される（既存パターンに準拠）");
-{
-  const ui = new AppUI();
-  ui.state = {
-    profiles: [{
-      identity: { id: "p1", nickname: "T", name: "T", character: "cat" },
-      points: { total: 0 },
-      skill: { subject: { currentGrade: 1, gradeProgress: { grade1: { difficultyLevel: 1 } } } },
-      settings: { darkMode: "auto" },
-      stats: {},
-    }],
-    activeProfileId: "p1",
-  };
-  ui.storage = { saveState: () => ({ success: false, error: "Quota exceeded" }) };
-  ui.setDarkMode("light");
-  const profile = ui.getActiveProfile();
-  // 既存の saveNickname / changeGrade / toggleFigureEnabled と同様、
-  // 先にメモリ上を変更し、保存失敗時も変更はそのまま（モーダルで通知）
-  check("保存失敗時もメモリ上は変更される（saveNickname等と同様）", profile.settings.darkMode === "light");
-}
-
-console.log("5. プロファイル未設定時は setDarkMode が何もしない");
-{
-  const ui = new AppUI();
-  ui.state = { profiles: [], activeProfileId: null };
-  ui.setDarkMode("dark"); // エラーにならないことを確認
-  check("プロファイルなしでもクラッシュしない", true);
-}
-
-console.log("");
-console.log(`  ${passCount} アサーションすべて PASS`);
-console.log("=========================================");
+console.log("  All theme regression assertions passed.");

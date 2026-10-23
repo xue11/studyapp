@@ -45,16 +45,16 @@
   };
 
   var COLORS = {
-    face: "#ffffff",
-    rim: "#334155",
-    tick: "#cbd5e1",
-    tickStrong: "#64748b",
-    number: "#1e293b",
-    number24: "#94a3b8",
-    hourHand: "#1e293b",
-    minuteHand: "#2563eb",
-    secondHand: "#dc2626",
-    center: "#0f172a"
+    face: "var(--clock-face)",
+    rim: "var(--clock-rim)",
+    tick: "var(--clock-tick)",
+    tickStrong: "var(--clock-tick-strong)",
+    number: "var(--clock-number)",
+    number24: "var(--clock-number24)",
+    hourHand: "var(--clock-hour-hand)",
+    minuteHand: "var(--clock-minute-hand)",
+    secondHand: "var(--clock-second-hand)",
+    center: "var(--clock-center)"
   };
 
   // 秒針を含めた「時・分・秒」の回答形式。答えの書き方は学年で分けず、常に分離入力。
@@ -378,4 +378,3 @@
     window.ClockSVG = ClockSVG;
   }
 })();
-

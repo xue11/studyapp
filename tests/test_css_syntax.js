@@ -179,4 +179,23 @@ const res = analyze(css);
   console.log("  [PASS] 必須セレクタ " + required.length + " 件すべて存在");
 }
 
+// 5. Theme tokens referenced by CSS are defined and both dark modes exist
+{
+  console.log("5. テーマ変数の定義と OS 連動テーマ");
+  const definitions = new Set(
+    [...css.matchAll(/^\s*(--[a-zA-Z0-9_-]+)\s*:/gm)].map(match => match[1])
+  );
+  const references = new Set(
+    [...css.matchAll(/var\((--[a-zA-Z0-9_-]+)/g)].map(match => match[1])
+  );
+  const undefinedVariables = [...references].filter(name => !definitions.has(name));
+  assert.deepStrictEqual(undefinedVariables, [], "参照されるテーマ変数がすべて定義されている");
+  assert.ok(css.includes(':root[data-theme="dark"]'), "固定ダークテーマが定義されている");
+  assert.ok(css.includes(':root[data-theme="system"]'), "OS 連動テーマが定義されている");
+  for (const token of ["--svg-line", "--clock-face", "--hissan-digit", "--net-face", "--chart-good"]) {
+    assert.ok(definitions.has(token), token + " が定義されている");
+  }
+  console.log("  [PASS] 参照変数 " + references.size + " 件が定義済み。dark / system / SVG 用トークンを確認");
+}
+
 console.log("\n=== CSS 構文・構造テスト: 全合格 ===");

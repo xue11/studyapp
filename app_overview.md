@@ -934,17 +934,21 @@ P1 修正要件 3 件（回答処理のガード・空白画面の修正・モ�
 
 ### 10.23 V2.9.14 ダークモード / テーマ設定
 
-設定画面に「画面の明るさ」を追加し、ライト・ダーク・OS連携（auto）の3モードから選択可能にした。
+設定画面でライト・ダーク・OS連携の3モードを選べる。現行実装では共通の色トークンを使い、通常画面・動的に生成する案内やグラフ・図形／時計／筆算のSVGまでテーマに追従させる。
 
 **仕様**
-- 保存先: `profile.settings.darkMode`（`"auto"` / `"light"` / `"dark"`、デフォルト `"auto"`）
+- 保存先: `profile.settings.theme`（`"system"` / `"light"` / `"dark"`、デフォルト `"system"`）
+- 旧 `profile.settings.darkMode` の `"auto"` / `"light"` / `"dark"` は読み込み時に移行し、旧キーは削除する。`theme: "auto"` は `"system"` に正規化する
 - `data-theme` 属性を `<html>` 要素に設定し、CSS変数を切り替える
-- `prefers-color-scheme` メディアクエリにより、OS/ブラウザのダークモード設定と自動連携（`auto`モード時）
-- 設定画面の「🌙 画面の明るさ」カードから「じどうしゃ / てるてる / よるもーど」を選択
+- `prefers-color-scheme` メディアクエリにより、OS/ブラウザの配色設定と自動連携（`system` モード時）。OS配色変更時はブラウザの `theme-color` も更新する
+- 設定画面の「🌙 画面のテーマ」カードから「じどう / ライト / ダーク」を選択
 
 **変更ファイル**
-- `css/app.css`: `:root` 変数の後に `[data-theme="dark"]`、`[data-theme="light"]`、`@media (prefers-color-scheme: dark)` 用の変数を追加。固定色要素（吹き出し・問題表示・テンキー・モーダル等）をダーク時用に上書き
-- `js/ui.js`: `_applyTheme()`、`setDarkMode(mode)` を追加。`init()` で `_applyTheme()` を呼び出し。`_renderSettingsScreen()` にテーマ選択UIを追加
+- `css/app.css`: ライト／ダーク／OS連動の意味色トークンを定義し、部品・状態表示・入力欄・図形選択・教材表示に適用
+- `js/ui.js`: 起動・プロフィール切替・インポート時のテーマ適用、設定保存、OS配色変更への追従を実装。旧呼び出し向けに `setDarkMode(mode)` を互換ラッパーとして維持
+- `js/figure_svg.js` / `js/clock_svg.js` / `js/hissan_svg.js` / `js/templates_figures_g2.js`: SVGの線・文字・面・折り目の色をCSSテーマ変数から取得
+- `manifest.json`: PWA起動時の背景色をアプリのライトテーマ背景に合わせる（Manifestの色は静的）
+- `tests/test_dark_mode_v2914.js` / `tests/test_css_syntax.js`: テーマ適用・旧設定移行・CSS変数参照を回帰テスト
 
 **バージョン統一**
 - `config.js` / `migration.js` / `schema.js` / `sw.js`（`CACHE_NAME = arith-study-v2.9.14-dark-mode`）/ `index.html` title / `test_phase1.js` / `test_phase1.html` / `test_service_worker_update.js` / `scripts/check_version.js` / 本ドキュメントを V2.9.14 に統一。

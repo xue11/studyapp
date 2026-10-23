@@ -97,6 +97,15 @@ function migrateAppState(data) {
       if (!p.settings) p.settings = {};
       if (typeof p.settings.figureEnabled !== "boolean") p.settings.figureEnabled = true;
 
+      const legacyTheme = p.settings.darkMode;
+      if (!["system", "light", "dark"].includes(p.settings.theme)) {
+        if (legacyTheme === "auto") p.settings.theme = "system";
+        else if (legacyTheme === "light" || legacyTheme === "dark") p.settings.theme = legacyTheme;
+        else if (p.settings.theme === "auto") p.settings.theme = "system";
+        else p.settings.theme = "system";
+      }
+      delete p.settings.darkMode;
+
       migrateGradeUnitData(p, 2, GRADE_2_UNIT_ID_MIGRATIONS);
       migrateGradeUnitData(p, 3, GRADE_3_UNIT_ID_MIGRATIONS);
     }

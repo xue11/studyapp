@@ -71,7 +71,7 @@ function createNewProfile(id, name, grade, character = "cat", taste = "standard"
     settings: {
       sound: true,
       fontSize: "medium",
-      theme: "default",
+      theme: "system",
       parentPin: "", // V2.5.11: 保護者モード用4桁PIN (未設定は空文字)
       figureEnabled: true // V2.6.4: 図形問題の出題ON/OFF (既定ON)
     }
@@ -161,4 +161,3 @@ if (typeof module !== "undefined" && module.exports) {
   window.createInitialAppState = createInitialAppState;
   window.validateAppState = validateAppState;
 }
-

@@ -75,12 +75,12 @@
   LAYOUT.signX = LAYOUT.opWidth / 2;
 
   var COLORS = {
-    digit: "#1e293b",
-    sign: "#334155",
-    carry: "#2563eb",
-    rule: "#334155",    // 罫線
-    subRule: "#94a3b8", // 補助罫線
-    mark: "#dc2626"     // 解答済みの強調
+    digit: "var(--hissan-digit)",
+    sign: "var(--hissan-sign)",
+    carry: "var(--hissan-carry)",
+    rule: "var(--hissan-rule)",
+    subRule: "var(--hissan-sub-rule)",
+    mark: "var(--hissan-mark)"
   };
 
   var FONT = "'Hiragino Sans','Noto Sans JP',sans-serif";
@@ -681,4 +681,3 @@
     window.HissanSVG = HissanSVG;
   }
 })();
-
