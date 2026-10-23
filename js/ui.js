@@ -1945,7 +1945,7 @@ class AppUI {
                 </div>
               </div>
               <span class="badge ${p.identity.id === this.state.activeProfileId ? 'success' : ''}">${p.identity.id === this.state.activeProfileId ? '選択中' : '選ぶ'}</span>
-              <button class="btn btn-outline" style="min-height:32px; padding:2px 8px; font-size:0.75rem; margin-left:8px;" onclick="event.stopPropagation(); app.deleteProfile('${p.identity.id}')">🗑️</button>
+              <button class="btn btn-outline btn-delete" onclick="event.stopPropagation(); app.deleteProfile('${p.identity.id}')">🗑️</button>
             </div>
           `).join("")}
         </div>
