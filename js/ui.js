@@ -76,10 +76,9 @@ class AppUI {
    * "light" / "dark" の場合は明示的に data-theme を設定する
    */
   _applyTheme() {
-    const profile = this.getActiveProfile();
-    const mode = profile?.settings?.darkMode || "auto";
+    // テーマ選択は無効化（常にライトモード）
     const root = document.documentElement;
-    root.setAttribute("data-theme", mode);
+    root.setAttribute("data-theme", "light");
   }
 
   /**
@@ -1836,16 +1835,6 @@ class AppUI {
         <p style="font-size:0.8rem; color:var(--text-muted);">※ OFFにすると学習・テストに図形問題が出なくなります。いつでも戻せます。</p>
       </div>
 
-      <div class="card">
-        <div class="card-title">🌙 画面の明るさ</div>
-        <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:6px;">テーマをえらぶ:</label>
-        <div style="display:flex; gap:8px; margin-bottom:6px;">
-          <button class="btn ${(profile.settings && profile.settings.darkMode === 'auto') ? 'btn-primary' : 'btn-outline'}" style="flex:1; min-height:40px; font-size:0.85rem;" onclick="app.setDarkMode('auto')">じどうしゃ</button>
-          <button class="btn ${(profile.settings && profile.settings.darkMode === 'light') ? 'btn-primary' : 'btn-outline'}" style="flex:1; min-height:40px; font-size:0.85rem;" onclick="app.setDarkMode('light')">てるてる</button>
-          <button class="btn ${(profile.settings && profile.settings.darkMode === 'dark') ? 'btn-primary' : 'btn-outline'}" style="flex:1; min-height:40px; font-size:0.85rem;" onclick="app.setDarkMode('dark')">よるもーど</button>
-        </div>
-        <p style="font-size:0.8rem; color:var(--text-muted);">※「じどうしゃ」にすると、スマホやパソコンの設定に合わせてかわります。</p>
-      </div>
 
       <div class="card">
         <div class="card-title">👥 プロフィール切り替え・管理</div>
