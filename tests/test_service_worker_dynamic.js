@@ -34,7 +34,7 @@ console.log("1. Service Worker キャッシュ名とバージョン整合");
   const cacheName = (sw.match(/const CACHE_NAME\s*=\s*'([^']+)'/) || [])[1];
   check("CACHE_NAME が定義されている", !!cacheName);
   check("CACHE_NAME が arith-study-v プレフィクスを含む", cacheName.startsWith("arith-study-v"));
-  check("CACHE_NAME が現行バージョン (2.9.15) を含む", cacheName.includes("2.9.15"));
+  check("CACHE_NAME が現行バージョン (2.9.16) を含む", cacheName.includes("2.9.16"));
   check("古いキャッシュ名 (v2.9.7) とは異なる", cacheName !== "arith-study-v2.9.7-math-quality-pwa-fix");
 }
 
@@ -99,15 +99,18 @@ console.log("5. インストール失敗時のハンドリング (原子的イ�
 }
 
 // ---------------------------------------------------------------
-console.log("6. fetch ハンドラのキャッシュ優先ロジック");
+console.log("6. HTML / CSS のネットワーク優先とオフラインフォールバック");
 // ---------------------------------------------------------------
 {
   const fetchStart = sw.indexOf("self.addEventListener('fetch'");
   const messageStart = sw.indexOf("self.addEventListener('message'", fetchStart);
   const fetchHandler = sw.slice(fetchStart, messageStart > fetchStart ? messageStart : sw.length);
 
-  check("fetch で caches.match を使う", fetchHandler.includes("caches.match(e.request)"));
-  check("fetch で fetch(e.request) にフォールバックする", fetchHandler.includes("fetch(e.request)"));
+  check("画面遷移と同一オリジン CSS をネットワーク優先にする", sw.includes("request.mode === 'navigate'") && sw.includes("url.pathname.endsWith('.css')"));
+  check("CSS / HTML のネットワーク取得でブラウザー HTTP キャッシュを回避する", sw.includes("fetch(request, { cache: 'no-store' })"));
+  check("ネットワーク成功時に最新応答で SW キャッシュを更新する", sw.includes("cache.put(request, response.clone())"));
+  check("ネットワーク失敗時はキャッシュ済み応答へフォールバックする", sw.includes("const cached = await caches.match(request)") && sw.includes("if (cached) return cached"));
+  check("ネットワーク / キャッシュ更新失敗を明示ログする", sw.includes("ネットワーク取得に失敗") && sw.includes("キャッシュ更新に失敗"));
 }
 
 // ---------------------------------------------------------------
@@ -130,6 +133,7 @@ console.log("8. Firebase Hosting キャッシュヘッダー");
   const htmlHeader = headers.find(h => h.source === "**/*.html");
   const rootHeader = headers.find(h => h.source === "/");
   const swHeader = headers.find(h => h.source === "**/sw.js");
+  const cssHeader = headers.find(h => h.source === "**/*.css");
 
   check("HTML にキャッシュヘッダーが設定されている", !!htmlHeader);
   if (htmlHeader) {
@@ -145,6 +149,11 @@ console.log("8. Firebase Hosting キャッシュヘッダー");
   if (swHeader) {
     const cc = swHeader.headers.find(h => h.key.toLowerCase() === "cache-control");
     check("sw.js の Cache-Control に no-cache を含む", cc && /no-cache/.test(cc.value));
+  }
+  check("CSS に専用のキャッシュヘッダーがある", !!cssHeader);
+  if (cssHeader) {
+    const cc = cssHeader.headers.find(h => h.key.toLowerCase() === "cache-control");
+    check("CSS の Cache-Control が保存を禁止し再検証する", cc && /no-store/.test(cc.value) && /no-cache/.test(cc.value));
   }
 }
 

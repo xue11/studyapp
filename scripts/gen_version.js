@@ -82,7 +82,7 @@ replaceFile("index.html", {
 // --- 4. js/schema.js ---
 replaceFile("js/schema.js", {
   appMetaAppVersion: {
-    regex: /(appVersion:\s*")V[\d.]+(")/,
+    regex: /^(\s*appVersion:\s*")V[\d.]+(")/m,
     replacement: `$1${appVersion}$2`
   }
 });

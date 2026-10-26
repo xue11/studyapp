@@ -1,5 +1,5 @@
-// PWA Service Worker (V2.9.15 online-offline-profile-delete)
-const CACHE_NAME = 'arith-study-v2.9.15-online-offline';
+// PWA Service Worker (V2.9.15 theme cache refresh)
+const CACHE_NAME = 'arith-study-v2.9.16-theme-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -45,6 +45,34 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
+function isNetworkFirstRequest(request) {
+  if (request.mode === 'navigate') return true;
+  const url = new URL(request.url);
+  return url.origin === self.location.origin && url.pathname.endsWith('.css');
+}
+
+async function networkFirst(request) {
+  let response;
+  try {
+    response = await fetch(request, { cache: 'no-store' });
+  } catch (err) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    console.error('[SW] ネットワーク取得に失敗:', request.url, err);
+    throw err;
+  }
+
+  if (response.ok) {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, response.clone());
+    } catch (err) {
+      console.error('[SW] キャッシュ更新に失敗:', request.url, err);
+    }
+  }
+  return response;
+}
+
 // インストール時：キャッシュを準備し、更新はユーザーの操作まで待機する
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -57,16 +85,17 @@ self.addEventListener('install', e => {
   );
 });
 
-// フェッチ時：キャッシュから返す or ネットワーク
+// HTML / CSS はネットワーク優先、その他の静的リソースはキャッシュ優先
 self.addEventListener('fetch', e =>
-  e.respondWith(
-    caches.match(e.request)
-      .then(response => response || fetch(e.request))
-      .catch(err => {
-        console.error('[SW] フェッチ失敗:', e.request.url, err);
-        throw err;
-      })
-  )
+  e.respondWith((async () => {
+    if (e.request.method !== 'GET') return fetch(e.request);
+    if (isNetworkFirstRequest(e.request)) return networkFirst(e.request);
+    const response = await caches.match(e.request);
+    return response || fetch(e.request);
+  })().catch(err => {
+    console.error('[SW] フェッチ失敗:', e.request.url, err);
+    throw err;
+  }))
 );
 
 // 古いキャッシュ削除 & 即座にクライアントを制御下に置く

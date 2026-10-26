@@ -11,7 +11,7 @@ const overview = fs.readFileSync(path.join(root, "app_overview.md"), "utf8");
 const cacheName = (sw.match(/const CACHE_NAME\s*=\s*'([^']+)'/) || [])[1];
 assert.ok(cacheName, "Service Worker cache name must be defined");
 assert.notStrictEqual(cacheName, "arith-study-v2.9.7-math-quality-pwa-fix", "Cache version must change to trigger an update");
-assert.ok(cacheName.startsWith("arith-study-v2.9.15-"), "Cache version must remain aligned with the app version");
+assert.ok(cacheName.startsWith("arith-study-v2.9.16-"), "Cache version must remain aligned with the app version");
 assert.ok(overview.includes(cacheName), "App overview must document the active cache name");
 
 const installStart = sw.indexOf("self.addEventListener('install'");
@@ -37,6 +37,19 @@ const rootHeaders = firebase.hosting.headers.find(header => header.source === "/
 assert.ok(rootHeaders, "Firebase Hosting must explicitly set cache headers for the app root");
 const rootCacheControl = rootHeaders.headers.find(header => header.key.toLowerCase() === "cache-control");
 assert.ok(rootCacheControl && /no-cache/.test(rootCacheControl.value), "The app root must be revalidated");
+const cssHeaders = firebase.hosting.headers.find(header => header.source === "**/*.css");
+assert.ok(cssHeaders, "Firebase Hosting must define CSS cache headers");
+const cssCacheControl = cssHeaders.headers.find(header => header.key.toLowerCase() === "cache-control");
+assert.ok(cssCacheControl && /no-cache/.test(cssCacheControl.value) && /no-store/.test(cssCacheControl.value),
+  "CSS must not be retained by the browser HTTP cache");
+assert.ok(sw.includes("request.mode === 'navigate'") && sw.includes("url.pathname.endsWith('.css')"),
+  "HTML navigation and CSS must use network-first fetches");
+assert.ok(sw.includes("fetch(request, { cache: 'no-store' })"),
+  "Network-first fetches must bypass the browser HTTP cache");
+assert.ok(sw.includes("cache.put(request, response.clone())"),
+  "Successful network responses must refresh the service worker cache");
+assert.ok(sw.includes("const cached = await caches.match(request)") && sw.includes("if (cached) return cached"),
+  "Network-first requests must fall back to the cache while offline");
 assert.ok(installHandler.includes("throw err"), "A failed precache must fail installation instead of succeeding partially");
 assert.ok(sw.includes("console.error('[SW] フェッチ失敗:'") && sw.includes("throw err"), "Fetch failures must remain explicit");
 

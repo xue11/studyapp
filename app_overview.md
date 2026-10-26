@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.15  
+**バージョン**: V2.9.16
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -979,3 +979,17 @@ P1 修正要件 3 件（回答処理のガード・空白画面の修正・モ�
 **バージョン統一**
 - `config.js` / `migration.js` / `schema.js` / `sw.js`（`CACHE_NAME = arith-study-v2.9.15-online-offline`）/ `index.html` title / `test_phase1.js` / `test_phase1.html` / `test_service_worker_update.js` / `test_service_worker_dynamic.js` / `scripts/check_version.js` / `scripts/gen_version.js` / 本ドキュメントを V2.9.15 に統一。
 - `schemaVersion` 2.5.6 は変更なし（マイグレーション不要）。
+
+### 10.25 V2.9.16 PWA の HTML / CSS キャッシュ更新安定化
+
+同じCSS URLをキャッシュ優先で返すと、サーバーに更新があっても端末内のService Workerキャッシュが残る可能性がある。HTMLの画面遷移と同一オリジンCSSをネットワーク優先とし、成功時にService Workerキャッシュを更新、通信失敗時はキャッシュを使う。
+
+**仕様**
+- HTMLナビゲーションとCSS取得は `fetch(..., { cache: "no-store" })` でブラウザーHTTPキャッシュも迂回し、応答成功後に現在のService Workerキャッシュへ保存
+- ネットワークが失敗した場合は既存キャッシュへフォールバックし、キャッシュ更新失敗はコンソールに明示
+- Firebase HostingのCSSレスポンスに `Cache-Control: no-cache, no-store, must-revalidate` を指定
+- `CACHE_NAME` を `arith-study-v2.9.16-theme-cache-v2` に更新し、既存PWAへ新しいService Workerをインストールさせる
+- Service Workerの更新通知・ユーザーによる適用操作は従来どおり維持
+
+**確認**
+- `test_service_worker_dynamic.js` / `test_service_worker_update.js` でネットワーク優先・オフラインフォールバック・CSSキャッシュヘッダーを検証する。
