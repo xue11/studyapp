@@ -2896,7 +2896,94 @@ MATH_TEMPLATES.push(
     answer: "kg * 1000 - grams",
     hints: ["りんごの重さをgになおそう。", "同じ単位にそろえてから、みかんの重さをひこう。"],
     explanation: "{kg}kg = {kg * 1000}g。{kg * 1000} − {grams} = {answer}g。"
-  })
+  }),
+  // ==========================================
+  // 発展問題：低学年用（A）かくれバンゴう
+  // ==========================================
+  {
+    templateId: "g1_dev_hidden_01",
+    grade: 1, difficultyLevel: 3,
+    unitId: "dev_hidden_number", conceptId: "missing_number",
+    problemType: "calculation", answerType: "number_input",
+    format: "かくれバンゴう + {b} = {total}",
+    formats: ["かくれバンゴう + {b} = {total}", "{total} から {b} を ひくと なんなる？"],
+    generate: { hidden: { type: "integer", range: [1, 9] }, b: { type: "integer", range: [1, 9], constraints: ["hidden + b <= 18"] }, total: { formula: "hidden + b" } },
+    answer: { expression: "hidden", normalization: "integer" },
+    hintSteps: ["{total} から {b} を ひくと、かくれバンゴうは いくつ？", "ゆびや ブロック を つかって かぞえてみよう。"],
+    explanationTemplate: "{total} から {b} を ひくと {hidden} になるので、かくれバンゴうは {hidden} だね。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "{total} から {b} を ひいた かずは どれかな？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+  },
+  // 発展問題：低学年用（B）かずのパターン
+  {
+    templateId: "g2_dev_pattern_01",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_number_pattern", conceptId: "number_pattern",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a}、{a+d}、{a+d*2}、？",
+    formats: ["{a}、{a+d}、{a+d*2}、つぎの数は なん？", "{a} から {a+d} までは {d} ずつふえているよ。つぎも {d} をたそう。"],
+    generate: { a: { type: "integer", range: [1, 8] }, d: { type: "integer", range: [1, 3], constraints: ["a + d * 2 <= 10"] }, answer: { formula: "a + d * 3" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a} から {a+d} へは {d} ずつふえているよ。", "つぎは {d} ずつ さらに たすと、いくつになるかな？"],
+    explanationTemplate: "{a}、{a+d}、{a+d*2} のきそくは {d} ずつふえること。つぎの数は {answer} だね。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "つぎの数は どれかな？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + d" }, wrong2: { formula: "answer - d > 0 ? answer - d : answer + d" } } }
+  },
+  // 発展問題：低学年用（C）ぎゃくけいさん
+  {
+    templateId: "g2_dev_reverse_01",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_reverse_calc", conceptId: "reverse_calculation",
+    problemType: "calculation", answerType: "number_input",
+    format: "？ - {b} = {c}",
+    formats: ["？ - {b} = {c}", "もとの数は {c} に {b} を たして なんになる？"],
+    generate: { b: { type: "integer", range: [1, 8] }, c: { type: "integer", range: [1, 10], constraints: ["c >= b"] }, answer: { formula: "c + b" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{c} に {b} を たすと、もとの数がでてくるよ。", "{c} に {b} をたすと、いくつになるかな？"],
+    explanationTemplate: "{c} に {b} を たすと {answer} になるので、もとの数は {answer} だね。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "もとの数は どれかな？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+  },
+  // 発展問題：低学年用（D）何曜日？
+  {
+    templateId: "g2_dev_weekday_01",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_weekday", conceptId: "weekday_calculation",
+    problemType: "calculation", answerType: "choice",
+    format: "きょうは {a}曜日です。{b} にちごつ は なんようび？",
+    formats: ["きょうは {a}曜日です。{b} にちごつ は なんようび？", "7にちごつ は 同じようびだよ。{b} を 7 で わけた あまりを かぞえよう。"],
+    generate: { a: { type: "integer", range: [0, 6] }, b: { type: "integer", range: [1, 30] }, answer: { formula: "(a + b) % 7" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["7にちごつ は 同じようびだよ。", "{b} を 7 で わけた あまりは、いくつかな？"],
+    explanationTemplate: "{b} にちごつ 後のようびは {answer} だね（{a}曜日から数えて {answer}）。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "{b} にちごつ 後のようびは どれかな？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "(answer + 1) % 7" }, wrong2: { formula: "(answer + 2) % 7" } } }
+  },
+  // 発展問題：低学年用（E）おかねの合わせ方
+  {
+    templateId: "g2_dev_money_01",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_money", conceptId: "money_combination",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a}えん を つくるには、{b}えん玉が なにえん ひつよう？",
+    formats: ["{a}えん を つくるには、{b}えん玉が なにえん ひつよう？", "{a}えん の うちから {b}えん を ひいた あいたいくつ？"],
+    generate: { a: { type: "integer", range: [5, 50], constraints: ["a % 10 === 0"] }, b: { type: "integer", range: [1, 9], constraints: ["a % b === 0"] }, answer: { formula: "a / b" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a}えん を {b}えん で わけるといくつ？", "{b}えん 玉を そろえると、いくつえんになるかな？"],
+    explanationTemplate: "{a}えん を {b}えん {answer}こ 使うと {answer}えん になるので、{b}えん玉は {answer} こ ひつようだよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "{b}えん玉は なんこ ひつよう？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+  },
+  // 発展問題：低学年用（F）かいぶんすうクイズ
+  {
+    templateId: "g3_dev_palindrome_01",
+    grade: 3, difficultyLevel: 3,
+    unitId: "dev_palindrome", conceptId: "palindrome_number",
+    problemType: "calculation", answerType: "choice",
+    format: "{a} は かいぶんすうですか？",
+    formats: ["{a} は かいぶんすうですか？（はい=1 / いいえ=2）", "{a} を まえからよむと、まんうしろからよんでも おなじ？"],
+    generate: { a: { type: "integer", range: [11, 99] }, is_palindrome: { type: "boolean", formula: "Math.floor(a / 10) === a % 10" }, answer: { formula: "is_palindrome ? 1 : 2" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a} を まえからよむと、まんうしろからよんでも おなじ？", "まえのすうじと うしろのすうじ が おなじなら かいぶんすうだよ。"],
+    explanationTemplate: "{a} を まえからよむと、まんうしろからよんでも おなじ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "{a} は かいぶんすうですか？", choices: ["はい（1）", "いいえ（2）"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+  }
+
 );
 
 
