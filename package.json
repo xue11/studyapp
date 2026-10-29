@@ -1,6 +1,6 @@
 {
   "name": "math-study-app",
-  "version": "2.9.16",
+  "version": "2.9.17",
   "scripts": {
     "test": "node scripts/run_tests.js",
     "build": "node scripts/build_dist.js",

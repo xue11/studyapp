@@ -1,6 +1,6 @@
 # 小学生向け算数学習アプリ — 概要仕様書
 
-**バージョン**: V2.9.16
+**バージョン**: V2.9.17
 **スキーマバージョン**: 2.5.6  
 **種別**: PWA（Progressive Web App）— サーバー不要・ブラウザのみで動作  
 **対象**: 小学1〜6年生
@@ -988,8 +988,14 @@ P1 修正要件 3 件（回答処理のガード・空白画面の修正・モ�
 - HTMLナビゲーションとCSS取得は `fetch(..., { cache: "no-store" })` でブラウザーHTTPキャッシュも迂回し、応答成功後に現在のService Workerキャッシュへ保存
 - ネットワークが失敗した場合は既存キャッシュへフォールバックし、キャッシュ更新失敗はコンソールに明示
 - Firebase HostingのCSSレスポンスに `Cache-Control: no-cache, no-store, must-revalidate` を指定
-- `CACHE_NAME` を `arith-study-v2.9.16-theme-cache-v2` に更新し、既存PWAへ新しいService Workerをインストールさせる
+- `CACHE_NAME` を `arith-study-v2.9.17-theme-cache-v2` に更新し、既存PWAへ新しいService Workerをインストールさせる
 - Service Workerの更新通知・ユーザーによる適用操作は従来どおり維持
 
 **確認**
 - `test_service_worker_dynamic.js` / `test_service_worker_update.js` でネットワーク優先・オフラインフォールバック・CSSキャッシュヘッダーを検証する。
+
+### 10.26 V2.9.17 発展問題の追加と内容修正
+
+- 1〜3年生向けの発展問題6型を単元登録し、単元選択から出題できるようにする
+- 曜日問題の曜日名と回答ルール、お金問題の硬貨額面・設問・解説、回文数問題の解説を整合させる
+- テンプレートの問題文・ヒントで答えを直接参照しないことを検証する

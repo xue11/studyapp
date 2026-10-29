@@ -115,7 +115,8 @@ class UnitRegistry {
         ],
         3: [
           { id: "add_sub_3terms_10", name: "3つのかずのけいさん（10まで）", concepts: ["three_terms_add_sub"] },
-          { id: "add_sub_3terms_20", name: "3つのかずのけいさん（20まで）", concepts: ["three_terms_add_sub_20"] }
+          { id: "add_sub_3terms_20", name: "3つのかずのけいさん（20まで）", concepts: ["three_terms_add_sub_20"] },
+          { id: "dev_hidden_number", name: "かくれた数の計算", concepts: ["missing_number"] }
         ]
       },
       2: {
@@ -143,7 +144,11 @@ class UnitRegistry {
         3: [
           { id: "multiplication_g2", name: "九九の応用・発展", concepts: ["kuku_advanced_groups", "kuku_mastery"], learningGroupId: "multiplication" },
           { id: "calc_application", name: "計算の活用", concepts: ["three_terms_2digit", "two_step_2digit", "working_backwards"], learningGroupId: "calculation_application" },
-          { id: "geometry_g2", name: "図形", concepts: ["tri_quad_count_parts", "tri_quad_grid_length"], learningGroupId: "geometry" }
+          { id: "geometry_g2", name: "図形", concepts: ["tri_quad_count_parts", "tri_quad_grid_length"], learningGroupId: "geometry" },
+          { id: "dev_number_pattern", name: "数のきまり", concepts: ["number_pattern"] },
+          { id: "dev_reverse_calc", name: "逆算", concepts: ["reverse_calculation"] },
+          { id: "dev_weekday", name: "曜日の計算", concepts: ["weekday_calculation"] },
+          { id: "dev_money", name: "お金の計算", concepts: ["money_combination"] }
         ]
       },
       3: {
@@ -170,7 +175,8 @@ class UnitRegistry {
           // V2.7.0: 図形タップ問題 (answerType: "figure_tap") の3年生向け単元
           { id: "angle_figure", name: "角と三角形（図形タップ）", concepts: ["angle_right_vertex", "angle_right_all", "tri_longest_side"] },
           { id: "area_grid_figure", name: "面積と方眼（図形タップ）", concepts: ["area_square_sides", "area_rect_sides", "area_square_equal_sides"] },
-          { id: "solid_net_figure", name: "立体と展開図（図形タップ）", concepts: ["solid_visible_faces", "solid_top_face", "net_fold_lines"] }
+          { id: "solid_net_figure", name: "立体と展開図（図形タップ）", concepts: ["solid_visible_faces", "solid_top_face", "net_fold_lines"] },
+          { id: "dev_palindrome", name: "回文数", concepts: ["palindrome_number"] }
         ]
       },
       4: {

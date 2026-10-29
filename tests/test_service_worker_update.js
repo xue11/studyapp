@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
+const appVersion = require(path.join(root, "package.json")).version;
 const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
 const index = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const firebase = JSON.parse(fs.readFileSync(path.join(root, "firebase.json"), "utf8"));
@@ -11,7 +12,7 @@ const overview = fs.readFileSync(path.join(root, "app_overview.md"), "utf8");
 const cacheName = (sw.match(/const CACHE_NAME\s*=\s*'([^']+)'/) || [])[1];
 assert.ok(cacheName, "Service Worker cache name must be defined");
 assert.notStrictEqual(cacheName, "arith-study-v2.9.7-math-quality-pwa-fix", "Cache version must change to trigger an update");
-assert.ok(cacheName.startsWith("arith-study-v2.9.16-"), "Cache version must remain aligned with the app version");
+assert.ok(cacheName.startsWith(`arith-study-v${appVersion}-`), "Cache version must remain aligned with the app version");
 assert.ok(overview.includes(cacheName), "App overview must document the active cache name");
 
 const installStart = sw.indexOf("self.addEventListener('install'");

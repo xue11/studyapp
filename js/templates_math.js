@@ -2946,14 +2946,14 @@ MATH_TEMPLATES.push(
     templateId: "g2_dev_weekday_01",
     grade: 2, difficultyLevel: 3,
     unitId: "dev_weekday", conceptId: "weekday_calculation",
-    problemType: "calculation", answerType: "choice",
-    format: "きょうは {a}曜日です。{b} にちごつ は なんようび？",
-    formats: ["きょうは {a}曜日です。{b} にちごつ は なんようび？", "7にちごつ は 同じようびだよ。{b} を 7 で わけた あまりを かぞえよう。"],
-    generate: { a: { type: "integer", range: [0, 6] }, b: { type: "integer", range: [1, 30] }, answer: { formula: "(a + b) % 7" } },
+    problemType: "calculation", answerType: "number_input",
+    format: "きょうは {weekdayToday}曜日です。{b}日後は何曜日？日曜日を0、月曜日を1、…土曜日を6として数字で答えよう。",
+    formats: ["きょうは {weekdayToday}曜日です。{b}日後の曜日を数字で答えよう（日=0、月=1、火=2、水=3、木=4、金=5、土=6）。", "曜日は7日でひとまわり。きょうは {weekdayToday}曜日です。{b}日後の曜日を数字で答えよう（日=0、月=1、火=2、水=3、木=4、金=5、土=6）。"],
+    generate: { a: { type: "integer", range: [0, 6] }, b: { type: "integer", range: [1, 30] }, answer: { formula: "(a + b) % 7" }, weekdayToday: { formula: "['日', '月', '火', '水', '木', '金', '土'][a]" }, weekdayTarget: { formula: "['日', '月', '火', '水', '木', '金', '土'][answer]" } },
     answer: { expression: "answer", normalization: "integer" },
-    hintSteps: ["7にちごつ は 同じようびだよ。", "{b} を 7 で わけた あまりは、いくつかな？"],
-    explanationTemplate: "{b} にちごつ 後のようびは {answer} だね（{a}曜日から数えて {answer}）。",
-    understandingCheck: { enabled: true, type: "choice", questionTemplate: "{b} にちごつ 後のようびは どれかな？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "(answer + 1) % 7" }, wrong2: { formula: "(answer + 2) % 7" } } }
+    hintSteps: ["曜日は7日でひとまわりするよ。", "{b}を7でわったあまりだけ、{weekdayToday}曜日から先に進もう。"],
+    explanationTemplate: "{weekdayToday}曜日から{b}日後は{weekdayTarget}曜日。曜日の番号は{answer}だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "曜日の番号はどれかな？（日=0、月=1、火=2、水=3、木=4、金=5、土=6）", answer: "{answer}", generateWrong: { wrong1: { formula: "(answer + 1) % 7" }, wrong2: { formula: "(answer + 2) % 7" } } }
   },
   // 発展問題：低学年用（E）おかねの合わせ方
   {
@@ -2961,27 +2961,27 @@ MATH_TEMPLATES.push(
     grade: 2, difficultyLevel: 3,
     unitId: "dev_money", conceptId: "money_combination",
     problemType: "calculation", answerType: "number_input",
-    format: "{a}えん を つくるには、{b}えん玉が なにえん ひつよう？",
-    formats: ["{a}えん を つくるには、{b}えん玉が なにえん ひつよう？", "{a}えん の うちから {b}えん を ひいた あいたいくつ？"],
-    generate: { a: { type: "integer", range: [5, 50], constraints: ["a % 10 === 0"] }, b: { type: "integer", range: [1, 9], constraints: ["a % b === 0"] }, answer: { formula: "a / b" } },
+    format: "{a}円を{b}円玉だけで作るには、何枚いるかな？",
+    formats: ["{a}円を{b}円玉だけで作るには、何枚いるかな？", "1枚{b}円の硬貨を何枚集めると{a}円になるかな？"],
+    generate: { a: { type: "integer", range: [10, 50], constraints: ["a % 10 === 0"] }, b: { type: "integer", range: [1, 10], constraints: ["(b === 1 || b === 5 || b === 10) && a % b === 0"] }, answer: { formula: "a / b" } },
     answer: { expression: "answer", normalization: "integer" },
-    hintSteps: ["{a}えん を {b}えん で わけるといくつ？", "{b}えん 玉を そろえると、いくつえんになるかな？"],
-    explanationTemplate: "{a}えん を {b}えん {answer}こ 使うと {answer}えん になるので、{b}えん玉は {answer} こ ひつようだよ。",
-    understandingCheck: { enabled: true, type: "choice", questionTemplate: "{b}えん玉は なんこ ひつよう？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+    hintSteps: ["{a}円を{b}円ずつに分ける計算をしよう。", "{a} ÷ {b} を計算すると、必要な枚数がわかるよ。"],
+    explanationTemplate: "{a} ÷ {b} = {answer}。{b}円玉を{answer}枚使うと、合計は{b * answer}円になるよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "{b}円玉は何枚いるかな？", answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
   },
   // 発展問題：低学年用（F）かいぶんすうクイズ
   {
     templateId: "g3_dev_palindrome_01",
     grade: 3, difficultyLevel: 3,
     unitId: "dev_palindrome", conceptId: "palindrome_number",
-    problemType: "calculation", answerType: "choice",
-    format: "{a} は かいぶんすうですか？",
-    formats: ["{a} は かいぶんすうですか？（はい=1 / いいえ=2）", "{a} を まえからよむと、まんうしろからよんでも おなじ？"],
-    generate: { a: { type: "integer", range: [11, 99] }, is_palindrome: { type: "boolean", formula: "Math.floor(a / 10) === a % 10" }, answer: { formula: "is_palindrome ? 1 : 2" } },
+    problemType: "calculation", answerType: "number_input",
+    format: "{a}は回文数かな？はいなら1、いいえなら2を入力しよう。",
+    formats: ["{a}は回文数かな？はい=1、いいえ=2で答えよう。", "{a}を前から読んでも後ろから読んでも同じかな？はい=1、いいえ=2で答えよう。"],
+    generate: { a: { type: "integer", range: [11, 99] }, is_palindrome: { type: "boolean", formula: "Math.floor(a / 10) === a % 10" }, answer: { formula: "is_palindrome ? 1 : 2" }, palindromeResult: { formula: "is_palindrome ? '回文数です' : '回文数ではありません'" } },
     answer: { expression: "answer", normalization: "integer" },
-    hintSteps: ["{a} を まえからよむと、まんうしろからよんでも おなじ？", "まえのすうじと うしろのすうじ が おなじなら かいぶんすうだよ。"],
-    explanationTemplate: "{a} を まえからよむと、まんうしろからよんでも おなじ。",
-    understandingCheck: { enabled: true, type: "choice", questionTemplate: "{a} は かいぶんすうですか？", choices: ["はい（1）", "いいえ（2）"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+    hintSteps: ["十の位と一の位の数字をくらべよう。", "2つの数字が同じなら回文数だよ。"],
+    explanationTemplate: "{a}は{palindromeResult}。十の位は{Math.floor(a / 10)}、一の位は{a % 10}だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "十の位の数字はどれかな？", answer: "{Math.floor(a / 10)}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
   }
 
 );

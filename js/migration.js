@@ -27,7 +27,7 @@ function currentAppVersion() {
       if (cfg && cfg.APP_META && cfg.APP_META.appVersion) return cfg.APP_META.appVersion;
     }
   } catch (e) { /* not available */ }
-  return "V2.9.16";
+  return "V2.9.17";
 }
 
 const GRADE_2_UNIT_ID_MIGRATIONS = {

@@ -518,6 +518,7 @@ const N = 40;
       t.questionText,
       t.format,
       ...(t.formats || []),
+      ...(t.sentencePatterns || []),
       ...(t.hintSteps || []),
     ];
 
@@ -548,6 +549,69 @@ const N = 40;
       console.log("    - " + o);
     }
   }
+}
+
+// 14. 発展テンプレートの登録、問題文、答え、解説が整合していること
+{
+  console.log("14. 追加された発展テンプレートの登録と内容");
+  const expectedUnits = [
+    { id: "g1_dev_hidden_01", grade: 1, unitId: "dev_hidden_number" },
+    { id: "g2_dev_pattern_01", grade: 2, unitId: "dev_number_pattern" },
+    { id: "g2_dev_reverse_01", grade: 2, unitId: "dev_reverse_calc" },
+    { id: "g2_dev_weekday_01", grade: 2, unitId: "dev_weekday" },
+    { id: "g2_dev_money_01", grade: 2, unitId: "dev_money" },
+    { id: "g3_dev_palindrome_01", grade: 3, unitId: "dev_palindrome" }
+  ];
+
+  for (const expected of expectedUnits) {
+    const template = TemplateRegistry.get(expected.id);
+    assert.ok(template, expected.id + " が登録されていること");
+    assert.ok(UnitRegistry.findUnit("math", expected.grade, expected.unitId),
+      expected.unitId + " が単元として登録されていること");
+    assert.ok(UnitRegistry.getUnitsForLevel("math", expected.grade, 3)
+      .some(unit => unit.id === expected.unitId),
+    expected.unitId + " が発展レベルから選択できること");
+    assert.ok(TemplateRegistry.getByUnit("math", expected.grade, 3, expected.unitId)
+      .some(t => t.templateId === expected.id),
+    expected.id + " が単元の出題候補になること");
+  }
+
+  for (let i = 0; i < N; i++) {
+    const q = RuleBasedQuestionSource.generateQuestion("g2_dev_weekday_01", []);
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+    const expected = (q.variables.a + q.variables.b) % 7;
+    assert.strictEqual(Number(q.answer), expected, "曜日番号が正しいこと");
+    assert.ok(q.questionText.includes(weekdays[q.variables.a] + "曜日"),
+      "問題文が正しい曜日名を表示すること: " + q.questionText);
+    assert.ok(q.explanation.includes(weekdays[expected] + "曜日"),
+      "解説が正しい曜日名を表示すること: " + q.explanation);
+    assert.ok(q.answerType === "number_input" && q.questionText.includes("日=0"),
+      "数字入力の規則が問題文に示されること");
+
+    const money = RuleBasedQuestionSource.generateQuestion("g2_dev_money_01", []);
+    const coinValues = [1, 5, 10, 50, 100, 500];
+    assert.ok(coinValues.includes(money.variables.b), "実在する硬貨の額面であること");
+    assert.strictEqual(money.variables.b * Number(money.answer), money.variables.a,
+      "硬貨の枚数と合計金額が一致すること");
+    assert.ok(money.explanation.includes(money.variables.a + "円"),
+      "解説の合計額が問題の合計金額と一致すること");
+  }
+
+  const originalRandom = Math.random;
+  try {
+    for (const [randomValue, palindrome, answer] of [[0, true, "1"], [0.06, false, "2"]]) {
+      Math.random = () => randomValue;
+      const q = RuleBasedQuestionSource.generateQuestion("g3_dev_palindrome_01", []);
+      assert.strictEqual(q.variables.is_palindrome, palindrome);
+      assert.strictEqual(q.answer, answer);
+      assert.ok(q.explanation.includes(palindrome ? "回文数です" : "回文数ではありません"),
+        "回文判定と解説が一致すること: " + q.explanation);
+      assert.strictEqual(q.answerType, "number_input", "回答形式が数字入力であること");
+    }
+  } finally {
+    Math.random = originalRandom;
+  }
+  console.log("  [PASS] 追加6テンプレートの単元登録と曜日・硬貨・回文の整合性");
 }
 
 console.log("\nANSWER SANITY TESTS PASSED");

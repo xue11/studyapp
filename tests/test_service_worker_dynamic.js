@@ -23,6 +23,7 @@ function check(label, cond) {
 }
 
 const root = path.resolve(__dirname, "..");
+const appVersion = require(path.join(root, "package.json")).version;
 const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
 const index = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const firebase = JSON.parse(fs.readFileSync(path.join(root, "firebase.json"), "utf8"));
@@ -34,7 +35,7 @@ console.log("1. Service Worker キャッシュ名とバージョン整合");
   const cacheName = (sw.match(/const CACHE_NAME\s*=\s*'([^']+)'/) || [])[1];
   check("CACHE_NAME が定義されている", !!cacheName);
   check("CACHE_NAME が arith-study-v プレフィクスを含む", cacheName.startsWith("arith-study-v"));
-  check("CACHE_NAME が現行バージョン (2.9.16) を含む", cacheName.includes("2.9.16"));
+  check(`CACHE_NAME が現行バージョン (${appVersion}) を含む`, cacheName.includes(appVersion));
   check("古いキャッシュ名 (v2.9.7) とは異なる", cacheName !== "arith-study-v2.9.7-math-quality-pwa-fix");
 }
 
