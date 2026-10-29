@@ -501,6 +501,53 @@ const N = 40;
   console.log("  [PASS] " + cases.length + " パターン: 相異・非負・正解非一致、位入れ違い優先・桁飛びなし");
 }
 
+// 13. 出題画面・ヒント画面に {answer} が直接含まれていないこと（答え漏洩防止）
+{
+  console.log("13. 出題画面・ヒント画面に {answer} の直接記述がないこと");
 
+  const answerPlaceholderRegex = /\{answer\}/;
+  const offenders = [];
+
+  const allIds = Object.keys(TemplateRegistry.templates);
+  for (const id of allIds) {
+    const t = TemplateRegistry.templates[id];
+    if (!t) continue;
+
+    // 出題・ヒント画面で表示される文字列フィールドを全検査
+    const fields = [
+      t.questionText,
+      t.format,
+      ...(t.formats || []),
+      ...(t.hintSteps || []),
+    ];
+
+    for (const field of fields) {
+      if (typeof field === "string" && answerPlaceholderRegex.test(field)) {
+        offenders.push(`${id}: "${field}"`);
+      }
+    }
+  }
+
+  // explanationTemplate は解答後の解説画面で表示されるため、
+  // 答え漏洩とは見なさず、INFO として出力のみ行う
+  const explanationOffenders = [];
+  for (const id of allIds) {
+    const t = TemplateRegistry.templates[id];
+    if (!t || typeof t.explanationTemplate !== "string") continue;
+    if (answerPlaceholderRegex.test(t.explanationTemplate)) {
+      explanationOffenders.push(`${id}: "${t.explanationTemplate}"`);
+    }
+  }
+
+  assert.deepStrictEqual(offenders, [],
+    "出題画面・ヒント画面に {answer} が直接含まれています:\n    - " + offenders.join("\n    - "));
+  console.log("  [PASS] 全 " + allIds.length + " テンプレート: 出題・ヒント画面の {answer} 直接記述 0 件");
+  if (explanationOffenders.length > 0) {
+    console.log("  [INFO] explanationTemplate に {answer} を含むテンプレート: " + explanationOffenders.length + " 件");
+    for (const o of explanationOffenders) {
+      console.log("    - " + o);
+    }
+  }
+}
 
 console.log("\nANSWER SANITY TESTS PASSED");
