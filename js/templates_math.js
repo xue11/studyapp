@@ -2927,6 +2927,32 @@ MATH_TEMPLATES.push(
     explanationTemplate: "{a}、{a+d}、{a+d*2} のきそくは {d} ずつふえること。つぎの数は {answer} だね。",
     understandingCheck: { enabled: true, type: "choice", questionTemplate: "つぎの数は どれかな？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + d" }, wrong2: { formula: "answer - d > 0 ? answer - d : answer + d" } } }
   },
+  {
+    templateId: "g2_dev_pattern_02",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_number_pattern", conceptId: "number_pattern",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a}、{a+d}、？、{a+d*3}。？に入る数は？",
+    formats: ["{a}、{a+d}、？、{a+d*3}。？に入る数は？", "同じ数ずつふえる数のならびです。{a}、{a+d}、？、{a+d*3}。？はいくつ？"],
+    generate: { a: { type: "integer", range: [1, 10] }, d: { type: "integer", range: [1, 3], constraints: ["a + d * 3 <= 20"] }, answer: { formula: "a + d * 2" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["となりどうしの数のちがいを見つけよう。", "{a+d}に{d}をたすと、？に入る数になるよ。"],
+    explanationTemplate: "{a}から{a+d}へは{d}ふえているね。同じきまりで、？には{answer}が入るよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "？に入る数はどれかな？", answer: "{answer}", generateWrong: { wrong1: { formula: "answer + d" }, wrong2: { formula: "answer - d > 0 ? answer - d : answer + d" } } }
+  },
+  {
+    templateId: "g2_dev_pattern_03",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_number_pattern", conceptId: "number_pattern",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a}、{a-d}、{a-d*2}、？。つぎの数は？",
+    formats: ["{a}、{a-d}、{a-d*2}、？。つぎの数は？", "同じ数ずつへる数のならびです。{a}から{d}ずつへると、つぎはいくつ？"],
+    generate: { a: { type: "integer", range: [10, 20] }, d: { type: "integer", range: [1, 3], constraints: ["a - d * 3 >= 1"] }, answer: { formula: "a - d * 3" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["となりどうしで、いくつずつへっているかな？", "{a-d*2}から{d}をひこう。"],
+    explanationTemplate: "{a}から{d}ずつへるきまりだね。{a-d*2}から{d}をひくと{answer}だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "つぎの数はどれかな？", answer: "{answer}", generateWrong: { wrong1: { formula: "answer + d" }, wrong2: { formula: "answer > d ? answer - d : answer + d" } } }
+  },
   // 発展問題：低学年用（C）ぎゃくけいさん
   {
     templateId: "g2_dev_reverse_01",
@@ -2940,6 +2966,32 @@ MATH_TEMPLATES.push(
     hintSteps: ["{c} に {b} を たすと、もとの数がでてくるよ。", "{c} に {b} をたすと、いくつになるかな？"],
     explanationTemplate: "{c} に {b} を たすと {answer} になるので、もとの数は {answer} だね。",
     understandingCheck: { enabled: true, type: "choice", questionTemplate: "もとの数は どれかな？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+  },
+  {
+    templateId: "g2_dev_reverse_02",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_reverse_calc", conceptId: "reverse_calculation",
+    problemType: "calculation", answerType: "number_input",
+    format: "？ + {b} = {total}。？に入る数は？",
+    formats: ["？ + {b} = {total}。？に入る数は？", "{b}をたすと{total}になる数は？"],
+    generate: { hidden: { type: "integer", range: [1, 20] }, b: { type: "integer", range: [1, 20] }, total: { formula: "hidden + b" }, answer: { formula: "total - b" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["たし算の答えから、たした数をひくともとの数がわかるよ。", "{total}から{b}をひこう。"],
+    explanationTemplate: "{total} - {b} = {answer}。だから、？に入る数は{answer}だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "？に入る数はどれかな？", answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+  },
+  {
+    templateId: "g2_dev_reverse_03",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_reverse_calc", conceptId: "reverse_calculation",
+    problemType: "calculation", answerType: "number_input",
+    format: "{b} × ？ = {total}。？に入る数は？",
+    formats: ["{b} × ？ = {total}。？に入る数は？", "{b}のだんで{total}になるには、いくつ分？"],
+    generate: { factor: { type: "integer", range: [2, 9] }, b: { type: "integer", range: [2, 9] }, total: { formula: "factor * b" }, answer: { formula: "factor" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["かけ算の答えを、わかっている数でわると？がわかるよ。", "{total} ÷ {b} を計算しよう。"],
+    explanationTemplate: "{total} ÷ {b} = {answer}。{b} × {answer} = {total}だから、？は{answer}だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "？に入る数はどれかな？", answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
   },
   // 発展問題：低学年用（D）何曜日？
   {
@@ -2955,6 +3007,32 @@ MATH_TEMPLATES.push(
     explanationTemplate: "{weekdayToday}曜日から{b}日後は{weekdayTarget}曜日。曜日の番号は{answer}だよ。",
     understandingCheck: { enabled: true, type: "choice", questionTemplate: "曜日の番号はどれかな？（日=0、月=1、火=2、水=3、木=4、金=5、土=6）", answer: "{answer}", generateWrong: { wrong1: { formula: "(answer + 1) % 7" }, wrong2: { formula: "(answer + 2) % 7" } } }
   },
+  {
+    templateId: "g2_dev_weekday_02",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_weekday", conceptId: "weekday_calculation",
+    problemType: "calculation", answerType: "number_input",
+    format: "きょうは{weekdayToday}曜日です。{b}日前は何曜日？曜日の番号（日=0〜土=6）で答えよう。",
+    formats: ["きょうは{weekdayToday}曜日です。{b}日前は何曜日？（日=0、月=1、火=2、水=3、木=4、金=5、土=6）", "{b}日前の曜日を考えよう。きょうは{weekdayToday}曜日です。番号（日=0〜土=6）で答えよう。"],
+    generate: { a: { type: "integer", range: [0, 6] }, b: { type: "integer", range: [1, 30] }, answer: { formula: "((a - b) % 7 + 7) % 7" }, weekdayToday: { formula: "['日', '月', '火', '水', '木', '金', '土'][a]" }, weekdayTarget: { formula: "['日', '月', '火', '水', '木', '金', '土'][answer]" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["曜日は7日でひとまわりするよ。", "{b}を7でわったあまりだけ、{weekdayToday}曜日から前に戻ろう。"],
+    explanationTemplate: "{weekdayToday}曜日から{b}日前は{weekdayTarget}曜日。曜日の番号は{answer}だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "曜日の番号はどれかな？（日=0、月=1、火=2、水=3、木=4、金=5、土=6）", answer: "{answer}", generateWrong: { wrong1: { formula: "(answer + 1) % 7" }, wrong2: { formula: "(answer + 2) % 7" } } }
+  },
+  {
+    templateId: "g2_dev_weekday_03",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_weekday", conceptId: "weekday_calculation",
+    problemType: "calculation", answerType: "number_input",
+    format: "きょうは{weekdayToday}曜日です。{weeks}週間と{days}日後は何曜日？番号（日=0〜土=6）で答えよう。",
+    formats: ["きょうは{weekdayToday}曜日です。{weeks}週間と{days}日後は何曜日？（日=0、月=1、火=2、水=3、木=4、金=5、土=6）", "1週間は7日です。{weeks}週間と{days}日後の曜日を番号（日=0〜土=6）で答えよう。"],
+    generate: { a: { type: "integer", range: [0, 6] }, weeks: { type: "integer", range: [1, 4] }, days: { type: "integer", range: [1, 6] }, answer: { formula: "(a + weeks * 7 + days) % 7" }, weekdayToday: { formula: "['日', '月', '火', '水', '木', '金', '土'][a]" }, weekdayTarget: { formula: "['日', '月', '火', '水', '木', '金', '土'][answer]" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["1週間は何日かな？1週間後は同じ曜日に戻るよ。", "まず{days}日後の曜日を考えよう。"],
+    explanationTemplate: "{weeks}週間は曜日がひとまわりするので、{days}日後と同じ。{weekdayTarget}曜日（番号は{answer}）だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "曜日の番号はどれかな？（日=0、月=1、火=2、水=3、木=4、金=5、土=6）", answer: "{answer}", generateWrong: { wrong1: { formula: "(answer + 1) % 7" }, wrong2: { formula: "(answer + 2) % 7" } } }
+  },
   // 発展問題：低学年用（E）おかねの合わせ方
   {
     templateId: "g2_dev_money_01",
@@ -2968,6 +3046,32 @@ MATH_TEMPLATES.push(
     hintSteps: ["{a}円を{b}円ずつに分ける計算をしよう。", "{a} ÷ {b} を計算すると、必要な枚数がわかるよ。"],
     explanationTemplate: "{a} ÷ {b} = {answer}。{b}円玉を{answer}枚使うと、合計は{b * answer}円になるよ。",
     understandingCheck: { enabled: true, type: "choice", questionTemplate: "{b}円玉は何枚いるかな？", answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+  },
+  {
+    templateId: "g2_dev_money_02",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_money", conceptId: "money_change",
+    problemType: "word_problem", answerType: "number_input",
+    format: "{price}円の品物を買うために100円玉を1枚出しました。おつりはいくら？",
+    formats: ["{price}円の品物を買うために100円玉を1枚出しました。おつりはいくら？", "100円をはらって、{price}円の品物を買いました。おつりはいくら？"],
+    generate: { price: { type: "integer", range: [10, 90], constraints: ["price % 10 === 0"] }, answer: { formula: "100 - price" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["おつりは、はらったお金から品物のねだんをひいた金額だよ。", "100円から{price}円をひこう。"],
+    explanationTemplate: "100 - {price} = {answer}。おつりは{answer}円だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "おつりはいくらかな？", answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 10" }, wrong2: { formula: "answer > 10 ? answer - 10 : answer + 20" } } }
+  },
+  {
+    templateId: "g2_dev_money_03",
+    grade: 2, difficultyLevel: 3,
+    unitId: "dev_money", conceptId: "money_combination",
+    problemType: "calculation", answerType: "number_input",
+    format: "10円玉が{tens}枚、1円玉が{ones}枚あります。ぜんぶで何円？",
+    formats: ["10円玉が{tens}枚、1円玉が{ones}枚あります。ぜんぶで何円？", "10円玉{tens}枚と1円玉{ones}枚を合わせると、何円になる？"],
+    generate: { tens: { type: "integer", range: [1, 9] }, ones: { type: "integer", range: [1, 9] }, answer: { formula: "tens * 10 + ones" } },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["10円玉が何円分か、先に計算しよう。", "{tens}×10円に、1円玉{ones}枚分をたそう。"],
+    explanationTemplate: "{tens}×10 + {ones} = {answer}。ぜんぶで{answer}円だよ。",
+    understandingCheck: { enabled: true, type: "choice", questionTemplate: "ぜんぶで何円かな？", answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 10" }, wrong2: { formula: "answer - 10 > 0 ? answer - 10 : answer + 1" } } }
   },
   // 発展問題：低学年用（F）かいぶんすうクイズ
   {

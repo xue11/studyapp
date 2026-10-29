@@ -557,9 +557,17 @@ const N = 40;
   const expectedUnits = [
     { id: "g1_dev_hidden_01", grade: 1, unitId: "dev_hidden_number" },
     { id: "g2_dev_pattern_01", grade: 2, unitId: "dev_number_pattern" },
+    { id: "g2_dev_pattern_02", grade: 2, unitId: "dev_number_pattern" },
+    { id: "g2_dev_pattern_03", grade: 2, unitId: "dev_number_pattern" },
     { id: "g2_dev_reverse_01", grade: 2, unitId: "dev_reverse_calc" },
+    { id: "g2_dev_reverse_02", grade: 2, unitId: "dev_reverse_calc" },
+    { id: "g2_dev_reverse_03", grade: 2, unitId: "dev_reverse_calc" },
     { id: "g2_dev_weekday_01", grade: 2, unitId: "dev_weekday" },
+    { id: "g2_dev_weekday_02", grade: 2, unitId: "dev_weekday" },
+    { id: "g2_dev_weekday_03", grade: 2, unitId: "dev_weekday" },
     { id: "g2_dev_money_01", grade: 2, unitId: "dev_money" },
+    { id: "g2_dev_money_02", grade: 2, unitId: "dev_money" },
+    { id: "g2_dev_money_03", grade: 2, unitId: "dev_money" },
     { id: "g3_dev_palindrome_01", grade: 3, unitId: "dev_palindrome" }
   ];
 
@@ -574,6 +582,14 @@ const N = 40;
     assert.ok(TemplateRegistry.getByUnit("math", expected.grade, 3, expected.unitId)
       .some(t => t.templateId === expected.id),
     expected.id + " が単元の出題候補になること");
+  }
+
+  for (const unitId of ["dev_number_pattern", "dev_reverse_calc", "dev_weekday", "dev_money"]) {
+    assert.strictEqual(
+      TemplateRegistry.getByUnit("math", 2, 3, unitId).length,
+      3,
+      unitId + " に発展問題が3型あること"
+    );
   }
 
   for (let i = 0; i < N; i++) {
@@ -597,6 +613,25 @@ const N = 40;
       "解説の合計額が問題の合計金額と一致すること");
   }
 
+  const generatedCases = {
+    g2_dev_pattern_02: q => q.variables.a + 2 * q.variables.d,
+    g2_dev_pattern_03: q => q.variables.a - 3 * q.variables.d,
+    g2_dev_reverse_02: q => q.variables.hidden,
+    g2_dev_reverse_03: q => q.variables.factor,
+    g2_dev_weekday_02: q => ((q.variables.a - q.variables.b) % 7 + 7) % 7,
+    g2_dev_weekday_03: q => (q.variables.a + q.variables.weeks * 7 + q.variables.days) % 7,
+    g2_dev_money_02: q => 100 - q.variables.price,
+    g2_dev_money_03: q => q.variables.tens * 10 + q.variables.ones
+  };
+  for (const [id, getExpectedAnswer] of Object.entries(generatedCases)) {
+    for (let i = 0; i < N; i++) {
+      const q = RuleBasedQuestionSource.generateQuestion(id, []);
+      assert.strictEqual(Number(q.answer), getExpectedAnswer(q), id + " の答えが生成値と一致すること");
+      assert.strictEqual(q.answerType, "number_input", id + " が数字入力であること");
+      assert.strictEqual(QuestionValidator.validate(q).valid, true, id + " の問題がValidatorを通ること");
+    }
+  }
+
   const originalRandom = Math.random;
   try {
     for (const [randomValue, palindrome, answer] of [[0, true, "1"], [0.06, false, "2"]]) {
@@ -611,7 +646,7 @@ const N = 40;
   } finally {
     Math.random = originalRandom;
   }
-  console.log("  [PASS] 追加6テンプレートの単元登録と曜日・硬貨・回文の整合性");
+  console.log("  [PASS] 発展テンプレートの単元登録と曜日・硬貨・回文の整合性");
 }
 
 console.log("\nANSWER SANITY TESTS PASSED");
