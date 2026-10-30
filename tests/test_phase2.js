@@ -228,8 +228,8 @@ function testLevelEngine() {
   const gp = profile.skill.subject.gradeProgress.grade1;
   gp.difficultyLevel = 1;
 
-  // Grade 1 Lv1 の units: add_1digit_no_carry, sub_1digit_no_borrow, number_bond_10, shape_basic (計4単元)
-  // 必要学習済みunit数: Math.ceil(4 * 0.60) = 3単元 (attempts >= 5) [V2.6.3: shape_basic追加で4単元]
+  // Grade 1 Lv1 has six units, including geometry properties and length comparison.
+  // Required completed units: Math.ceil(6 * 0.60) = 4 (attempts >= 5).
 
   // まだ学習済みが0単元の場合 -> 判定スキップ
   const eval1 = LevelEngine.evaluateLevel(profile, APP_CONFIG);
@@ -239,12 +239,15 @@ function testLevelEngine() {
   gp.unitStats["add_1digit_no_carry"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
   gp.unitStats["sub_1digit_no_borrow"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
   gp.unitStats["shape_basic"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
-
   // 直近5問の履歴 (平均learningScore >= 0.70)
   for (let i = 0; i < 5; i++) {
     profile.history.push({ grade: 1, learningScore: 0.8, correct: true });
   }
 
+  const evalBelowCoverage = LevelEngine.evaluateLevel(profile, APP_CONFIG);
+  assert.strictEqual(evalBelowCoverage.evaluated, false, "Should not evaluate below 60% unit coverage");
+
+  gp.unitStats["number_bond_10"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
   const eval2 = LevelEngine.evaluateLevel(profile, APP_CONFIG);
   assert.strictEqual(eval2.evaluated, true);
   assert.strictEqual(eval2.levelChanged, true);

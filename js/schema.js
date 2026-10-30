@@ -85,7 +85,7 @@ function createInitialAppState() {
     profiles: [defaultProfile],
     activeProfileId: defaultProfile.identity.id,
     appMeta: {
-      appVersion: "V2.9.18",
+      appVersion: "V2.9.19",
       generationMode: "rule_based",
       features: {}
     }

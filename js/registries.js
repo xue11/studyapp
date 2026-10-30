@@ -107,7 +107,9 @@ class UnitRegistry {
           { id: "add_1digit_no_carry", name: "1けたのたし算（くり上がりなし）", concepts: ["add_basic", "combine_numbers"] },
           { id: "sub_1digit_no_borrow", name: "1けたのひき算（くり下がりなし）", concepts: ["sub_basic", "take_away"] },
           { id: "number_bond_10", name: "10の合成・分解", concepts: ["number_bond_10"] },
-          { id: "shape_basic", name: "図形（かたちをみつけよう）", concepts: ["shape_identify_basic", "shape_select_all", "shape_compare_size"] }
+          { id: "shape_basic", name: "図形（かたちをみつけよう）", concepts: ["shape_identify_basic", "shape_select_all", "shape_compare_size"] },
+          { id: "geometry_properties_g1", name: "形の辺とかど", concepts: ["shape_identify_basic"] },
+          { id: "length_compare_g1", name: "長さくらべ", concepts: ["length_compare_basic"] }
         ],
         2: [
           { id: "add_1digit_carry", name: "1けたのたし算（くり上がりあり）", concepts: ["add_carry_10"] },

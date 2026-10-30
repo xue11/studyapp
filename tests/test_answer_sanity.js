@@ -555,7 +555,13 @@ const N = 40;
 {
   console.log("14. 追加された発展テンプレートの登録と内容");
   const expectedUnits = [
-    { id: "g1_dev_hidden_01", grade: 1, unitId: "dev_hidden_number" },
+    { id: "g1_dev_hidden_01", grade: 1, unitId: "dev_hidden_number", level: 3 },
+    { id: "g1_basic_bond_02", grade: 1, unitId: "number_bond_10", level: 1 },
+    { id: "g1_basic_bond_03", grade: 1, unitId: "number_bond_10", level: 1 },
+    { id: "g1_basic_shape_sides_01", grade: 1, unitId: "geometry_properties_g1", level: 1 },
+    { id: "g1_basic_shape_vertices_02", grade: 1, unitId: "geometry_properties_g1", level: 1 },
+    { id: "g1_basic_length_compare_01", grade: 1, unitId: "length_compare_g1", level: 1 },
+    { id: "g1_basic_length_compare_02", grade: 1, unitId: "length_compare_g1", level: 1 },
     { id: "g2_dev_pattern_01", grade: 2, unitId: "dev_number_pattern" },
     { id: "g2_dev_pattern_02", grade: 2, unitId: "dev_number_pattern" },
     { id: "g2_dev_pattern_03", grade: 2, unitId: "dev_number_pattern" },
@@ -568,18 +574,33 @@ const N = 40;
     { id: "g2_dev_money_01", grade: 2, unitId: "dev_money" },
     { id: "g2_dev_money_02", grade: 2, unitId: "dev_money" },
     { id: "g2_dev_money_03", grade: 2, unitId: "dev_money" },
-    { id: "g3_dev_palindrome_01", grade: 3, unitId: "dev_palindrome" }
+    { id: "g2_std_length_compare_mixed_04", grade: 2, unitId: "length_unit", level: 2 },
+    { id: "g2_std_length_add_mixed_05", grade: 2, unitId: "length_unit", level: 2 },
+    { id: "g2_std_time_end_minutes_04", grade: 2, unitId: "time_clock_basic", level: 2 },
+    { id: "g2_std_time_duration_from_clock_05", grade: 2, unitId: "time_clock_basic", level: 2 },
+    { id: "g2_std_fraction_picture_numerator_04", grade: 2, unitId: "fraction_intro", level: 2 },
+    { id: "g2_std_fraction_part_difference_05", grade: 2, unitId: "fraction_intro", level: 2 },
+    { id: "g3_dev_palindrome_01", grade: 3, unitId: "dev_palindrome" },
+    { id: "g3_std_calc_groups_left_04", grade: 3, unitId: "calc_application_g3", level: 2 },
+    { id: "g3_std_calc_share_groups_05", grade: 3, unitId: "calc_application_g3", level: 2 },
+    { id: "g3_std_length_add_m_km_04", grade: 3, unitId: "length_unit", level: 2 },
+    { id: "g3_std_length_compare_mixed_05", grade: 3, unitId: "length_unit", level: 2 },
+    { id: "g3_std_weight_add_mixed_04", grade: 3, unitId: "weight_unit", level: 2 },
+    { id: "g3_std_weight_compare_mixed_05", grade: 3, unitId: "weight_unit", level: 2 },
+    { id: "g3_std_fraction_add_same_04", grade: 3, unitId: "fraction_meaning", level: 2 },
+    { id: "g3_std_fraction_complete_whole_05", grade: 3, unitId: "fraction_meaning", level: 2 }
   ];
 
   for (const expected of expectedUnits) {
     const template = TemplateRegistry.get(expected.id);
+    const level = expected.level || 3;
     assert.ok(template, expected.id + " が登録されていること");
     assert.ok(UnitRegistry.findUnit("math", expected.grade, expected.unitId),
       expected.unitId + " が単元として登録されていること");
-    assert.ok(UnitRegistry.getUnitsForLevel("math", expected.grade, 3)
+    assert.ok(UnitRegistry.getUnitsForLevel("math", expected.grade, level)
       .some(unit => unit.id === expected.unitId),
-    expected.unitId + " が発展レベルから選択できること");
-    assert.ok(TemplateRegistry.getByUnit("math", expected.grade, 3, expected.unitId)
+    expected.unitId + " が該当レベルから選択できること");
+    assert.ok(TemplateRegistry.getByUnit("math", expected.grade, level, expected.unitId)
       .some(t => t.templateId === expected.id),
     expected.id + " が単元の出題候補になること");
   }
@@ -614,6 +635,26 @@ const N = 40;
   }
 
   const generatedCases = {
+    g1_basic_bond_02: q => 10 - q.variables.a,
+    g1_basic_bond_03: q => 10 - q.variables.a,
+    g1_basic_shape_sides_01: q => q.variables.shapeIdx + 2,
+    g1_basic_shape_vertices_02: q => q.variables.triangles * 3,
+    g1_basic_length_compare_01: q => q.variables.red - q.variables.blue,
+    g1_basic_length_compare_02: q => q.variables.ruler - q.variables.pencil,
+    g2_std_length_compare_mixed_04: q => q.variables.difference,
+    g2_std_length_add_mixed_05: q => q.variables.totalA + q.variables.totalB,
+    g2_std_time_end_minutes_04: q => q.variables.endHour * 100 + q.variables.endMinute,
+    g2_std_time_duration_from_clock_05: q => 60 - q.variables.startMinute,
+    g2_std_fraction_picture_numerator_04: q => q.variables.numerator,
+    g2_std_fraction_part_difference_05: q => q.variables.difference,
+    g3_std_calc_groups_left_04: q => q.variables.total - q.variables.used,
+    g3_std_calc_share_groups_05: q => q.variables.total / q.variables.children,
+    g3_std_length_add_m_km_04: q => q.variables.first + q.variables.second,
+    g3_std_length_compare_mixed_05: q => q.variables.km * 1000 - q.variables.meters,
+    g3_std_weight_add_mixed_04: q => q.variables.first + q.variables.second,
+    g3_std_weight_compare_mixed_05: q => q.variables.heavier - q.variables.lighter,
+    g3_std_fraction_add_same_04: q => q.variables.a + q.variables.b,
+    g3_std_fraction_complete_whole_05: q => q.variables.denominator - q.variables.numerator,
     g2_dev_pattern_02: q => q.variables.a + 2 * q.variables.d,
     g2_dev_pattern_03: q => q.variables.a - 3 * q.variables.d,
     g2_dev_reverse_02: q => q.variables.hidden,

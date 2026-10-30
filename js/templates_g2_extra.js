@@ -1236,6 +1236,95 @@
       explanation: "{b}こ分のほうが大きいから、答えは {answer} だね。"
     }),
     numericTemplate({
+      id: "g2_std_length_compare_mixed_04", level: 2, unit: "length_unit",
+      concept: "length_add_sub_mixed", problemType: "word_problem",
+      format: "赤いテープは{aCm}cm{aMm}mm、青いテープは{bCm}cm{bMm}mmです。長いほうは何mm長い？",
+      generate: {
+        aCm: { type: "integer", range: [1, 5] },
+        aMm: { type: "integer", range: [0, 9] },
+        difference: { type: "integer", range: [1, 20] },
+        totalA: { formula: "aCm * 10 + aMm" },
+        totalB: { formula: "totalA + difference" },
+        bCm: { formula: "Math.floor(totalB / 10)" },
+        bMm: { formula: "totalB % 10" }
+      },
+      answer: "difference",
+      hints: ["どちらもmmになおしてからくらべよう。", "長いほうの長さから短いほうの長さをひこう。"],
+      explanation: "{bCm}cm{bMm}mmのほうが長いね。長さのちがいは {answer}mm だよ。"
+    }),
+    numericTemplate({
+      id: "g2_std_length_add_mixed_05", level: 2, unit: "length_unit",
+      concept: "length_add_sub_mixed", problemType: "word_problem",
+      format: "{aCm}cm{aMm}mmのリボンと{bCm}cm{bMm}mmのリボンをつなぎます。あわせて何mm？",
+      generate: {
+        aCm: { type: "integer", range: [1, 8] },
+        aMm: { type: "integer", range: [0, 9] },
+        bCm: { type: "integer", range: [1, 8] },
+        bMm: { type: "integer", range: [0, 9] },
+        totalA: { formula: "aCm * 10 + aMm" },
+        totalB: { formula: "bCm * 10 + bMm" }
+      },
+      answer: "totalA + totalB",
+      hints: ["1cmは10mmだから、cmをmmになおそう。", "それぞれの長さをmmで表してからたそう。"],
+      explanation: "{totalA}mm + {totalB}mm = {answer}mm だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_time_end_minutes_04", level: 2, unit: "time_clock_basic",
+      concept: "time_duration_across_hour", problemType: "word_problem",
+      format: "{hour}時ちょうどに始めて{duration}分かかりました。終わった時こくは何時何分？（時と分を続けて入力）",
+      generate: {
+        hour: { type: "integer", range: [1, 10] },
+        duration: { type: "integer", range: [20, 150] },
+        endHour: { formula: "hour + Math.floor(duration / 60)" },
+        endMinute: { formula: "duration % 60" },
+        answer: { formula: "endHour * 100 + endMinute" }
+      },
+      answer: "endHour * 100 + endMinute",
+      hints: ["60分で1時間だよ。", "かかった時間を60分とくらべて、時と分に分けよう。"],
+      explanation: "{duration}分は{endHour}時間{endMinute}分。終わった時こくは{endHour}時{endMinute}分だよ。"
+    }),
+    numericTemplate({
+      id: "g2_std_time_duration_from_clock_05", level: 2, unit: "time_clock_basic",
+      concept: "time_duration_across_hour", problemType: "word_problem",
+      format: "{startHour}時{startMinute}分に出発し、{endHour}時ちょうどに着きました。何分かかった？",
+      generate: {
+        startHour: { type: "integer", range: [1, 10] },
+        startMinute: { type: "choice", values: [10, 20, 30, 40, 50] },
+        duration: { type: "integer", range: [10, 59], constraints: ["startMinute + duration === 60"] },
+        endHour: { formula: "startHour + 1" }
+      },
+      answer: "duration",
+      hints: ["まず{startHour}時{startMinute}分から{endHour}時までを考えよう。", "60分から{startMinute}分をひこう。"],
+      explanation: "60 - {startMinute} = {answer}。かかった時間は{answer}分だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_fraction_picture_numerator_04", level: 2, unit: "fraction_intro",
+      concept: "fraction_compare_pictures",
+      format: "テープを{denominator}こに同じ大きさに分けました。■の部分は全体の何分のいくつ？分子を答えよう。<br>{picture}",
+      generate: {
+        denominator: { type: "integer", range: [3, 8] },
+        numerator: { formula: "Math.floor(Math.random() * (denominator - 1)) + 1" },
+        picture: { formula: "'■'.repeat(numerator) + '□'.repeat(denominator - numerator)" }
+      },
+      answer: "numerator",
+      hints: ["分母は、同じ大きさに分けた数だよ。", "■の数をかぞえると分子になるよ。"],
+      explanation: "■が{numerator}こあるから、分数は{numerator}/{denominator}。分子は{answer}だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_fraction_part_difference_05", level: 2, unit: "fraction_intro",
+      concept: "fraction_compare_pictures",
+      format: "{a}/{denominator}と{b}/{denominator}では、大きいほうは何こ分多い？",
+      generate: {
+        denominator: { type: "integer", range: [4, 8] },
+        a: { type: "integer", range: [1, 3] },
+        difference: { type: "integer", range: [1, 2], constraints: ["a + difference < denominator"] },
+        b: { formula: "a + difference" }
+      },
+      answer: "difference",
+      hints: ["分母が同じだから、分子の数をくらべよう。", "{b}から{a}をひくと、何こ分多いか分かるよ。"],
+      explanation: "{b} - {a} = {answer}。大きいほうは{answer}こ分多いね。"
+    }),
+    numericTemplate({
       id: "g2_std_geometry_edges_word_01", level: 2, unit: "geometry_g2",
       concept: "box_faces_edges_vertices",
       format: "三角形の頂点は3こ、{shape}の頂点は{n}こ。頂点はあわせて何こ？",

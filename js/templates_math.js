@@ -95,6 +95,133 @@ const MATH_TEMPLATES = [
       }
     }
   },
+  {
+    templateId: "g1_basic_bond_02",
+    grade: 1, difficultyLevel: 1,
+    unitId: "number_bond_10", conceptId: "number_bond_10",
+    problemType: "word_problem", answerType: "number_input",
+    format: "10このますのうち、{a}こに りんごを入れました。からのますは いくつ？",
+    generate: {
+      a: { type: "integer", range: [1, 9] },
+      answer: { formula: "10 - a" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["ますはぜんぶで10こだよ。", "10から、りんごを入れたますの数をひこう。"],
+    explanationTemplate: "10 - {a} = {answer}。からのますは {answer}こだね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "からのますはいくつかな？",
+      answer: "{answer}",
+      generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } }
+    }
+  },
+  {
+    templateId: "g1_basic_bond_03",
+    grade: 1, difficultyLevel: 1,
+    unitId: "number_bond_10", conceptId: "number_bond_10",
+    problemType: "calculation", answerType: "number_input",
+    format: "10は{a}と□に分けられます。□はいくつ？",
+    formats: ["10 = {a} + □。□はいくつ？", "10このブロックから{a}こをとると、のこりはいくつ？"],
+    generate: {
+      a: { type: "integer", range: [1, 9] },
+      answer: { formula: "10 - a" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["10を、{a}ともうひとつの数に分けよう。", "10から{a}をひくと、のこりが分かるよ。"],
+    explanationTemplate: "10 - {a} = {answer}。10は{a}と{answer}に分けられるね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "10から{a}をひいた数はどれかな？",
+      answer: "{answer}",
+      generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } }
+    }
+  },
+  {
+    templateId: "g1_basic_shape_sides_01",
+    grade: 1, difficultyLevel: 1,
+    unitId: "geometry_properties_g1", conceptId: "shape_identify_basic",
+    problemType: "calculation", answerType: "number_input",
+    format: "{shape}の辺は何本？",
+    generate: {
+      shapeIdx: { type: "integer", range: [1, 3] },
+      shape: { formula: "['三角形', '四角形', '五角形'][shapeIdx - 1]" },
+      answer: { formula: "shapeIdx + 2" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["辺は、まわりの直線の数だよ。", "{shape}の辺を順番に数えよう。"],
+    explanationTemplate: "{shape}の辺を数えると{answer}本だよ。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "{shape}の辺は何本かな？",
+      answer: "{answer}",
+      generateWrong: { wrong1: { formula: "answer - 1" }, wrong2: { formula: "answer + 1" } }
+    }
+  },
+  {
+    templateId: "g1_basic_shape_vertices_02",
+    grade: 1, difficultyLevel: 1,
+    unitId: "geometry_properties_g1", conceptId: "shape_identify_basic",
+    problemType: "calculation", answerType: "number_input",
+    format: "三角形が{triangles}こあります。かどはぜんぶで何こ？",
+    generate: {
+      triangles: { type: "integer", range: [1, 5] },
+      verticesPerTriangle: { type: "choice", values: [3] },
+      answer: { formula: "triangles * verticesPerTriangle" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["三角形1つには、かどが3つあるよ。", "三角形の数だけ、3をたそう。"],
+    explanationTemplate: "三角形が{triangles}こだから、{triangles} × 3 = {answer}こだよ。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "かどはぜんぶで何こかな？",
+      answer: "{answer}",
+      generateWrong: { wrong1: { formula: "answer + 3" }, wrong2: { formula: "answer > 3 ? answer - 3 : answer + 1" } }
+    }
+  },
+  {
+    templateId: "g1_basic_length_compare_01",
+    grade: 1, difficultyLevel: 1,
+    unitId: "length_compare_g1", conceptId: "length_compare_basic",
+    problemType: "word_problem", answerType: "number_input",
+    format: "赤いリボンは{red}cm、青いリボンは{blue}cmです。赤いほうが何cm長い？",
+    generate: {
+      red: { type: "integer", range: [5, 15] },
+      difference: { type: "integer", range: [1, 5] },
+      blue: { formula: "red - difference", constraints: ["blue >= 1"] },
+      answer: { formula: "red - blue" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["どちらもcmだから、数字をくらべよう。", "長いほうから短いほうをひこう。"],
+    explanationTemplate: "{red} - {blue} = {answer}。赤いリボンのほうが{answer}cm長いね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "リボンの長さのちがいは何cmかな？",
+      answer: "{answer}",
+      generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } }
+    }
+  },
+  {
+    templateId: "g1_basic_length_compare_02",
+    grade: 1, difficultyLevel: 1,
+    unitId: "length_compare_g1", conceptId: "length_compare_basic",
+    problemType: "word_problem", answerType: "number_input",
+    format: "えんぴつは{pencil}cm、ものさしは{ruler}cmです。どちらが何cm長い？",
+    generate: {
+      pencil: { type: "integer", range: [5, 15] },
+      difference: { type: "integer", range: [1, 10] },
+      ruler: { formula: "pencil + difference", constraints: ["ruler <= 25"] },
+      answer: { formula: "ruler - pencil" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["数字の大きいほうが長いよ。", "長いほうから短いほうをひくと、長さのちがいになるよ。"],
+    explanationTemplate: "ものさしのほうが長いね。{ruler} - {pencil} = {answer}cmだよ。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "長さのちがいは何cmかな？",
+      answer: "{answer}",
+      generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } }
+    }
+  },
   // Lv2: add_1digit_carry (くり上がり足し算)
   {
     templateId: "g1_std_add_carry_01",
@@ -2896,6 +3023,119 @@ MATH_TEMPLATES.push(
     answer: "kg * 1000 - grams",
     hints: ["りんごの重さをgになおそう。", "同じ単位にそろえてから、みかんの重さをひこう。"],
     explanation: "{kg}kg = {kg * 1000}g。{kg * 1000} − {grams} = {answer}g。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_calc_groups_left_04", level: 2, unit: "calc_application_g3",
+    concept: "choose_multiplication_or_division", problemType: "word_problem",
+    format: "箱が{boxes}こあり、1箱に{each}本ずつ入っています。{used}本使うと、のこりは何本？",
+    generate: {
+      boxes: { type: "integer", range: [3, 8] },
+      each: { type: "integer", range: [4, 9] },
+      used: { type: "integer", range: [2, 15] },
+      total: { formula: "boxes * each" }
+    },
+    answer: "total - used",
+    hints: ["まず箱ぜんぶの本数をかけ算で出そう。", "ぜんぶの本数から使った本数をひこう。"],
+    explanation: "{boxes} × {each} = {total}本。{total} − {used} = {answer}本だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_calc_share_groups_05", level: 2, unit: "calc_application_g3",
+    concept: "choose_multiplication_or_division", problemType: "word_problem",
+    format: "1ふくろに{each}こ入ったあめが{bags}ふくろあります。{children}人で同じ数ずつ分けると、1人何こ？",
+    generate: {
+      each: { type: "integer", range: [3, 8] },
+      bags: { type: "integer", range: [2, 5] },
+      total: { formula: "each * bags" },
+      children: { type: "integer", range: [2, 5], constraints: ["total % children === 0"] }
+    },
+    answer: "total / children",
+    hints: ["まず、あめのぜんぶの数をかけ算で出そう。", "ぜんぶの数を人数でわろう。"],
+    explanation: "{each} × {bags} = {total}こ。{total} ÷ {children} = {answer}こずつだね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_length_add_m_km_04", level: 2, unit: "length_unit",
+    concept: "length_convert_m_km", problemType: "word_problem",
+    format: "家から公園まで{km}km{meters}m、公園から駅まで{nextKm}km{nextMeters}mです。家から駅まで何m？",
+    generate: {
+      km: { type: "integer", range: [1, 4] },
+      meters: { type: "choice", values: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+      nextKm: { type: "integer", range: [1, 3] },
+      nextMeters: { type: "choice", values: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+      first: { formula: "km * 1000 + meters" },
+      second: { formula: "nextKm * 1000 + nextMeters" }
+    },
+    answer: "first + second",
+    hints: ["kmをmになおしてから、2つの道のりをたそう。", "1kmは1000mだよ。"],
+    explanation: "{first}m + {second}m = {answer}m。家から駅までは{answer}mだね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_length_compare_mixed_05", level: 2, unit: "length_unit",
+    concept: "length_convert_m_km", problemType: "word_problem",
+    format: "赤いテープは{km}km、青いテープは{meters}mです。赤いほうが何m長い？",
+    generate: {
+      km: { type: "integer", range: [1, 3] },
+      meters: { type: "integer", range: [200, 900] }
+    },
+    answer: "km * 1000 - meters",
+    hints: ["まず赤いテープの長さをmになおそう。", "同じ単位にそろえてから、青い長さをひこう。"],
+    explanation: "{km}km = {km * 1000}m。{km * 1000} − {meters} = {answer}m。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_weight_add_mixed_04", level: 2, unit: "weight_unit",
+    concept: "weight_convert_basic", problemType: "word_problem",
+    format: "りんごは{kg}kg{grams}g、みかんは{otherKg}kg{otherGrams}gです。あわせて何g？",
+    generate: {
+      kg: { type: "integer", range: [1, 5] },
+      grams: { type: "choice", values: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+      otherKg: { type: "integer", range: [1, 4] },
+      otherGrams: { type: "choice", values: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+      first: { formula: "kg * 1000 + grams" },
+      second: { formula: "otherKg * 1000 + otherGrams" }
+    },
+    answer: "first + second",
+    hints: ["kgをgになおしてから、2つの重さをたそう。", "1kgは1000gだよ。"],
+    explanation: "{first}g + {second}g = {answer}g。あわせて{answer}gだね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_weight_compare_mixed_05", level: 2, unit: "weight_unit",
+    concept: "weight_compare_convert", problemType: "word_problem",
+    format: "すいかは{kg}kg{grams}g、かぼちゃは{otherKg}kg{otherGrams}gです。すいかのほうが何g重い？",
+    generate: {
+      kg: { type: "integer", range: [3, 7] },
+      grams: { type: "choice", values: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+      otherKg: { type: "integer", range: [1, 2] },
+      otherGrams: { type: "choice", values: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+      heavier: { formula: "kg * 1000 + grams" },
+      lighter: { formula: "otherKg * 1000 + otherGrams", constraints: ["heavier > lighter"] }
+    },
+    answer: "heavier - lighter",
+    hints: ["どちらもgになおしてくらべよう。", "重いほうから軽いほうをひこう。"],
+    explanation: "すいかは{heavier}g、かぼちゃは{lighter}g。{heavier} − {lighter} = {answer}gだね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_fraction_add_same_04", level: 2, unit: "fraction_meaning",
+    concept: "fraction_add_same_denom_intro",
+    format: "{a}/{denominator} + {b}/{denominator} = ?/{denominator}。分子を答えよう。",
+    generate: {
+      denominator: { type: "integer", range: [3, 8] },
+      a: { type: "integer", range: [1, 3], constraints: ["a < denominator"] },
+      b: { type: "integer", range: [1, 3], constraints: ["a + b <= denominator"] }
+    },
+    answer: "a + b",
+    hints: ["分母が同じ分数をたすときは、分子をたそう。", "分母はそのままで、{a}と{b}をたしてね。"],
+    explanation: "{a}/{denominator} + {b}/{denominator} = {answer}/{denominator} だね。"
+  }),
+  createGrade3NumericTemplate({
+    id: "g3_std_fraction_complete_whole_05", level: 2, unit: "fraction_meaning",
+    concept: "unit_fraction_count",
+    format: "{numerator}/{denominator}に、1/{denominator}をあと何こたすと1になる？",
+    generate: {
+      denominator: { type: "integer", range: [2, 8] },
+      numerator: { type: "integer", range: [1, 7], constraints: ["numerator < denominator"] }
+    },
+    answer: "denominator - numerator",
+    hints: ["1は、1/{denominator}が{denominator}こ分だよ。", "{denominator}こ分から、いまある{numerator}こ分をひこう。"],
+    explanation: "{denominator} - {numerator} = {answer}。1/{denominator}をあと{answer}こたすと1になるね。"
   }),
   // ==========================================
   // 発展問題：低学年用（A）かくれバンゴう
