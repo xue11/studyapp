@@ -256,7 +256,7 @@ function testLevelEngine() {
 
   // Lv3 到達時の上限維持 & 通知フラグ
   gp.difficultyLevel = 3;
-  // Grade 1 Lv3 units: add_sub_3terms_10, add_sub_3terms_20 (計2単元, 必要=2)
+  // Grade 1 Lv3 has three units; two completed units meet the 60% threshold.
   gp.unitStats["add_sub_3terms_10"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
   gp.unitStats["add_sub_3terms_20"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
   const eval3 = LevelEngine.evaluateLevel(profile, APP_CONFIG);

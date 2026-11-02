@@ -130,7 +130,8 @@ class UnitRegistry {
           { id: "time_clock_basic", name: "時こくと時間", concepts: ["time_minute_convert_g2", "time_duration_forward", "time_duration_between"] },
           { id: "fraction_intro", name: "分数（2年）", concepts: ["fraction_denominator", "fraction_compare_basic"] },
           { id: "geometry_g2", name: "図形", concepts: ["box_faces_edges_vertices", "box_face_shape", "box_net_basic", "tri_quad_identify", "rect_square_identify"], learningGroupId: "geometry" },
-          { id: "multiplication_g2", name: "かけ算・九九", concepts: ["kuku_basic_groups", "kuku_groups_intro"], learningGroupId: "multiplication" }
+          { id: "multiplication_g2", name: "かけ算・九九", concepts: ["kuku_basic_groups", "kuku_groups_intro"], learningGroupId: "multiplication" },
+          { id: "weight_unit", name: "ものの重さ（g・kg）", concepts: ["weight_compare", "weight_unit_g_kg"], learningGroupId: "calculation_application" }
         ],
         2: [
           { id: "addition_2digit", name: "2けたのたし算", concepts: ["add_2digit_basic", "add_2digit_carry"], learningGroupId: "addition_subtraction" },
@@ -141,7 +142,8 @@ class UnitRegistry {
           { id: "multiplication_g2", name: "かけ算・九九", concepts: ["kuku_basic_groups", "kuku_groups_intro"], learningGroupId: "multiplication" },
           { id: "volume_unit", name: "かさの単位（L・dL・mL）", concepts: ["volume_convert_basic", "volume_compare_basic"] },
           { id: "calc_application", name: "計算の活用", concepts: ["add_sub_missing_number", "calc_idea_make_10", "calc_idea_make_100", "calc_idea_sub_together", "estimation_round10_add", "estimation_round100_mul"], learningGroupId: "calculation_application" },
-          { id: "geometry_g2", name: "図形", concepts: ["box_faces_edges_vertices", "box_face_shape", "box_net_basic", "tri_quad_identify", "rect_square_identify", "tri_quad_tap_vertex", "tri_quad_tap_edge"], learningGroupId: "geometry" }
+          { id: "geometry_g2", name: "図形", concepts: ["box_faces_edges_vertices", "box_face_shape", "box_net_basic", "tri_quad_identify", "rect_square_identify", "tri_quad_tap_vertex", "tri_quad_tap_edge"], learningGroupId: "geometry" },
+          { id: "weight_unit", name: "ものの重さ（g・kg）", concepts: ["weight_add_sub", "weight_convert"], learningGroupId: "calculation_application" }
         ],
         3: [
           { id: "multiplication_g2", name: "九九の応用・発展", concepts: ["kuku_advanced_groups", "kuku_mastery"], learningGroupId: "multiplication" },
@@ -160,6 +162,7 @@ class UnitRegistry {
         ],
         2: [
           { id: "multiplication_g3", name: "かけ算", concepts: ["mul_2digit_algorithm"], learningGroupId: "multiplication" },
+          { id: "add_sub_3digit", name: "3けたのたし算・ひき算", concepts: ["add_sub_3digit_carry", "add_sub_3digit_borrow", "add_sub_3digit_word_problem"], learningGroupId: "addition_subtraction" },
           { id: "division_g3", name: "わり算", concepts: ["division_equal_share", "division_by_multiplication"], learningGroupId: "division" },
           { id: "calc_application_g3", name: "計算の活用", concepts: ["choose_multiplication_or_division"], learningGroupId: "calculation_application" },
           { id: "length_unit", name: "長さの単位（m・cm・km）", concepts: ["length_convert_m_km"] },

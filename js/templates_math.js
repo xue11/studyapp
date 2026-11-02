@@ -305,6 +305,32 @@ const MATH_TEMPLATES = [
       }
     }
   },
+  {
+    templateId: "g1_adv_3terms_02",
+    grade: 1, difficultyLevel: 3,
+    unitId: "add_sub_3terms_10", conceptId: "three_terms_add_sub",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a} + {b} + {c} = ?",
+    generate: {
+      a: { type: "integer", range: [1, 4] },
+      b: { type: "integer", range: [1, 4] },
+      c: { type: "integer", range: [1, 4], constraints: ["a + b + c <= 10"] },
+      answer: { formula: "a + b + c" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["たしやすい 2つを さきに たしてみよう。", "その こたえに のこりの 数を たそう。"],
+    explanationTemplate: "{a} + {b} + {c} = {answer}。10までの 数で たせたね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "{a} + {b} + {c} の こたえは どれ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    }
+  },
   // Lv3: add_sub_3terms_20 (3つの数の計算 20まで)
   {
     templateId: "g1_adv_3terms_20_01",
@@ -329,6 +355,33 @@ const MATH_TEMPLATES = [
       generateWrong: {
         wrong1: { formula: "answer + 1" },
         wrong2: { formula: "answer - 1" }
+      }
+    }
+  },
+  {
+    templateId: "g1_adv_3terms_20_02",
+    grade: 1, difficultyLevel: 3,
+    unitId: "add_sub_3terms_20", conceptId: "three_terms_add_sub_20",
+    problemType: "word_problem", answerType: "number_input",
+    format: "カードを {start}まい もっています。{added}まい もらい、{used}まい つかいました。のこりは 何まい？",
+    generate: {
+      start: { type: "integer", range: [6, 12] },
+      added: { type: "integer", range: [2, 6] },
+      used: { type: "integer", range: [1, 5], constraints: ["start + added <= 20", "start + added >= used"] },
+      total: { formula: "start + added" },
+      answer: { formula: "total - used" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["もらった カードを 先に たそう。", "できた 数から つかった カードを ひこう。"],
+    explanationTemplate: "{start} + {added} = {total}、{total} - {used} = {answer}。のこりは {answer}まい。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "カードは 何まい のこったかな？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
       }
     }
   },
@@ -2735,6 +2788,189 @@ const MATH_TEMPLATES = [
     choices: ["{answer}", "{wrong1}", "{wrong2}"],
     answer: "{answer}"
     }
+  },
+
+  // ==========================================
+  // 小学2年生 新テーマ (追加単元)
+  // weight_unit Level 1: ものの重さ（比較・単位）
+  {
+    templateId: "g2_basic_weight_compare_01",
+    grade: 2, difficultyLevel: 1,
+    unitId: "weight_unit", conceptId: "weight_compare",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a}kg と {b}kg、どちらが重い？重いほうの重さを数字で答えよう。",
+    generate: {
+      a: { type: "integer", range: [1, 9] },
+      b: { type: "integer", range: [1, 9], constraints: ["a !== b"] },
+      answer: { formula: "a > b ? a : b" },
+      heavier: { formula: "a > b ? 'りんご' : 'すいか'" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a} と {b} の 数を くらべてみよう。", "kg の 数が 大きいほうが、重いね。"],
+    explanationTemplate: "{heavier} は {answer}kg。{a}kg と {b}kg では、{answer}kg の ほうが 重いね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "重いほうの重さは どれ？",
+      choices: ["{answer}kg", "{wrong1}kg", "{wrong2}kg"],
+      answer: "{answer}kg",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    }
+  },
+  {
+    templateId: "g2_basic_weight_compare_g_02",
+    grade: 2, difficultyLevel: 1,
+    unitId: "weight_unit", conceptId: "weight_compare",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a}g と {b}g、どちらが重い？重いほうの重さを数字で答えよう。",
+    generate: {
+      a: { type: "integer", range: [100, 900], constraints: ["a % 100 === 0"] },
+      b: { type: "integer", range: [100, 900], constraints: ["b % 100 === 0", "a !== b"] },
+      answer: { formula: "a > b ? a : b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["g の 数を くらべてみよう。", "数字が 大きいほうが、重いね。"],
+    explanationTemplate: "{a}g と {b}g では、{answer}g の ほうが 重いね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "重いほうの重さは どれ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 100" },
+        wrong2: { formula: "answer > 100 ? answer - 100 : answer + 200" }
+      }
+    }
+  },
+  {
+    templateId: "g2_basic_weight_unit_g_01",
+    grade: 2, difficultyLevel: 1,
+    unitId: "weight_unit", conceptId: "weight_unit_g_kg",
+    problemType: "calculation", answerType: "number_input",
+    format: "{kg}kg は 何g？",
+    generate: {
+      kg: { type: "integer", range: [1, 5] },
+      answer: { formula: "kg * 1000" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["1kg は 1000g だよ。", "{kg} × 1000 を計算しよう。"],
+    explanationTemplate: "{kg}kg は {kg} × 1000 = {answer}g だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "{kg}kg は 何g？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "kg * 100" },
+        wrong2: { formula: "kg * 10000" }
+      }
+    }
+  },
+  // weight_unit Level 2: 足し算・単位換算
+  {
+    templateId: "g2_std_weight_add_sub_01",
+    grade: 2, difficultyLevel: 2,
+    unitId: "weight_unit", conceptId: "weight_add_sub",
+    problemType: "calculation", answerType: "number_input",
+    format: "りんごは {a}g、みかんは {b}g です。あわせて 何g？",
+    generate: {
+      a: { type: "integer", range: [100, 400], constraints: ["a % 100 === 0"] },
+      b: { type: "integer", range: [100, 400], constraints: ["b % 100 === 0"] },
+      answer: { formula: "a + b" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a} と {b} を足そう。", "百のまとまりで考えるとやさしいよ。"],
+    explanationTemplate: "{a} + {b} = {answer}g だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "{a}g + {b}g は どれ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "a * b" },
+        wrong2: { formula: "a + b + 100" }
+      }
+    }
+  },
+  {
+    templateId: "g2_std_weight_conv_01",
+    grade: 2, difficultyLevel: 2,
+    unitId: "weight_unit", conceptId: "weight_convert",
+    problemType: "calculation", answerType: "number_input",
+    format: "{kg}kg{g}g は、全部で 何g？",
+    generate: {
+      kg: { type: "integer", range: [1, 4] },
+      g: { type: "integer", range: [100, 900], constraints: ["g % 100 === 0"] },
+      totalG: { formula: "kg * 1000 + g" },
+      answer: { formula: "totalG" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{kg}kg は {kg * 1000}g だよ。", "{kg * 1000} に {g} をたそう。"],
+    explanationTemplate: "{kg}kg{g}g = {kg * 1000} + {g} = {answer}g だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "{kg}kg{g}g は全部で 何g？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "kg + g" },
+        wrong2: { formula: "kg * 100 + g" }
+      }
+    }
+  },
+  {
+    templateId: "g2_std_weight_sub_mixed_02",
+    grade: 2, difficultyLevel: 2,
+    unitId: "weight_unit", conceptId: "weight_add_sub",
+    problemType: "word_problem", answerType: "number_input",
+    format: "{kg}kg の こむぎこから {usedG}g つかいました。のこりは 何g？",
+    generate: {
+      kg: { type: "integer", range: [2, 5] },
+      usedG: { type: "integer", range: [100, 900], constraints: ["usedG % 100 === 0", "usedG < kg * 1000"] },
+      totalG: { formula: "kg * 1000" },
+      answer: { formula: "totalG - usedG" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["まず {kg}kg を g に なおそう。", "{totalG}g から つかった {usedG}g を ひこう。"],
+    explanationTemplate: "{kg}kg = {totalG}g。{totalG} - {usedG} = {answer}g のこるね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "のこりの こむぎこは 何g？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "totalG + usedG" },
+        wrong2: { formula: "totalG - usedG + 100" }
+      }
+    }
+  },
+  {
+    templateId: "g2_std_weight_difference_mixed_03",
+    grade: 2, difficultyLevel: 2,
+    unitId: "weight_unit", conceptId: "weight_convert",
+    problemType: "word_problem", answerType: "number_input",
+    format: "{heavyKg}kg の にもつと {lightG}g の にもつでは、重さは 何g ちがう？",
+    generate: {
+      heavyKg: { type: "integer", range: [2, 5] },
+      lightG: { type: "integer", range: [200, 1900], constraints: ["lightG % 100 === 0", "lightG < heavyKg * 1000"] },
+      heavyG: { formula: "heavyKg * 1000" },
+      answer: { formula: "heavyG - lightG" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{heavyKg}kg を g に なおして くらべよう。", "{heavyG}g から {lightG}g を ひこう。"],
+    explanationTemplate: "{heavyKg}kg = {heavyG}g。{heavyG} - {lightG} = {answer}g ちがうね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "重さは 何g ちがう？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "heavyG + lightG" },
+        wrong2: { formula: "heavyG - lightG + 100" }
+      }
+    }
   }
 ];
 
@@ -3152,6 +3388,56 @@ MATH_TEMPLATES.push(
     hintSteps: ["{total} から {b} を ひくと、かくれバンゴうは いくつ？", "ゆびや ブロック を つかって かぞえてみよう。"],
     explanationTemplate: "{total} から {b} を ひくと {hidden} になるので、かくれバンゴうは {hidden} だね。",
     understandingCheck: { enabled: true, type: "choice", questionTemplate: "{total} から {b} を ひいた かずは どれかな？", choices: ["{answer}", "{wrong1}", "{wrong2}"], answer: "{answer}", generateWrong: { wrong1: { formula: "answer + 1" }, wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" } } }
+  },
+  {
+    templateId: "g1_dev_hidden_subtract_02",
+    grade: 1, difficultyLevel: 3,
+    unitId: "dev_hidden_number", conceptId: "missing_number",
+    problemType: "calculation", answerType: "number_input",
+    format: "□ - {b} = {difference}。□に 入る 数は？",
+    generate: {
+      hidden: { type: "integer", range: [5, 18] },
+      b: { type: "integer", range: [1, 9], constraints: ["hidden > b"] },
+      difference: { formula: "hidden - b" }
+    },
+    answer: { expression: "hidden", normalization: "integer" },
+    hintSteps: ["□から {b} を ひくと {difference} になるよ。", "{difference} に {b} を たして、□を もとめよう。"],
+    explanationTemplate: "{difference} + {b} = {hidden}。□に 入る 数は {hidden} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "□ - {b} = {difference}。□に 入る 数は？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer - 1 > 0 ? answer - 1 : answer + 2" },
+        wrong2: { formula: "answer + 1" }
+      }
+    }
+  },
+  {
+    templateId: "g1_dev_hidden_subtrahend_03",
+    grade: 1, difficultyLevel: 3,
+    unitId: "dev_hidden_number", conceptId: "missing_number",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a} - □ = {difference}。□に 入る 数は？",
+    generate: {
+      a: { type: "integer", range: [6, 18] },
+      missing: { type: "integer", range: [1, 9], constraints: ["a > missing"] },
+      difference: { formula: "a - missing" }
+    },
+    answer: { expression: "missing", normalization: "integer" },
+    hintSteps: ["いくつ ひいたら {a} が {difference} に なるか 考えよう。", "{a} から {difference} を ひくと、□が わかるよ。"],
+    explanationTemplate: "{a} - {difference} = {missing}。□に 入る 数は {missing} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "{a} - □ = {difference}。□に 入る 数は？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer - 1 > 0 ? answer - 1 : answer + 2" },
+        wrong2: { formula: "answer + 1" }
+      }
+    }
   },
   // 発展問題：低学年用（B）かずのパターン
   {

@@ -556,6 +556,10 @@ const N = 40;
   console.log("14. 追加された発展テンプレートの登録と内容");
   const expectedUnits = [
     { id: "g1_dev_hidden_01", grade: 1, unitId: "dev_hidden_number", level: 3 },
+    { id: "g1_dev_hidden_subtract_02", grade: 1, unitId: "dev_hidden_number", level: 3 },
+    { id: "g1_dev_hidden_subtrahend_03", grade: 1, unitId: "dev_hidden_number", level: 3 },
+    { id: "g1_adv_3terms_02", grade: 1, unitId: "add_sub_3terms_10", level: 3 },
+    { id: "g1_adv_3terms_20_02", grade: 1, unitId: "add_sub_3terms_20", level: 3 },
     { id: "g1_basic_bond_02", grade: 1, unitId: "number_bond_10", level: 1 },
     { id: "g1_basic_bond_03", grade: 1, unitId: "number_bond_10", level: 1 },
     { id: "g1_basic_shape_sides_01", grade: 1, unitId: "geometry_properties_g1", level: 1 },
@@ -580,6 +584,13 @@ const N = 40;
     { id: "g2_std_time_duration_from_clock_05", grade: 2, unitId: "time_clock_basic", level: 2 },
     { id: "g2_std_fraction_picture_numerator_04", grade: 2, unitId: "fraction_intro", level: 2 },
     { id: "g2_std_fraction_part_difference_05", grade: 2, unitId: "fraction_intro", level: 2 },
+    { id: "g2_basic_weight_compare_01", grade: 2, unitId: "weight_unit", level: 1 },
+    { id: "g2_basic_weight_compare_g_02", grade: 2, unitId: "weight_unit", level: 1 },
+    { id: "g2_basic_weight_unit_g_01", grade: 2, unitId: "weight_unit", level: 1 },
+    { id: "g2_std_weight_add_sub_01", grade: 2, unitId: "weight_unit", level: 2 },
+    { id: "g2_std_weight_conv_01", grade: 2, unitId: "weight_unit", level: 2 },
+    { id: "g2_std_weight_sub_mixed_02", grade: 2, unitId: "weight_unit", level: 2 },
+    { id: "g2_std_weight_difference_mixed_03", grade: 2, unitId: "weight_unit", level: 2 },
     { id: "g3_dev_palindrome_01", grade: 3, unitId: "dev_palindrome" },
     { id: "g3_std_calc_groups_left_04", grade: 3, unitId: "calc_application_g3", level: 2 },
     { id: "g3_std_calc_share_groups_05", grade: 3, unitId: "calc_application_g3", level: 2 },
@@ -603,6 +614,11 @@ const N = 40;
     assert.ok(TemplateRegistry.getByUnit("math", expected.grade, level, expected.unitId)
       .some(t => t.templateId === expected.id),
     expected.id + " が単元の出題候補になること");
+  }
+
+  for (const unitId of ["number_pattern_g2", "fibonacci_g2", "palindrome_g2", "mental_math_g2"]) {
+    assert.strictEqual(UnitRegistry.findUnit("math", 2, unitId), null,
+      unitId + " は問題がないため単元登録から外れていること");
   }
 
   for (const unitId of ["dev_number_pattern", "dev_reverse_calc", "dev_weekday", "dev_money"]) {
@@ -635,6 +651,10 @@ const N = 40;
   }
 
   const generatedCases = {
+    g1_adv_3terms_02: q => q.variables.a + q.variables.b + q.variables.c,
+    g1_adv_3terms_20_02: q => q.variables.start + q.variables.added - q.variables.used,
+    g1_dev_hidden_subtract_02: q => q.variables.hidden,
+    g1_dev_hidden_subtrahend_03: q => q.variables.missing,
     g1_basic_bond_02: q => 10 - q.variables.a,
     g1_basic_bond_03: q => 10 - q.variables.a,
     g1_basic_shape_sides_01: q => q.variables.shapeIdx + 2,
@@ -647,6 +667,13 @@ const N = 40;
     g2_std_time_duration_from_clock_05: q => 60 - q.variables.startMinute,
     g2_std_fraction_picture_numerator_04: q => q.variables.numerator,
     g2_std_fraction_part_difference_05: q => q.variables.difference,
+    g2_basic_weight_compare_01: q => Math.max(q.variables.a, q.variables.b),
+    g2_basic_weight_compare_g_02: q => Math.max(q.variables.a, q.variables.b),
+    g2_basic_weight_unit_g_01: q => q.variables.kg * 1000,
+    g2_std_weight_add_sub_01: q => q.variables.a + q.variables.b,
+    g2_std_weight_conv_01: q => q.variables.kg * 1000 + q.variables.g,
+    g2_std_weight_sub_mixed_02: q => q.variables.kg * 1000 - q.variables.usedG,
+    g2_std_weight_difference_mixed_03: q => q.variables.heavyKg * 1000 - q.variables.lightG,
     g3_std_calc_groups_left_04: q => q.variables.total - q.variables.used,
     g3_std_calc_share_groups_05: q => q.variables.total / q.variables.children,
     g3_std_length_add_m_km_04: q => q.variables.first + q.variables.second,
@@ -670,6 +697,24 @@ const N = 40;
       assert.strictEqual(Number(q.answer), getExpectedAnswer(q), id + " の答えが生成値と一致すること");
       assert.strictEqual(q.answerType, "number_input", id + " が数字入力であること");
       assert.strictEqual(QuestionValidator.validate(q).valid, true, id + " の問題がValidatorを通ること");
+      if (id === "g2_basic_weight_unit_g_01") {
+        assert.ok(q.questionText.includes(q.variables.kg + "kg"),
+          "kgからgへの問題文に生成された重さが表示されること");
+      }
+    }
+  }
+
+  for (const grade of [1, 2, 3]) {
+    for (const level of [1, 2, 3]) {
+      for (const unit of UnitRegistry.getUnitsForLevel("math", grade, level)) {
+        assert.ok(TemplateRegistry.getByUnit("math", grade, level, unit.id).length > 0,
+          `Grade ${grade} Lv${level} ${unit.id} must have at least one template`);
+      }
+    }
+    for (const template of Object.values(TemplateRegistry.templates).filter(t => t.grade === grade)) {
+      assert.ok(UnitRegistry.getUnitsForLevel("math", grade, template.difficultyLevel)
+        .some(unit => unit.id === template.unitId),
+      `${template.templateId} must belong to a unit registered at Lv${template.difficultyLevel}`);
     }
   }
 

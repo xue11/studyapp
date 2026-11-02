@@ -11,6 +11,7 @@ const grade3UnitsByLevel = [1, 2, 3].map(level =>
 assert.ok(grade3UnitsByLevel[0].includes("multiplication_g3"));
 assert.ok(grade3UnitsByLevel[0].includes("add_sub_3digit"));
 assert.ok(grade3UnitsByLevel[1].includes("multiplication_g3"));
+assert.ok(grade3UnitsByLevel[1].includes("add_sub_3digit"));
 assert.ok(grade3UnitsByLevel[1].includes("division_g3"));
 assert.ok(grade3UnitsByLevel[2].includes("multiplication_g3"));
 assert.ok(grade3UnitsByLevel[2].includes("division_g3"));
@@ -32,6 +33,7 @@ for (const [level, unitId] of [
   [1, "multiplication_g3"],
   [1, "add_sub_3digit"],
   [2, "multiplication_g3"],
+  [2, "add_sub_3digit"],
   [2, "division_g3"],
   [3, "multiplication_g3"],
   [3, "division_g3"],
@@ -107,6 +109,13 @@ for (const [id, level, unitId] of balancedTemplates) {
 assert.ok(TemplateRegistry.getByUnit("math", 3, 1, "add_sub_3digit").length >= 5);
 assert.ok(TemplateRegistry.getByUnit("math", 3, 2, "add_sub_3digit").length >= 3);
 assert.ok(TemplateRegistry.getByUnit("math", 3, 3, "add_sub_3digit").length >= 3);
+for (const template of Object.values(TemplateRegistry.templates).filter(t => t.grade === 3)) {
+  assert.ok(
+    UnitRegistry.getUnitsForLevel("math", 3, template.difficultyLevel)
+      .some(unit => unit.id === template.unitId),
+    `${template.templateId} must belong to a unit registered at Lv${template.difficultyLevel}`
+  );
+}
 for (const level of [1, 2, 3]) {
   assert.ok(TemplateRegistry.getByUnit("math", 3, level, "multiplication_g3").length >= 4);
 }
