@@ -331,6 +331,59 @@ const MATH_TEMPLATES = [
       }
     }
   },
+  {
+    templateId: "g1_adv_3terms_10_make10_03",
+    grade: 1, difficultyLevel: 3,
+    unitId: "add_sub_3terms_10", conceptId: "three_terms_add_sub",
+    problemType: "calculation", answerType: "number_input",
+    format: "{a} + {b} - {c} = ?",
+    generate: {
+      a: { type: "integer", range: [2, 8] },
+      b: { formula: "10 - a" },
+      c: { type: "integer", range: [1, 8] },
+      answer: { formula: "a + b - c" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["{a} と {b} を たすと いくつかな？", "10から {c} を ひいてみよう。"],
+    explanationTemplate: "{a} + {b} = 10。10 - {c} = {answer} だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "{a} + {b} - {c} の こたえは どれ？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    }
+  },
+  {
+    templateId: "g1_adv_3terms_10_flower_story_04",
+    grade: 1, difficultyLevel: 3,
+    unitId: "add_sub_3terms_10", conceptId: "three_terms_add_sub",
+    problemType: "word_problem", answerType: "number_input",
+    format: "赤い花が {a}ほん、白い花が {b}ほん あります。花たばを作るのに {used}ほん つかうと、のこりは何ほん？",
+    generate: {
+      a: { type: "integer", range: [1, 4] },
+      b: { type: "integer", range: [1, 4], constraints: ["a + b <= 10"] },
+      used: { type: "integer", range: [1, 8], constraints: ["used <= a + b"] },
+      total: { formula: "a + b" },
+      answer: { formula: "total - used" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["赤い花と白い花を、まず ぜんぶ たそう。", "ぜんぶの花から、つかった花を ひこう。"],
+    explanationTemplate: "{a} + {b} = {total}ほん。{total} - {used} = {answer}ほん のこるね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "花は何ほん のこったかな？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    }
+  },
   // Lv3: add_sub_3terms_20 (3つの数の計算 20まで)
   {
     templateId: "g1_adv_3terms_20_01",
@@ -377,6 +430,59 @@ const MATH_TEMPLATES = [
     understandingCheck: {
       enabled: true, type: "choice",
       questionTemplate: "カードは 何まい のこったかな？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    }
+  },
+  {
+    templateId: "g1_adv_3terms_20_change_order_03",
+    grade: 1, difficultyLevel: 3,
+    unitId: "add_sub_3terms_20", conceptId: "three_terms_add_sub_20",
+    problemType: "word_problem", answerType: "number_input",
+    format: "バスに {start}人 のっています。{gotOff}人 おりてから、{gotOn}人 のりました。いまは何人？",
+    generate: {
+      start: { type: "integer", range: [8, 17] },
+      gotOff: { type: "integer", range: [1, 6], constraints: ["start > gotOff"] },
+      gotOn: { type: "integer", range: [1, 6], constraints: ["start - gotOff + gotOn <= 20"] },
+      afterGettingOff: { formula: "start - gotOff" },
+      answer: { formula: "afterGettingOff + gotOn" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["まず、バスからおりたあとの人数を もとめよう。", "その人数に、のってきた人を たそう。"],
+    explanationTemplate: "{start} - {gotOff} = {afterGettingOff}人。{afterGettingOff} + {gotOn} = {answer}人 だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "バスには何人 のっているかな？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    }
+  },
+  {
+    templateId: "g1_adv_3terms_20_subtract_twice_04",
+    grade: 1, difficultyLevel: 3,
+    unitId: "add_sub_3terms_20", conceptId: "three_terms_add_sub_20",
+    problemType: "word_problem", answerType: "number_input",
+    format: "シールを {start}まい もっています。{gaveFriend}まいを友だちに、{gaveSister}まいを妹にあげました。のこりは何まい？",
+    generate: {
+      start: { type: "integer", range: [10, 19] },
+      gaveFriend: { type: "integer", range: [1, 8] },
+      gaveSister: { type: "integer", range: [1, 8], constraints: ["start - gaveFriend - gaveSister >= 1"] },
+      answer: { formula: "start - gaveFriend - gaveSister" }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: ["友だちにあげた分を、まず ひこう。", "つぎに、妹にあげた分も ひこう。"],
+    explanationTemplate: "{start} - {gaveFriend} = {start - gaveFriend}。{start - gaveFriend} - {gaveSister} = {answer}まい だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "シールは何まい のこったかな？",
       choices: ["{answer}", "{wrong1}", "{wrong2}"],
       answer: "{answer}",
       generateWrong: {
@@ -3436,6 +3542,56 @@ MATH_TEMPLATES.push(
       generateWrong: {
         wrong1: { formula: "answer - 1 > 0 ? answer - 1 : answer + 2" },
         wrong2: { formula: "answer + 1" }
+      }
+    }
+  },
+  {
+    templateId: "g1_dev_hidden_start_story_04",
+    grade: 1, difficultyLevel: 3,
+    unitId: "dev_hidden_number", conceptId: "missing_number",
+    problemType: "word_problem", answerType: "number_input",
+    format: "クッキーが何こか ありました。{gave}こ あげると、{remaining}こ のこりました。はじめは何こ？",
+    generate: {
+      hidden: { type: "integer", range: [2, 18] },
+      gave: { type: "integer", range: [1, 9], constraints: ["hidden > gave"] },
+      remaining: { formula: "hidden - gave" }
+    },
+    answer: { expression: "hidden", normalization: "integer" },
+    hintSteps: ["のこった数に、あげた数を たすと はじめの数になるよ。", "{remaining} と {gave} を たしてみよう。"],
+    explanationTemplate: "{remaining} + {gave} = {hidden}こ。はじめは {hidden}こ だったね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "クッキーは、はじめ何こ あったかな？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    }
+  },
+  {
+    templateId: "g1_dev_hidden_removed_story_05",
+    grade: 1, difficultyLevel: 3,
+    unitId: "dev_hidden_number", conceptId: "missing_number",
+    problemType: "word_problem", answerType: "number_input",
+    format: "カードを {start}まい もっていました。何まいか あげると、{remaining}まいに なりました。何まい あげた？",
+    generate: {
+      start: { type: "integer", range: [5, 18] },
+      missing: { type: "integer", range: [1, 9], constraints: ["start > missing"] },
+      remaining: { formula: "start - missing" }
+    },
+    answer: { expression: "missing", normalization: "integer" },
+    hintSteps: ["はじめの数から、のこった数を ひこう。", "{start} から {remaining} を ひくと、あげた数が わかるよ。"],
+    explanationTemplate: "{start} - {remaining} = {missing}まい。あげたのは {missing}まい だね。",
+    understandingCheck: {
+      enabled: true, type: "choice",
+      questionTemplate: "あげたカードは何まいかな？",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
       }
     }
   },

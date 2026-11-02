@@ -49,6 +49,11 @@ const DEEPENING_TEMPLATES = [
 ];
 
 const BALANCE_TEMPLATES = [
+  ["g2_basic_add_missing_addend_03", 1, "addition_2digit"],
+  ["g2_basic_length_subtract_cm_mm_04", 1, "length_unit"],
+  ["g2_basic_fraction_unshaded_parts_04", 1, "fraction_intro"],
+  ["g2_basic_weight_g_to_kg_03", 1, "weight_unit"],
+  ["g2_std_sub_missing_subtrahend_03", 2, "subtraction_2digit"],
   ["g2_basic_sub_no_borrow_02", 1, "subtraction_2digit"],
   ["g2_basic_sub_no_borrow_03", 1, "subtraction_2digit"],
   ["g2_word_sub_no_borrow_01", 1, "subtraction_2digit"],
@@ -230,6 +235,22 @@ function testBreadthTemplates() {
       } else if (spec.id === "g2_std_calcidea_03") {
         assert.strictEqual(v.a % 10 + v.c, 10, "The selected addends must make a ten");
         assert.strictEqual(Number(q.answer), v.a + v.b + v.c);
+      } else if (id === "g2_basic_add_missing_addend_03") {
+        assert.strictEqual(Number(q.answer), v.total - v.a);
+        assert.ok(v.a % 10 + Number(q.answer) % 10 <= 9, "Basic addition must not carry");
+      } else if (id === "g2_basic_length_subtract_cm_mm_04") {
+        assert.strictEqual(Number(q.answer), v.cm * 10 + v.mm - v.cutCm * 10);
+        assert.ok(Number(q.answer) > 0, "Remainder length must be positive");
+      } else if (id === "g2_basic_fraction_unshaded_parts_04") {
+        assert.strictEqual(Number(q.answer), v.denominator - v.shaded);
+        assert.strictEqual((v.picture.match(/■/g) || []).length, v.shaded);
+        assert.strictEqual((v.picture.match(/□/g) || []).length, Number(q.answer));
+      } else if (id === "g2_basic_weight_g_to_kg_03") {
+        assert.strictEqual(v.grams, v.kg * 1000);
+        assert.strictEqual(Number(q.answer), v.kg);
+      } else if (id === "g2_std_sub_missing_subtrahend_03") {
+        assert.strictEqual(Number(q.answer), v.a - v.difference);
+        assert.ok(v.a % 10 < Number(q.answer), "Subtraction must require borrowing");
       }
     }
   }

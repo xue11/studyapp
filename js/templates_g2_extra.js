@@ -1372,6 +1372,73 @@
       answer: "side * 4",
       hints: ["正方形の辺は4本とも同じ長さだよ。", "{side}cm を4つ分たそう。"],
       explanation: "{side} × 4 = {answer}cm だね。"
+    }),
+    numericTemplate({
+      id: "g2_basic_add_missing_addend_03", level: 1, unit: "addition_2digit",
+      concept: "add_2digit_basic",
+      format: "{a} + □ = {total}。□に入る数は？",
+      generate: {
+        a: { type: "integer", range: [21, 54] },
+        b: { type: "integer", range: [11, 34], constraints: ["a % 10 + b % 10 <= 9", "a + b < 100"] },
+        total: { formula: "a + b" }
+      },
+      answer: "b",
+      hints: ["ぜんぶの数から、わかっている数をひこう。", "{total} - {a} を計算すると、□がわかるよ。"],
+      explanation: "{total} - {a} = {answer}。□に入る数は {answer} だね。"
+    }),
+    numericTemplate({
+      id: "g2_basic_length_subtract_cm_mm_04", level: 1, unit: "length_unit",
+      concept: "length_convert_basic", problemType: "word_problem",
+      format: "{cm}cm{mm}mm のリボンから {cutCm}cm きりました。のこりは何mm？",
+      generate: {
+        cm: { type: "integer", range: [3, 9] },
+        mm: { type: "integer", range: [1, 9] },
+        cutCm: { type: "integer", range: [1, 8], constraints: ["cutCm < cm"] },
+        totalMm: { formula: "cm * 10 + mm" },
+        cutMm: { formula: "cutCm * 10" }
+      },
+      answer: "totalMm - cutMm",
+      hints: ["cmをmmになおしてから、きった長さをひこう。", "{cm}cm{mm}mm は {totalMm}mm、{cutCm}cm は {cutMm}mm だよ。"],
+      explanation: "{totalMm} - {cutMm} = {answer}mm。のこりは {answer}mm だね。"
+    }),
+    numericTemplate({
+      id: "g2_basic_fraction_unshaded_parts_04", level: 1, unit: "fraction_intro",
+      concept: "fraction_denominator",
+      format: "全体を{denominator}こに分けました。■が{shaded}こなら、□はいくつ？<br>{picture}",
+      generate: {
+        denominator: { type: "integer", range: [3, 8] },
+        shaded: { type: "integer", range: [1, 7], constraints: ["shaded < denominator"] },
+        unshaded: { formula: "denominator - shaded" },
+        picture: { formula: "'■'.repeat(shaded) + '□'.repeat(unshaded)" }
+      },
+      answer: "unshaded",
+      hints: ["全体の数から、■の数をひこう。", "{denominator}こから■の{shaded}こをひくと、□の数になるよ。"],
+      explanation: "{denominator} - {shaded} = {answer}。□は {answer}こ だね。"
+    }),
+    numericTemplate({
+      id: "g2_basic_weight_g_to_kg_03", level: 1, unit: "weight_unit",
+      concept: "weight_unit_g_kg",
+      format: "{grams}g は何kg？",
+      generate: {
+        kg: { type: "integer", range: [1, 5] },
+        grams: { formula: "kg * 1000" }
+      },
+      answer: "kg",
+      hints: ["1000gは1kgだよ。", "{grams}gに1000gがいくつ分あるか考えよう。"],
+      explanation: "{grams}g = {kg}kg だから、答えは {answer}kg だね。"
+    }),
+    numericTemplate({
+      id: "g2_std_sub_missing_subtrahend_03", level: 2, unit: "subtraction_2digit",
+      concept: "sub_2digit_borrow",
+      format: "{a} - □ = {difference}。□に入る数は？",
+      generate: {
+        a: { type: "integer", range: [32, 89] },
+        b: { type: "integer", range: [12, 49], constraints: ["b < a", "a % 10 < b % 10"] },
+        difference: { formula: "a - b" }
+      },
+      answer: "b",
+      hints: ["ひかれる数から、こたえをひくと□がわかるよ。", "{a} - {difference} を計算しよう。"],
+      explanation: "{a} - {difference} = {answer}。□に入る数は {answer} だね。"
     })
   );
 

@@ -558,8 +558,14 @@ const N = 40;
     { id: "g1_dev_hidden_01", grade: 1, unitId: "dev_hidden_number", level: 3 },
     { id: "g1_dev_hidden_subtract_02", grade: 1, unitId: "dev_hidden_number", level: 3 },
     { id: "g1_dev_hidden_subtrahend_03", grade: 1, unitId: "dev_hidden_number", level: 3 },
+    { id: "g1_dev_hidden_start_story_04", grade: 1, unitId: "dev_hidden_number", level: 3 },
+    { id: "g1_dev_hidden_removed_story_05", grade: 1, unitId: "dev_hidden_number", level: 3 },
+    { id: "g1_adv_3terms_10_make10_03", grade: 1, unitId: "add_sub_3terms_10", level: 3 },
+    { id: "g1_adv_3terms_10_flower_story_04", grade: 1, unitId: "add_sub_3terms_10", level: 3 },
     { id: "g1_adv_3terms_02", grade: 1, unitId: "add_sub_3terms_10", level: 3 },
     { id: "g1_adv_3terms_20_02", grade: 1, unitId: "add_sub_3terms_20", level: 3 },
+    { id: "g1_adv_3terms_20_change_order_03", grade: 1, unitId: "add_sub_3terms_20", level: 3 },
+    { id: "g1_adv_3terms_20_subtract_twice_04", grade: 1, unitId: "add_sub_3terms_20", level: 3 },
     { id: "g1_basic_bond_02", grade: 1, unitId: "number_bond_10", level: 1 },
     { id: "g1_basic_bond_03", grade: 1, unitId: "number_bond_10", level: 1 },
     { id: "g1_basic_shape_sides_01", grade: 1, unitId: "geometry_properties_g1", level: 1 },
@@ -580,6 +586,11 @@ const N = 40;
     { id: "g2_dev_money_03", grade: 2, unitId: "dev_money" },
     { id: "g2_std_length_compare_mixed_04", grade: 2, unitId: "length_unit", level: 2 },
     { id: "g2_std_length_add_mixed_05", grade: 2, unitId: "length_unit", level: 2 },
+    { id: "g2_basic_add_missing_addend_03", grade: 2, unitId: "addition_2digit", level: 1 },
+    { id: "g2_basic_length_subtract_cm_mm_04", grade: 2, unitId: "length_unit", level: 1 },
+    { id: "g2_basic_fraction_unshaded_parts_04", grade: 2, unitId: "fraction_intro", level: 1 },
+    { id: "g2_basic_weight_g_to_kg_03", grade: 2, unitId: "weight_unit", level: 1 },
+    { id: "g2_std_sub_missing_subtrahend_03", grade: 2, unitId: "subtraction_2digit", level: 2 },
     { id: "g2_std_time_end_minutes_04", grade: 2, unitId: "time_clock_basic", level: 2 },
     { id: "g2_std_time_duration_from_clock_05", grade: 2, unitId: "time_clock_basic", level: 2 },
     { id: "g2_std_fraction_picture_numerator_04", grade: 2, unitId: "fraction_intro", level: 2 },
@@ -614,6 +625,18 @@ const N = 40;
     assert.ok(TemplateRegistry.getByUnit("math", expected.grade, level, expected.unitId)
       .some(t => t.templateId === expected.id),
     expected.id + " が単元の出題候補になること");
+  }
+
+  for (const [unitId, expectedCount] of [
+    ["add_sub_3terms_10", 4],
+    ["add_sub_3terms_20", 5],
+    ["dev_hidden_number", 5]
+  ]) {
+    assert.strictEqual(
+      TemplateRegistry.getByUnit("math", 1, 3, unitId).length,
+      expectedCount,
+      unitId + " のLv3問題型数が追加後の想定と一致すること"
+    );
   }
 
   for (const unitId of ["number_pattern_g2", "fibonacci_g2", "palindrome_g2", "mental_math_g2"]) {
@@ -651,10 +674,21 @@ const N = 40;
   }
 
   const generatedCases = {
+    g2_basic_add_missing_addend_03: q => q.variables.total - q.variables.a,
+    g2_basic_length_subtract_cm_mm_04: q => q.variables.cm * 10 + q.variables.mm - q.variables.cutCm * 10,
+    g2_basic_fraction_unshaded_parts_04: q => q.variables.denominator - q.variables.shaded,
+    g2_basic_weight_g_to_kg_03: q => q.variables.grams / 1000,
+    g2_std_sub_missing_subtrahend_03: q => q.variables.a - q.variables.difference,
     g1_adv_3terms_02: q => q.variables.a + q.variables.b + q.variables.c,
+    g1_adv_3terms_10_make10_03: q => q.variables.a + q.variables.b - q.variables.c,
+    g1_adv_3terms_10_flower_story_04: q => q.variables.a + q.variables.b - q.variables.used,
     g1_adv_3terms_20_02: q => q.variables.start + q.variables.added - q.variables.used,
+    g1_adv_3terms_20_change_order_03: q => q.variables.start - q.variables.gotOff + q.variables.gotOn,
+    g1_adv_3terms_20_subtract_twice_04: q => q.variables.start - q.variables.gaveFriend - q.variables.gaveSister,
     g1_dev_hidden_subtract_02: q => q.variables.hidden,
     g1_dev_hidden_subtrahend_03: q => q.variables.missing,
+    g1_dev_hidden_start_story_04: q => q.variables.gave + q.variables.remaining,
+    g1_dev_hidden_removed_story_05: q => q.variables.start - q.variables.remaining,
     g1_basic_bond_02: q => 10 - q.variables.a,
     g1_basic_bond_03: q => 10 - q.variables.a,
     g1_basic_shape_sides_01: q => q.variables.shapeIdx + 2,
@@ -700,6 +734,45 @@ const N = 40;
       if (id === "g2_basic_weight_unit_g_01") {
         assert.ok(q.questionText.includes(q.variables.kg + "kg"),
           "kgからgへの問題文に生成された重さが表示されること");
+      } else if (id === "g2_basic_length_subtract_cm_mm_04") {
+        assert.ok(q.variables.cm * 10 + q.variables.mm > q.variables.cutCm * 10,
+          "Length subtraction must leave a positive remainder");
+      } else if (id === "g2_basic_fraction_unshaded_parts_04") {
+        assert.strictEqual((q.variables.picture.match(/■/g) || []).length, q.variables.shaded);
+        assert.strictEqual((q.variables.picture.match(/□/g) || []).length, Number(q.answer));
+      } else if (id === "g2_basic_weight_g_to_kg_03") {
+        assert.ok(q.questionText.includes(q.variables.grams + "g"));
+        assert.ok(q.explanation.includes(q.variables.kg + "kg"));
+      } else if (id === "g2_std_sub_missing_subtrahend_03") {
+        assert.ok(q.variables.a % 10 < Number(q.answer),
+          "Missing subtrahend problem must require borrowing");
+      } else if (id === "g1_adv_3terms_10_make10_03") {
+        assert.strictEqual(q.variables.a + q.variables.b, 10,
+          "10までの計算で先に10を作れること");
+        assert.ok(Number(q.answer) > 0 && Number(q.answer) <= 9,
+          "10までの計算の答えが1から9であること");
+      } else if (id === "g1_adv_3terms_10_flower_story_04") {
+        assert.ok(q.variables.total <= 10 && Number(q.answer) >= 0,
+          "10までの花の文章題で合計と残りが範囲内であること");
+        assert.ok(q.questionText.includes(q.variables.a + "ほん")
+          && q.questionText.includes(q.variables.b + "ほん")
+          && q.questionText.includes(q.variables.used + "ほん"),
+        "花の文章題に生成された数が表示されること");
+      } else if (id === "g1_adv_3terms_20_change_order_03") {
+        assert.ok(Number(q.answer) > 0 && Number(q.answer) <= 20,
+          "バスの人数が0から20の範囲内であること");
+      } else if (id === "g1_adv_3terms_20_subtract_twice_04") {
+        assert.ok(Number(q.answer) > 0 && Number(q.answer) <= 20,
+          "2回ひく問題の答えが0から20の範囲内であること");
+      } else if (id === "g1_dev_hidden_start_story_04") {
+        assert.ok(q.questionText.includes(q.variables.gave + "こ")
+          && q.questionText.includes(q.variables.remaining + "こ")
+          && !q.questionText.includes(String(q.variables.hidden)),
+        "初めの数を求める問題で、答えを問題文に表示しないこと");
+      } else if (id === "g1_dev_hidden_removed_story_05") {
+        assert.ok(q.questionText.includes(q.variables.start + "まい")
+          && q.questionText.includes(q.variables.remaining + "まい"),
+        "あげた数を求める問題に必要な数が表示されること");
       }
     }
   }
