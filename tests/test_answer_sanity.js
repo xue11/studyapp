@@ -554,6 +554,40 @@ const N = 40;
 // 14. 発展テンプレートの登録、問題文、答え、解説が整合していること
 {
   console.log("14. 追加された発展テンプレートの登録と内容");
+  const challengeExpectedAnswers = {
+    g1_challenge_01: q => q.variables.red,
+    g1_challenge_02: q => 3 * q.variables.count + 1,
+    g1_challenge_03: q => q.variables.maxCard - 3,
+    g1_challenge_04: q => q.variables.start + 3 * q.variables.up - 3 * q.variables.down,
+    g1_challenge_05: q => q.variables.total / 3,
+    g2_challenge_01: q => q.variables.hundreds * 100 + q.variables.tens * 10 + q.variables.ones,
+    g2_challenge_02: q => (q.variables.total + q.variables.difference) / 2,
+    g2_challenge_03: q => (q.variables.right + q.variables.up) * (q.variables.right + q.variables.up - 1) / 2,
+    g2_challenge_04: q => q.variables.hidden,
+    g2_challenge_05: q => q.variables.number,
+    g2_challenge_06: q => q.variables.box,
+    g2_challenge_07: q => q.variables.endHour * 100 + q.variables.endMinute,
+    g2_challenge_08: q => 1 + (q.variables.week - 1) * 7,
+    g2_challenge_09: q => q.variables.tens + q.variables.fives + q.variables.ones,
+    g2_challenge_10: q => q.variables.redTotal - q.variables.blueCm,
+    g2_challenge_11: q => 1000 - q.variables.otherWeight,
+    g2_challenge_12: q => Math.floor(q.variables.candies / q.variables.people),
+    g2_challenge_13: q => q.variables.shirts * q.variables.pants,
+    g2_challenge_14: q => q.variables.tens * 10 + q.variables.ones,
+    g3_challenge_01: q => (q.variables.first + 3) * (q.variables.first + 2) + (q.variables.first + 1) * q.variables.first,
+    g3_challenge_02: q => q.variables.rows % 2 === 0
+      ? q.variables.rows * (q.variables.rows + 2) * (2 * q.variables.rows + 1) / 8
+      : (q.variables.rows * (q.variables.rows + 2) * (2 * q.variables.rows + 1) - 1) / 8,
+    g3_challenge_03: q => 2 * (q.variables.height + q.variables.width),
+    g3_challenge_04: q => 2 * q.variables.appleBlocks / 3,
+    g3_challenge_05: q => q.variables.scenario === 1 ? 2 : (q.variables.scenario === 2 ? 4 : 1),
+    g3_challenge_06: q => ((q.variables.first % 2) + ((q.variables.first + 1) % 2) + ((q.variables.first + 2) % 2)) * 2,
+    g3_challenge_07: q => q.variables.colors + 1,
+    g3_challenge_08: q => q.variables.target === 8 ? 2 : (q.variables.target === 9 ? 3 : (q.variables.target === 10 ? 4 : (q.variables.target === 11 ? 5 : 7))),
+    g3_challenge_09: q => (q.variables.digitSum - 6) * 100 + 15,
+    g3_challenge_10: q => (q.variables.perimeter / 4) ** 2,
+    g3_challenge_11: q => q.variables.denominator - 5
+  };
   const expectedUnits = [
     { id: "g1_dev_hidden_01", grade: 1, unitId: "dev_hidden_number", level: 3 },
     { id: "g1_dev_hidden_subtract_02", grade: 1, unitId: "dev_hidden_number", level: 3 },
@@ -610,7 +644,13 @@ const N = 40;
     { id: "g3_std_weight_add_mixed_04", grade: 3, unitId: "weight_unit", level: 2 },
     { id: "g3_std_weight_compare_mixed_05", grade: 3, unitId: "weight_unit", level: 2 },
     { id: "g3_std_fraction_add_same_04", grade: 3, unitId: "fraction_meaning", level: 2 },
-    { id: "g3_std_fraction_complete_whole_05", grade: 3, unitId: "fraction_meaning", level: 2 }
+    { id: "g3_std_fraction_complete_whole_05", grade: 3, unitId: "fraction_meaning", level: 2 },
+    ...Object.keys(challengeExpectedAnswers).map(id => ({
+      id,
+      grade: Number(id.charAt(1)),
+      unitId: "challenge_g" + id.charAt(1),
+      level: 3
+    }))
   ];
 
   for (const expected of expectedUnits) {
@@ -636,6 +676,14 @@ const N = 40;
       TemplateRegistry.getByUnit("math", 1, 3, unitId).length,
       expectedCount,
       unitId + " のLv3問題型数が追加後の想定と一致すること"
+    );
+  }
+
+  for (const [grade, expectedCount] of [[1, 5], [2, 14], [3, 11]]) {
+    assert.strictEqual(
+      TemplateRegistry.getByUnit("math", grade, 3, "challenge_g" + grade).length,
+      expectedCount,
+      "小学" + grade + "年生チャレンジ単元の問題型数が想定と一致すること"
     );
   }
 
@@ -674,6 +722,7 @@ const N = 40;
   }
 
   const generatedCases = {
+    ...challengeExpectedAnswers,
     g2_basic_add_missing_addend_03: q => q.variables.total - q.variables.a,
     g2_basic_length_subtract_cm_mm_04: q => q.variables.cm * 10 + q.variables.mm - q.variables.cutCm * 10,
     g2_basic_fraction_unshaded_parts_04: q => q.variables.denominator - q.variables.shaded,

@@ -254,11 +254,12 @@ function testLevelEngine() {
   assert.strictEqual(eval2.newLevel, 2, "Should level up to Lv2");
   assert.strictEqual(gp.difficultyLevel, 2);
 
-  // Lv3 到達時の上限維持 & 通知フラグ
+  // Lv3 の4単元中3単元を学習済みにすると上限通知の判定対象になる。
   gp.difficultyLevel = 3;
-  // Grade 1 Lv3 has three units; two completed units meet the 60% threshold.
+  // Grade 1 Lv3 has four units; three completed units meet the 60% threshold.
   gp.unitStats["add_sub_3terms_10"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
   gp.unitStats["add_sub_3terms_20"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
+  gp.unitStats["challenge_g1"] = { attempts: 5, correct: 5, accuracy: 1.0, masteryScore: 0.80 };
   const eval3 = LevelEngine.evaluateLevel(profile, APP_CONFIG);
   assert.strictEqual(eval3.evaluated, true);
   assert.strictEqual(eval3.levelChanged, false);

@@ -3772,6 +3772,368 @@ MATH_TEMPLATES.push(
 
 );
 
+function createChallengeTemplate(definition) {
+  return {
+    templateId: definition.id,
+    grade: definition.grade,
+    difficultyLevel: 3,
+    unitId: "challenge_g" + definition.grade,
+    conceptId: definition.concept,
+    problemType: definition.problemType || "word_problem",
+    answerType: "number_input",
+    format: definition.format,
+    generate: {
+      ...definition.generate,
+      answer: { formula: definition.answer }
+    },
+    answer: { expression: "answer", normalization: "integer" },
+    hintSteps: definition.hints,
+    explanationTemplate: definition.explanation,
+    understandingCheck: {
+      enabled: true,
+      type: "choice",
+      choices: ["{answer}", "{wrong1}", "{wrong2}"],
+      answer: "{answer}",
+      generateWrong: {
+        wrong1: { formula: "answer + 1" },
+        wrong2: { formula: "answer > 1 ? answer - 1 : answer + 2" }
+      }
+    }
+  };
+}
+
+const CHALLENGE_TEMPLATES = [
+  // Grade 1: number relationships, patterns and counting.
+  createChallengeTemplate({
+    id: "g1_challenge_01", grade: 1, concept: "number_reasoning",
+    format: "赤いブロックと青いブロックは、あわせて13こです。赤は青より{difference}こ多いとき、赤いブロックは何こ？",
+    generate: {
+      difference: { type: "choice", values: [1, 3, 5] },
+      blue: { formula: "(13 - difference) / 2" },
+      red: { formula: "(13 + difference) / 2" }
+    },
+    answer: "red",
+    hints: ["赤と青が同じ数ずつだと考えて、差の分を先に分けよう。", "13から差の{difference}こをひいて、のこりを半分にしよう。"],
+    explanation: "差の{difference}こをのぞくと、{blue}こずつになるね。赤は {blue} + {difference} = {answer}こ。"
+  }),
+  createChallengeTemplate({
+    id: "g1_challenge_02", grade: 1, concept: "pattern_reasoning",
+    format: "マッチぼうで正方形を横につなげます。正方形が{count}こなら、マッチぼうは何本いる？",
+    generate: { count: { type: "integer", range: [2, 6] } },
+    answer: "3 * count + 1",
+    hints: ["正方形を1こふやすと、となりと1辺を共有するよ。", "はじめの4本に、あとからふえる本数をたそう。"],
+    explanation: "1こ目に4本、そのあと{count - 1}こ分は3本ずつふえるので、4 + 3 × {count - 1} = {answer}本。"
+  }),
+  createChallengeTemplate({
+    id: "g1_challenge_03", grade: 1, concept: "systematic_counting",
+    format: "1から{maxCard}までのカードからちがうカードを2まいえらび、合計を7にします。組み合わせは何通り？",
+    generate: { maxCard: { type: "integer", range: [4, 6] } },
+    answer: "maxCard - 3",
+    hints: ["いちばん小さいカードから順に、組になる数をさがそう。", "同じ組を順番をかえて2回数えないようにしよう。"],
+    explanation: "組は 2と5、3と4 の2通り。順番をかえただけの組は1通りとして数えるよ。"
+  }),
+  createChallengeTemplate({
+    id: "g1_challenge_04", grade: 1, concept: "pattern_reasoning",
+    problemType: "calculation",
+    format: "{start}、{start + up}、{start + up - down}、{start + 2 * up - down}、{start + 2 * up - 2 * down}、{start + 3 * up - 2 * down}、□。□に入る数は？",
+    generate: {
+      start: { type: "integer", range: [1, 3] },
+      up: { type: "integer", range: [2, 4] },
+      down: { type: "integer", range: [1, 2] }
+    },
+    answer: "start + 3 * up - 3 * down",
+    hints: ["となり合う数のふえ方・へり方を見よう。", "「いくつたす」「いくつひく」が交互になっているよ。"],
+    explanation: "{start}から{up}ふえ、つぎに{down}へるきまりをくりかえすので、つぎの数は{answer}だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g1_challenge_05", grade: 1, concept: "number_reasoning",
+    problemType: "calculation",
+    format: "つづいた3つの数をたすと{total}です。まんなかの数はいくつ？",
+    generate: { total: { type: "choice", values: [18, 21, 24, 27, 30] } },
+    answer: "total / 3",
+    hints: ["まんなかの数より、1小さい数と1大きい数をたすよ。", "3つの数の平均が、まんなかの数になるね。"],
+    explanation: "まんなかの数を{answer}とすると、{answer - 1} + {answer} + {answer + 1} = {total}。だから答えは{answer}だよ。"
+  }),
+
+  // Grade 2: constraints, time, money, measurement and sharing.
+  createChallengeTemplate({
+    id: "g2_challenge_01", grade: 2, concept: "number_reasoning",
+    problemType: "calculation",
+    format: "{hundreds}、{tens}、{ones}のカードを1回ずつつかって、いちばん大きい偶数を作ろう。できた数は？",
+    generate: {
+      hundreds: { type: "choice", values: [6, 8] },
+      tens: { type: "choice", values: [3, 5] },
+      ones: { type: "choice", values: [2, 4] }
+    },
+    answer: "hundreds * 100 + tens * 10 + ones",
+    hints: ["偶数になるには、一の位にどの数字をおけばよいかな？", "のこりの数字を大きい位から大きい順にならべよう。"],
+    explanation: "{ones}を一の位におくと偶数になるね。のこりを大きい位からならべると、できる数は{answer}。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_02", grade: 2, concept: "number_reasoning",
+    format: "りんごとみかんは、あわせて{total}こです。りんごはみかんより{difference}こ多いとき、りんごは何こ？",
+    generate: {
+      total: { type: "choice", values: [10, 12, 14] },
+      differenceUnit: { type: "integer", range: [1, 3] },
+      difference: { formula: "differenceUnit * 2" }
+    },
+    answer: "(total + difference) / 2",
+    hints: ["りんごから差の半分の{difference / 2}こをみかんにわたすと、同じ数ずつになるよ。", "合計から差をひいて、半分にしてから、りんごに差をもどそう。"],
+    explanation: "差の{difference}こをのぞくと、{total - difference}こを同じ数ずつに分けられるね。りんごは{answer}こ。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_03", grade: 2, concept: "systematic_counting",
+    format: "右に{right}マス、上に{up}マス進んでゴールします。右か上にだけ進むとき、最短の道は何通り？",
+    generate: {
+      right: { formula: "2" },
+      up: { type: "integer", range: [1, 3] }
+    },
+    answer: "(right + up) * (right + up - 1) / 2",
+    hints: ["右に進む回数と上に進む回数を、ならべる順番を考えよう。", "同じ向きの進み方を入れかえただけの道を、重ねて数えないようにしよう。"],
+    explanation: "右{right}回と上{up}回のならべ方を数えると、最短の道は{answer}通りだよ。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_04", grade: 2, concept: "number_reasoning",
+    problemType: "calculation",
+    format: "ある数を2ばいして5をたすと{total}になりました。もとの数はいくつ？",
+    generate: {
+      hidden: { type: "integer", range: [4, 9] },
+      total: { formula: "hidden * 2 + 5" }
+    },
+    answer: "hidden",
+    hints: ["さいごにたした5を、まずひこう。", "のこった数を2でわると、もとの数になるよ。"],
+    explanation: "{total} - 5 = {hidden * 2}。{hidden * 2} ÷ 2 = {answer}。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_05", grade: 2, concept: "number_reasoning",
+    problemType: "calculation",
+    format: "20より大きく40より小さい4の倍数です。数字をたすと{digitSum}になります。この数はいくつ？",
+    generate: {
+      number: { type: "choice", values: [24, 28, 32, 36] },
+      digitSum: { formula: "Math.floor(number / 10) + number % 10" }
+    },
+    answer: "number",
+    hints: ["20より大きい4の倍数を、小さい方から書いてみよう。", "それぞれの数の数字をたして、6になるものをさがそう。"],
+    explanation: "{number}は4の倍数で、数字の和は{digitSum}。条件に合う数は{number}だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_06", grade: 2, concept: "number_reasoning",
+    problemType: "calculation",
+    format: "□ + □ + △ = {total}、□ + △ = {sum} です。□はいくつ？",
+    generate: {
+      box: { type: "integer", range: [4, 9] },
+      triangle: { type: "integer", range: [2, 7] },
+      sum: { formula: "box + triangle" },
+      total: { formula: "box + sum" }
+    },
+    answer: "box",
+    hints: ["上の式から下の式をひくと、何がのこるかな？", "□が1つ分の数をもとめよう。"],
+    explanation: "{total} - {sum} = {answer}。上の式には□が1つ多いので、□は{answer}だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_07", grade: 2, concept: "time_reasoning",
+    format: "{hour}時{minute}分に出発して、{duration}分歩きました。ついた時こくは何時何分？（例：10時25分は1025と入力）",
+    generate: {
+      hour: { type: "integer", range: [8, 11] },
+      minute: { type: "choice", values: [20, 35, 48] },
+      duration: { type: "choice", values: [25, 37, 45] },
+      endHour: { formula: "hour + Math.floor((minute + duration) / 60)" },
+      endMinute: { formula: "(minute + duration) % 60" }
+    },
+    answer: "endHour * 100 + endMinute",
+    hints: ["まず、{hour}時{minute}分から次の時こくまで何分か考えよう。", "{duration}分のうち、次の時こくまでの分をひこう。"],
+    explanation: "{minute}分 + {duration}分 = {minute + duration}分。ついた時こくは{endHour}時{endMinute}分、答えは{answer}。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_08", grade: 2, concept: "time_reasoning",
+    format: "ある月は1日が月曜日で、月曜日が{week}回あります。{week}回目の月曜日は何日？",
+    generate: { week: { type: "integer", range: [2, 5] } },
+    answer: "1 + (week - 1) * 7",
+    hints: ["月曜日は7日ごとにやってくるよ。", "1日から7日ずつ、{week - 1}回進もう。"],
+    explanation: "1日から7日ずつ進むので、{week}回目の月曜日は{answer}日だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_09", grade: 2, concept: "systematic_counting",
+    format: "10円玉、5円玉、1円玉をつかって{amount}円をはらいます。できるだけ少ないとき、何まい必要？",
+    generate: {
+      amount: { type: "choice", values: [11, 16, 19, 21] },
+      tens: { formula: "Math.floor(amount / 10)" },
+      fives: { formula: "Math.floor((amount % 10) / 5)" },
+      ones: { formula: "amount % 5" }
+    },
+    answer: "tens + fives + ones",
+    hints: ["まず、いちばん大きい10円玉をつかおう。", "のこりの金額を、5円玉と1円玉で作ろう。"],
+    explanation: "10円玉を{tens}まい、5円玉を{fives}まい、1円玉を{ones}まいつかうので、ぜんぶで{answer}まい。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_10", grade: 2, concept: "measurement_reasoning",
+    format: "赤いテープは1m{redCm}cm、青いテープは{blueCm}cmです。赤いテープは何cm長い？",
+    generate: {
+      redCm: { type: "integer", range: [25, 45] },
+      blueCm: { type: "integer", range: [100, 120] },
+      redTotal: { formula: "100 + redCm" }
+    },
+    answer: "redTotal - blueCm",
+    hints: ["赤いテープの長さを、まずcmだけで表そう。", "同じ単位にそろえてから、青い長さをひこう。"],
+    explanation: "赤は{redTotal}cm。{redTotal} - {blueCm} = {answer}cm長いね。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_11", grade: 2, concept: "measurement_reasoning",
+    format: "1kgの荷物と、{weightA}gと{weightB}gをあわせた荷物では、どちらが何g重い？重さのちがいを答えよう。",
+    generate: {
+      weightA: { type: "choice", values: [550, 600, 650] },
+      weightB: { type: "choice", values: [200, 250, 300] },
+      otherWeight: { formula: "weightA + weightB" }
+    },
+    answer: "1000 - otherWeight",
+    hints: ["1kgをgになおして、もう一方の荷物とくらべよう。", "{weightA}gと{weightB}gをたして、1000gとの差をもとめよう。"],
+    explanation: "1kgは1000g。{weightA}g + {weightB}g = {otherWeight}gなので、1kgの荷物が{answer}g重いよ。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_12", grade: 2, concept: "number_reasoning",
+    format: "{candies}このおかしを{people}人で同じ数ずつ分けます。1人分は何こ？",
+    generate: {
+      candies: { type: "choice", values: [17, 21, 25, 29] },
+      people: { type: "integer", range: [3, 5] }
+    },
+    answer: "Math.floor(candies / people)",
+    hints: ["{people}人に同じ数ずつ配れる数を考えよう。", "人数分のまとまりを作って、1人分をたしかめよう。"],
+    explanation: "1人分は{answer}こ。みんなに同じ数ずつ配れるね。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_13", grade: 2, concept: "systematic_counting",
+    format: "シャツが{shirts}しゅるい、ズボンが{pants}しゅるいあります。シャツとズボンを1つずつえらぶと、何通り？",
+    generate: {
+      shirts: { type: "integer", range: [2, 4] },
+      pants: { type: "integer", range: [2, 3] }
+    },
+    answer: "shirts * pants",
+    hints: ["シャツを1しゅるい決めたとき、ズボンは何通りえらべるかな？", "それぞれのシャツについて、同じように数えよう。"],
+    explanation: "シャツ{shirts}しゅるいそれぞれに、ズボンが{pants}しゅるいあるので、{shirts} × {pants} = {answer}通り。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_14", grade: 2, concept: "number_reasoning",
+    problemType: "calculation",
+    format: "十の位は一の位より{difference}大きく、2つの数字をたすと{digitSum}になる2けたの数は？",
+    generate: {
+      ones: { type: "integer", range: [1, 3] },
+      difference: { type: "integer", range: [1, 5] },
+      tens: { formula: "ones + difference" },
+      digitSum: { formula: "ones + tens" }
+    },
+    answer: "tens * 10 + ones",
+    hints: ["一の位を□とすると、十の位は□より{difference}大きいよ。", "数字の和から差をひくと、同じ□が2つ分になるね。"],
+    explanation: "一の位は{ones}、十の位は{tens}。だから答えは{answer}だよ。"
+  }),
+
+  // Grade 3: spatial reasoning, ordering and complete case counting.
+  createChallengeTemplate({
+    id: "g3_challenge_01", grade: 3, concept: "number_reasoning",
+    problemType: "calculation",
+    format: "{first}、{first + 1}、{first + 2}、{first + 3}を1回ずつつかい、□×□ + □×□ の最大の答えはいくつ？",
+    generate: { first: { type: "integer", range: [1, 3] } },
+    answer: "(first + 3) * (first + 2) + (first + 1) * first",
+    hints: ["積を大きくするには、大きい数を同じ組にするとよいかな？", "大きい2つの数の積と、小さい2つの数の積をたそう。"],
+    explanation: "{first + 3} × {first + 2} + {first + 1} × {first} = {answer}。この組み方が最大だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_02", grade: 3, concept: "spatial_reasoning",
+    format: "正三角形の各辺を{rows}こに等しく分け、格子状に線をひきました。できる三角形は全部で何こ？",
+    generate: { rows: { type: "integer", range: [2, 4] } },
+    answer: "rows % 2 === 0 ? rows * (rows + 2) * (2 * rows + 1) / 8 : (rows * (rows + 2) * (2 * rows + 1) - 1) / 8",
+    hints: ["小さい三角形だけでなく、いくつか分を合わせた三角形も数えよう。", "大きさごとに分けて、向きのちがう三角形もさがそう。"],
+    explanation: "1辺を{rows}こ分にした格子では、大きさや向きのちがう三角形を合わせて{answer}こあるよ。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_03", grade: 3, concept: "spatial_reasoning",
+    format: "たて{height}マス、横{width}マスの長方形のます目から、角の1マスを切りとりました。のこった形のまわりの長さは何マス分？",
+    generate: {
+      height: { type: "integer", range: [3, 6] },
+      width: { type: "integer", range: [3, 6] }
+    },
+    answer: "2 * (height + width)",
+    hints: ["もとの3×3の正方形のまわりの長さを数えよう。", "角を切ると、外側からなくなる辺と、新しくできる辺があるよ。"],
+    explanation: "もとのまわりは{answer}マス分。角を切ると、外側の辺と同じ長さの辺が内側にできるので、長さは変わらないよ。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_04", grade: 3, concept: "number_reasoning",
+    format: "りんご2こ分の重さは、みかん3こ分の重さと同じです。りんご1こはブロック{appleBlocks}こ分の重さです。みかん1こはブロック何こ分？",
+    generate: { appleBlocks: { type: "choice", values: [6, 9, 12] } },
+    answer: "2 * appleBlocks / 3",
+    hints: ["りんご2この重さを、ブロック何こ分かにしよう。", "同じ重さのみかん3こを、3等分しよう。"],
+    explanation: "りんご2こはブロック{2 * appleBlocks}こ分。みかん3こで同じ重さなので、みかん1こは{answer}こ分だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_05", grade: 3, concept: "logic_reasoning",
+    format: "背くらべをしました。{clue1}{clue2}{clue3}高い方からならべると、アは何番目？",
+    generate: {
+      scenario: { type: "integer", range: [1, 3] },
+      clue1: { formula: "scenario === 1 ? 'アはイより高く、' : (scenario === 2 ? 'エはイより高く、' : 'アはイより高く、')" },
+      clue2: { formula: "scenario === 1 ? 'ウはイより低く、' : (scenario === 2 ? 'イはウより高く、' : 'イはウより高く、')" },
+      clue3: { formula: "scenario === 1 ? 'エはアより高いです。' : (scenario === 2 ? 'ウはアより高いです。' : 'ウはエより高いです。')" }
+    },
+    answer: "scenario === 1 ? 2 : (scenario === 2 ? 4 : 1)",
+    hints: ["わかっている高さの関係を、不等号でつないでみよう。", "いちばん高い人の次に高い人をさがそう。"],
+    explanation: "3つの条件をつなげて高さの順にならべると、アは高い方から{answer}番目だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_06", grade: 3, concept: "systematic_counting",
+    format: "{first}、{first + 1}、{first + 2}のカードを1回ずつつかって3けたの奇数を作ります。何通り作れる？",
+    generate: { first: { type: "integer", range: [1, 3] } },
+    answer: "((first % 2) + ((first + 1) % 2) + ((first + 2) % 2)) * 2",
+    hints: ["奇数にするには、一の位にどの数字をおけばよいかな？", "一の位を決めたあと、のこり2まいのならべ方を数えよう。"],
+    explanation: "一の位における奇数のカードは{(first % 2) + ((first + 1) % 2) + ((first + 2) % 2)}まい。のこり2まいのならべ方を合わせると{answer}通り。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_07", grade: 3, concept: "logic_reasoning",
+    format: "{colors}しゅるいの色のくつ下が、どの色もたくさんあります。目をつぶって取り出すとき、同じ色を2つそろえるには、最低何まい必要？",
+    generate: { colors: { type: "integer", range: [2, 5] } },
+    answer: "colors + 1",
+    hints: ["3まい取り出して、全部ちがう色になることはあるかな？", "その場合でも、もう1まい取り出すとどうなる？"],
+    explanation: "{colors}まいまでは全部ちがう色のことがあるよ。もう1まい取り出すと、必ずどれかと同じ色になるね。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_08", grade: 3, concept: "systematic_counting",
+    format: "1から9までのカードからちがう数字を3まいえらび、合計を{target}にします。組み合わせは何通り？",
+    generate: { target: { type: "integer", range: [8, 12] } },
+    answer: "target === 8 ? 2 : (target === 9 ? 3 : (target === 10 ? 4 : (target === 11 ? 5 : 7)))",
+    hints: ["いちばん小さい数字を決めて、合計が10になる組をさがそう。", "小さい数字から順に調べると、ぬけや重なりを防げるよ。"],
+    explanation: "小さい数字から順に、同じ組を重ねずに調べると、条件に合う組は{answer}通り。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_09", grade: 3, concept: "number_reasoning",
+    problemType: "calculation",
+    format: "1から9までのカードからちがう数字を3まいつかいます。5でわり切れるいちばん大きい3けたの数を作ります。数字の合計は{digitSum}です。何という数？",
+    generate: {
+      digitSum: { type: "choice", values: [10, 12, 14] },
+      hundreds: { formula: "digitSum - 6" }
+    },
+    answer: "hundreds * 100 + 15",
+    hints: ["5でわり切れる数の一の位は何かな？", "一の位を5にして、のこりの数字の和が7になる中で、百の位をできるだけ大きくしよう。"],
+    explanation: "一の位を5にすると、のこり2けたの和は{digitSum - 5}。百の位をできるだけ大きくすると{hundreds}になり、答えは{answer}。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_10", grade: 3, concept: "spatial_reasoning",
+    format: "たてと横が整数cmの長方形を作ります。まわりの長さが{perimeter}cmのとき、面積を最大にすると何cm²？",
+    generate: {
+      perimeter: { type: "choice", values: [16, 24, 32] },
+      side: { formula: "perimeter / 4" }
+    },
+    answer: "side * side",
+    hints: ["たてと横の長さの合計はいくつかな？", "たてと横を近い長さにしたときの面積をくらべよう。"],
+    explanation: "面積はたてと横が同じ長さのとき最大。{side}cm × {side}cm = {answer}cm²だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g3_challenge_11", grade: 3, concept: "fraction_reasoning",
+    format: "ケーキの1/{denominator / 2}を太郎が食べ、3/{denominator}を花子が食べました。のこりは全体の何分のいくつ？分子を答えよう。",
+    generate: { denominator: { type: "choice", values: [6, 8, 10] } },
+    answer: "denominator - 5",
+    hints: ["1/4を、分母が8の分数になおそう。", "食べた分をたして、1からひこう。"],
+    explanation: "1/{denominator / 2} = 2/{denominator}。食べたのは5/{denominator}なので、のこりの分子は{answer}だよ。"
+  })
+];
+
+MATH_TEMPLATES.push(...CHALLENGE_TEMPLATES);
 
 function registerAllMathTemplates() {
   const reg = typeof window !== "undefined" ? window.TemplateRegistry : require('./registries.js').TemplateRegistry;
