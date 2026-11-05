@@ -166,9 +166,10 @@ class AppUI {
    * 従来 this.storage.saveState(this.state) の戻り値を無視していた7箇所を
    * このヘルパー経由に統一し、Quota超過・プライベートモード等の保存失敗を
    * ユーザーが気づけるようにする。
+   * @param {Array|null} failureButtons 保存失敗時に表示する追加アクション
    * @returns {boolean} 保存に成功したら true
    */
-  _saveOrAlert() {
+  _saveOrAlert(failureButtons = null) {
     let res = null;
     try {
       res = this.storage.saveState(this.state);
@@ -178,9 +179,8 @@ class AppUI {
     if (!res || !res.success) {
       if (typeof Sound !== "undefined" && Sound && Sound.playIncorrect) Sound.playIncorrect();
       const detail = (res && res.error) ? ("<br><small>" + res.error + "</small>") : "";
-      this._showModal("ほぞんに しっぱいしました", "データを ほぞんできませんでした。<br>ブラウザの容量を 確認してね。" + detail, [
-        { text: "もどる", action: "app.closeModal()" }
-      ]);
+      this._showModal("ほぞんに しっぱいしました", "データを ほぞんできませんでした。<br>ブラウザの容量を 確認してね。" + detail,
+        failureButtons || [{ text: "もどる", action: "app.closeModal()" }]);
       return false;
     }
     return true;
@@ -245,6 +245,9 @@ class AppUI {
         break;
       case "learning":
         html += this._renderLearningScreen();
+        break;
+      case "challenge_course":
+        html += this._renderChallengeCourseScreen(profile);
         break;
       case "session_result":
         html += this._renderSessionResultScreen(params);
@@ -387,6 +390,7 @@ class AppUI {
 
       <div style="margin-top:auto;">
         <button class="btn btn-primary" onclick="app.startLearningSession()">🚀 学習をはじめる（10問）</button>
+        ${currentGrade >= 1 && currentGrade <= 3 ? `<button class="btn btn-purple" onclick="app.navigate('challenge_course')">🧠 チャレンジコース</button>` : ""}
         <button class="btn btn-secondary" onclick="app.navigate('unit_select')">🎯 たんげんをえらんで練習</button>
         <button class="btn btn-success" onclick="app.startTestSession()">📝 テストを受ける（10問）</button>
         <button class="btn btn-purple" onclick="app.navigate('review_history')">📚 ふくしゅう・きろく (${profile.reviewQueue?.filter(r=>r.status==='active').length || 0})</button>
@@ -394,6 +398,72 @@ class AppUI {
         ${(typeof APP_CONFIG !== "undefined" && APP_CONFIG.features && APP_CONFIG.features.parentMode) ? `
         <button class="btn btn-outline" style="min-height:36px; padding:6px 12px; font-size:0.85rem; margin-top:2px;" onclick="app.startParentMode()">🔒 保護者モード</button>
         ` : ""}
+      </div>
+    `;
+  }
+
+  _renderChallengeCourseScreen(profile) {
+    const grade = profile.skill.subject.currentGrade;
+    if (grade < 1 || grade > 3) {
+      return `
+        <div class="card">
+          <h2>チャレンジコース</h2>
+          <p>チャレンジコースは小学1〜3年生向けです。</p>
+          <button class="btn btn-outline" onclick="app.navigate('home')">🏠 ホームへもどる</button>
+        </div>
+      `;
+    }
+
+    const progress = ChallengeEngine.getProgress(profile, grade);
+    const stageNames = ["ひらめきの土台", "考え方を使う", "入試型に挑戦"];
+    const stageDescriptions = [
+      "条件を整理し、きまりや関係を見つけよう。",
+      "いくつかの条件を組み合わせて考えよう。",
+      "場合分けや図を使って、じっくり解こう。"
+    ];
+    const fields = Object.entries(CHALLENGE_CATEGORIES);
+    const stageCards = [1, 2, 3].map(stage => {
+      const stageProgress = progress.stages[stage];
+      const templates = ChallengeEngine.getTemplates(grade, stage);
+      const unlocked = stage <= progress.unlockedStage;
+      const passed = stageProgress.completed;
+      const badge = passed ? "✅ クリア" : (unlocked ? "🔓 挑戦できる" : "🔒 まだロック中");
+      return `
+        <div class="card" style="border-left:4px solid ${passed ? "var(--success)" : (unlocked ? "var(--primary)" : "var(--border)")};">
+          <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+            <h3 style="margin:0;">${stage}. ${stageNames[stage - 1]}</h3>
+            <span class="badge">${badge}</span>
+          </div>
+          <p style="font-size:0.9rem; color:var(--text-muted);">${stageDescriptions[stage - 1]}</p>
+          <div style="font-size:0.85rem; margin-bottom:10px;">
+            問題型 ${templates.length}種類 ・ これまで ${stageProgress.attempts}回
+            ${stageProgress.attempts > 0 ? `・ ベスト ${stageProgress.bestScore}/5` : ""}
+          </div>
+          ${unlocked
+            ? `<button class="btn btn-primary" onclick="app.startChallengeStage(${stage})">${passed ? "もう一度挑戦" : "5問に挑戦する"}</button>`
+            : '<button class="btn btn-outline" disabled>前の段階をクリアすると挑戦できます</button>'}
+          ${!passed && unlocked ? '<small style="display:block; color:var(--text-muted); margin-top:6px;">5問中4問正解で、次の段階が開きます。ヒントを使っても大丈夫。</small>' : ""}
+        </div>
+      `;
+    }).join("");
+    const categoryRows = fields.map(([id, label]) => {
+      const stats = progress.categoryStats[id];
+      if (!stats || stats.attempts < 1) return "";
+      return `<span class="badge">${label}: ${stats.correct}/${stats.attempts}</span>`;
+    }).filter(Boolean).join(" ");
+
+    return `
+      <div class="card" style="padding:16px 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <h2 style="margin:0;">🧠 小学${grade}年生 チャレンジコース</h2>
+          <button class="btn btn-outline" style="width:auto; margin:0;" onclick="app.navigate('home')">🏠 もどる</button>
+        </div>
+        <p style="color:var(--text-muted);">数の関係・規則・場合の数・図形など、考え方を身につけよう。</p>
+        ${categoryRows ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">${categoryRows}</div>` : ""}
+      </div>
+      ${stageCards}
+      <div class="card" style="font-size:0.85rem; color:var(--text-muted);">
+        各段階は5問です。4問以上正解すると次の段階に進めます。何度でも挑戦できます。
       </div>
     `;
   }
@@ -460,6 +530,58 @@ class AppUI {
   // ==========================================
   // 4. 学習セッション画面 (Screen 4)
   // ==========================================
+  startChallengeStage(stage) {
+    const profile = this.getActiveProfile();
+    const grade = profile.skill.subject.currentGrade;
+    if (grade < 1 || grade > 3 || !ChallengeEngine.canStartStage(profile, grade, stage)) {
+      this._showModal("まだ挑戦できません", "前の段階をクリアしてから挑戦しよう。", [
+        { text: "もどる", action: "app.navigate('challenge_course')" }
+      ]);
+      return;
+    }
+
+    const templates = ChallengeEngine.getTemplates(grade, stage);
+    if (templates.length === 0) {
+      throw new Error(`No challenge templates registered for grade ${grade}, stage ${stage}.`);
+    }
+
+    this.session = {
+      type: "learning",
+      mode: "challenge",
+      challengeGrade: grade,
+      challengeStage: stage,
+      currentIndex: 0,
+      totalCount: CHALLENGE_STAGE_COUNT,
+      correctCount: 0,
+      earnedPointsTotal: 0,
+      questions: [],
+      currentAttemptCount: 0,
+      currentHintUsed: false,
+      challengeHintIndex: 0,
+      challengeMethodResults: Array(CHALLENGE_STAGE_COUNT).fill(null),
+      historySummary: [],
+      startedAt: Date.now()
+    };
+
+    const deck = this._shuffleArray([...templates]);
+    for (let i = 0; i < CHALLENGE_STAGE_COUNT; i++) {
+      if (deck.length === 0) deck.push(...this._shuffleArray([...templates]));
+      const template = deck.shift();
+      const question = RuleBasedQuestionSource.generateQuestion(
+        template.templateId,
+        this.session.questions,
+        { isReview: false }
+      );
+      this.session.questions.push(question);
+    }
+
+    ChallengeEngine.getProgress(profile, grade);
+    if (!this._saveOrAlert()) return;
+    this._startSessionTimer();
+    Sound.playClick();
+    this.navigate("learning");
+  }
+
   startLearningSession() {
     const profile = this.getActiveProfile();
     const currentGrade = profile.skill.subject.currentGrade;
@@ -482,7 +604,7 @@ class AppUI {
     // V2.5.13: 単元ごとのテンプレートデッキを事前シャッフル (同一単元でも毎回別テンプレートを出題)
     const tReg = TemplateRegistry;
     const currentUnits = (typeof UnitRegistry !== "undefined")
-      ? UnitRegistry.getUnitsForLevel("math", currentGrade, gp.difficultyLevel)
+      ? UnitRegistry.getUnitsForLevel("math", currentGrade, gp.difficultyLevel).filter(unit => !unit.isChallenge)
       : [];
     const decks = {};
     for (const u of currentUnits) {
@@ -530,12 +652,21 @@ class AppUI {
     const profile = this.getActiveProfile();
     const currentGrade = targetGrade || profile.skill.subject.currentGrade;
     const tReg = TemplateRegistry;
+    const unitInfo = (typeof UnitRegistry !== "undefined" && UnitRegistry.findUnit)
+      ? UnitRegistry.findUnit("math", currentGrade, unitId)
+      : null;
+    if (unitInfo && unitInfo.isChallenge) {
+      this._showModal("チャレンジコースから挑戦しよう", "チャレンジ問題は専用コースで段階的に学べます。", [
+        { text: "コースを見る", action: "app.navigate('challenge_course')" }
+      ]);
+      return;
+    }
 
     // 指定単元のテンプレートを全レベル、または選択されたレベルから収集
     let pool = [];
     const levels = targetLevel === null ? [1, 2, 3] : [Number(targetLevel)];
     for (const lv of levels) {
-      const tmpls = tReg.getByUnit("math", currentGrade, lv, unitId) || [];
+      const tmpls = (tReg.getByUnit("math", currentGrade, lv, unitId) || []).filter(template => !template.challenge);
       pool = pool.concat(tmpls);
     }
 
@@ -546,9 +677,6 @@ class AppUI {
       return;
     }
 
-    const unitInfo = (typeof UnitRegistry !== "undefined" && UnitRegistry.findUnit)
-      ? UnitRegistry.findUnit("math", currentGrade, unitId)
-      : null;
     const unitName = (unitInfo && unitInfo.name) || unitId;
 
     this.session = {
@@ -713,6 +841,10 @@ class AppUI {
     const q = this.session.questions[this.session.currentIndex];
     const progress = `${this.session.currentIndex + 1} / ${this.session.totalCount}`;
     const isPracticeMode = (this.session.mode === "unit_practice");
+    const isChallengeMode = (this.session.mode === "challenge");
+    const challengeCategory = isChallengeMode && q.challenge
+      ? CHALLENGE_CATEGORIES[q.challenge.category]
+      : "";
     // V2.6.1: 出題中のunit名を表示 (新単元の出題可視化)
     let unitName = "";
     try {
@@ -727,7 +859,7 @@ class AppUI {
     return `
       <div class="question-meta">
         <span><b>第 ${progress} 問</b> <span id="session-timer" style="color:var(--text-muted); font-weight:normal;">⏱ ${formatElapsed(0)}</span></span>
-        <span>${isPracticeMode ? '<span class="badge warn" style="font-size:0.75rem;">🎯 とっくん</span> ' : ''}<span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
+        <span>${isPracticeMode ? '<span class="badge warn" style="font-size:0.75rem;">🎯 とっくん</span> ' : ''}${isChallengeMode ? `<span class="badge warn">🧠 段階${this.session.challengeStage} · ${challengeCategory || "チャレンジ"}</span> ` : ''}<span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${unitName}</span> <span class="badge success">${q.problemType === 'word_problem' ? '文章題' : '計算'}</span> Lv${q.difficultyLevel}</span>
       </div>
 
       <div class="progress-container">
@@ -1229,14 +1361,19 @@ class AppUI {
         // 2回目不正解: ヒント表示
         this.session.currentHintUsed = true;
         Sound.playHint();
-        this._showModal("💡 ヒント", `
-          <div style="text-align:left; font-size:0.95rem;">
-            ${q.hintSteps.map((h, i) => `<div style="background:var(--hint-bg); color:var(--hint-text); border:1px solid var(--hint-border); padding:8px; border-radius:6px; margin-bottom:6px;"><b>ヒント${i+1}:</b> ${h}</div>`).join("")}
-            ${q.hissanHintHTML ? `<div class="hissan-stage" style="justify-content:flex-start;">${q.hissanHintHTML}</div>` : ""}
-          </div>
-        `, [
-          { text: "ヒントを使って答える", action: "app.closeModal()" }
-        ]);
+        if (this.session.mode === "challenge") {
+          this.session.challengeHintIndex = 0;
+          this.showNextChallengeHint();
+        } else {
+          this._showModal("💡 ヒント", `
+            <div style="text-align:left; font-size:0.95rem;">
+              ${q.hintSteps.map((h, i) => `<div style="background:var(--hint-bg); color:var(--hint-text); border:1px solid var(--hint-border); padding:8px; border-radius:6px; margin-bottom:6px;"><b>ヒント${i+1}:</b> ${h}</div>`).join("")}
+              ${q.hissanHintHTML ? `<div class="hissan-stage" style="justify-content:flex-start;">${q.hissanHintHTML}</div>` : ""}
+            </div>
+          `, [
+            { text: "ヒントを使って答える", action: "app.closeModal()" }
+          ]);
+        }
         this.currentInput = "";
         const display = document.getElementById("answer-display");
         if (display) display.innerHTML = '<span class="answer-placeholder">？</span>';
@@ -1244,6 +1381,48 @@ class AppUI {
         // 3回目不正解: 終了・正解表示・復習登録
         this._handleLearningQuestionCompletion(false, 3, this.session.currentHintUsed);
       }
+    }
+  }
+
+  showNextChallengeHint() {
+    const q = this.session && this.session.questions[this.session.currentIndex];
+    if (!q || !Array.isArray(q.hintSteps)) return;
+    const index = this.session.challengeHintIndex || 0;
+    if (index >= q.hintSteps.length) {
+      this._showModal("💡 ヒント", "ヒントはここまでです。答えを考えてみよう。", [
+        { text: "答える", action: "app.closeModal()" }
+      ]);
+      return;
+    }
+
+    this.session.challengeHintIndex = index + 1;
+    const remaining = q.hintSteps.length - this.session.challengeHintIndex;
+    this._showModal(`💡 ヒント ${index + 1}`, `
+      <div style="text-align:left; font-size:0.95rem;">
+        <div style="background:var(--hint-bg); color:var(--hint-text); border:1px solid var(--hint-border); padding:10px; border-radius:6px;">${q.hintSteps[index]}</div>
+        ${q.hissanHintHTML && index === q.hintSteps.length - 1 ? `<div class="hissan-stage" style="justify-content:flex-start; margin-top:8px;">${q.hissanHintHTML}</div>` : ""}
+      </div>
+    `, [
+      { text: remaining > 0 ? "つぎのヒント" : "答える", action: remaining > 0 ? "app.showNextChallengeHint()" : "app.closeModal()" }
+    ]);
+  }
+
+  selectChallengeMethod(methodId) {
+    if (!this.session || this.session.mode !== "challenge") return;
+    const q = this.session.questions[this.session.currentIndex];
+    if (!q || !q.challenge) return;
+    const method = CHALLENGE_METHODS.find(item => item.id === methodId);
+    if (!method) return;
+    this.session.challengeMethodResults[this.session.currentIndex] = {
+      category: q.challenge.category,
+      method: methodId,
+      correct: methodId === q.challenge.method
+    };
+    const feedback = document.getElementById("challenge-method-feedback");
+    if (feedback) {
+      const correct = methodId === q.challenge.method;
+      feedback.textContent = correct ? "考え方も正解！その方法がぴったりです。" : "考え方を選んでくれてありがとう。いろいろな方法があります。";
+      feedback.style.color = correct ? "var(--success)" : "var(--text-muted)";
     }
   }
 
@@ -1316,6 +1495,19 @@ class AppUI {
         `;
       }
 
+      if (this.session.mode === "challenge" && isCorrect && q.challenge) {
+        bodyHtml += `
+          <div style="text-align:left; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px;">
+            <b>🤔 どう考えた？</b>
+            <p style="font-size:0.85rem; margin:4px 0 8px;">近い考え方をひとつ選ぼう（えらばなくても次へ進めます）。</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+              ${CHALLENGE_METHODS.map(method => `<button class="choice-btn" onclick="app.selectChallengeMethod('${method.id}')">${method.label}</button>`).join("")}
+            </div>
+            <div id="challenge-method-feedback" style="font-size:0.85rem; font-weight:bold; margin-top:6px;"></div>
+          </div>
+        `;
+      }
+
       this._showModal(title, bodyHtml, [
         { text: this.session.currentIndex + 1 >= this.session.totalCount ? "結果を見る ➔" : "つぎの問題へ ➔", action: "app.nextLearningQuestion()" }
       ]);
@@ -1339,29 +1531,64 @@ class AppUI {
     this.session.currentIndex++;
     this.session.currentAttemptCount = 0;
     this.session.currentHintUsed = false;
+    this.session.challengeHintIndex = 0;
     this.currentInput = "";
     this.session.selectedFigureChoices = [];
     // V2.9.6: 時計のフォーカス所属設問もリセット (前の設問と混同しないため)
     this.session.clockFocusQ = null;
 
     if (this.session.currentIndex >= this.session.totalCount) {
-      // 10問完了 -> 結果画面へ
+      // セッション完了 -> 結果画面へ
       this._stopSessionTimer();
       const elapsedSeconds = (this.session.startedAt)
         ? Math.floor((Date.now() - this.session.startedAt) / 1000)
         : 0;
       Sound.playFanfare();
-      this.navigate("session_result", {
+      const resultParams = {
         correctCount: this.session.correctCount,
         totalCount: this.session.totalCount,
         earnedPoints: this.session.earnedPointsTotal,
         elapsedSeconds: elapsedSeconds,
         isPracticeMode: this.session.mode === "unit_practice",
-        targetUnitName: this.session.targetUnitName || ""
-      });
+        targetUnitName: this.session.targetUnitName || "",
+        isChallengeMode: this.session.mode === "challenge",
+        challengeStage: this.session.challengeStage,
+        challengePassed: false,
+        challengeUnlockedStage: 0
+      };
+      if (this.session.mode === "challenge" && !this.session.challengeResultRecorded) {
+        const challengeResult = ChallengeEngine.recordStageResult(
+          this.getActiveProfile(),
+          this.session.challengeGrade,
+          this.session.challengeStage,
+          this.session.correctCount,
+          this.session.challengeMethodResults.filter(Boolean)
+        );
+        this.session.challengeResultRecorded = true;
+        resultParams.challengePassed = challengeResult.passed;
+        resultParams.challengeUnlockedStage = challengeResult.unlockedStage;
+        this.session.challengeResultParams = resultParams;
+        const retryButtons = [
+          { text: "もう一度保存", action: "app.retryChallengeStageSave()" },
+          { text: "ホームへ", action: "app.navigate('home')" }
+        ];
+        if (!this._saveOrAlert(retryButtons)) return;
+      }
+      this.navigate("session_result", resultParams);
     } else {
       this.render();
     }
+  }
+
+  retryChallengeStageSave() {
+    if (!this.session || this.session.mode !== "challenge" ||
+        !this.session.challengeResultRecorded || !this.session.challengeResultParams) return;
+    const retryButtons = [
+      { text: "もう一度保存", action: "app.retryChallengeStageSave()" },
+      { text: "ホームへ", action: "app.navigate('home')" }
+    ];
+    if (!this._saveOrAlert(retryButtons)) return;
+    this.navigate("session_result", this.session.challengeResultParams);
   }
 
   // ==========================================
@@ -1371,10 +1598,12 @@ class AppUI {
     const accuracyPct = Math.round((params.correctCount / params.totalCount) * 100);
     const title = params.isPracticeMode
       ? `🎯 ${params.targetUnitName || 'たんげん'} 特訓完了！`
-      : `🏆 学習セッション完了！`;
+      : (params.isChallengeMode ? `🧠 チャレンジ段階${params.challengeStage}完了！` : `🏆 学習セッション完了！`);
     const subtitle = params.isPracticeMode
       ? `集中してよくれんしゅうしました！`
-      : `よくがんばりました！`;
+      : (params.isChallengeMode
+        ? (params.challengePassed ? "合格！次の段階に進めるよ。" : "あと少し！何度でも挑戦できます。")
+        : `よくがんばりました！`);
 
     return `
       <div class="card" style="text-align:center; padding:24px 16px;">
@@ -1399,6 +1628,13 @@ class AppUI {
         <div style="font-size:0.9rem; font-weight:bold; margin-top:4px; margin-bottom:8px;">正答率: ${accuracyPct}%</div>
         <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:20px;">⏱ かかった時間: ${formatElapsed(params.elapsedSeconds || 0)}</div>
 
+        ${params.isChallengeMode ? `
+          <div class="card" style="background:var(--primary-light); margin-bottom:14px;">
+            <b>${params.challengePassed ? "🎉 次の段階が開きました！" : "🔁 もう一度挑戦してみよう"}</b>
+            <p style="font-size:0.9rem; margin:6px 0;">合格ラインは5問中4問です。ヒントを使っても合否には影響しません。</p>
+            <button class="btn btn-primary" onclick="app.navigate('challenge_course')">段階一覧を見る</button>
+          </div>
+        ` : ""}
         ${params.isPracticeMode ? `<button class="btn btn-secondary" style="margin-bottom:8px;" onclick="app.navigate('unit_select')">🎯 別の単元をえらぶ</button>` : ""}
         <button class="btn btn-primary" onclick="app.navigate('home')">🏠 ホームへもどる</button>
       </div>
@@ -1602,6 +1838,7 @@ class AppUI {
       for (let lv = 1; lv <= 3; lv++) {
         const list = UnitRegistry.getUnitsForLevel("math", viewGrade, lv) || [];
         for (const u of list) {
+          if (u.isChallenge) continue;
           if (!seenIds.has(u.id)) {
             seenIds.add(u.id);
             let tmplCount = 0;

@@ -145,6 +145,7 @@ const seenUnits = new Set();
 for (let g = 1; g <= 6; g++) {
   for (let lv = 1; lv <= 3; lv++) {
     for (const u of UnitRegistry.getUnitsForLevel("math", g, lv)) {
+      if (u.isChallenge) continue;
       const key = g + ":" + u.id;
       if (seenUnits.has(key)) continue;
       seenUnits.add(key);

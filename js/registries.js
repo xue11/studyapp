@@ -119,7 +119,7 @@ class UnitRegistry {
           { id: "add_sub_3terms_10", name: "3つのかずのけいさん（10まで）", concepts: ["three_terms_add_sub"] },
           { id: "add_sub_3terms_20", name: "3つのかずのけいさん（20まで）", concepts: ["three_terms_add_sub_20"] },
           { id: "dev_hidden_number", name: "かくれた数の計算", concepts: ["missing_number"] },
-          { id: "challenge_g1", name: "チャレンジ問題", concepts: ["number_reasoning", "pattern_reasoning", "systematic_counting", "spatial_reasoning", "time_reasoning", "measurement_reasoning", "logic_reasoning", "fraction_reasoning"] }
+          { id: "challenge_g1", name: "チャレンジ問題", concepts: ["number_reasoning", "pattern_reasoning", "systematic_counting", "spatial_reasoning", "time_reasoning", "measurement_reasoning", "logic_reasoning", "fraction_reasoning"], isChallenge: true }
         ]
       },
       2: {
@@ -154,7 +154,7 @@ class UnitRegistry {
           { id: "dev_reverse_calc", name: "逆算", concepts: ["reverse_calculation"] },
           { id: "dev_weekday", name: "曜日の計算", concepts: ["weekday_calculation"] },
           { id: "dev_money", name: "お金の計算", concepts: ["money_combination"] },
-          { id: "challenge_g2", name: "チャレンジ問題", concepts: ["number_reasoning", "pattern_reasoning", "systematic_counting", "spatial_reasoning", "time_reasoning", "measurement_reasoning", "logic_reasoning", "fraction_reasoning"] }
+          { id: "challenge_g2", name: "チャレンジ問題", concepts: ["number_reasoning", "pattern_reasoning", "systematic_counting", "spatial_reasoning", "time_reasoning", "measurement_reasoning", "logic_reasoning", "fraction_reasoning"], isChallenge: true }
         ]
       },
       3: {
@@ -179,7 +179,7 @@ class UnitRegistry {
           { id: "division_g3", name: "わり算", concepts: ["division_with_remainder", "division_equal_share"], learningGroupId: "division" },
           { id: "calc_application_g3", name: "計算の活用", concepts: ["mixed_mul_div"], learningGroupId: "calculation_application" },
           { id: "multiplication_g3", name: "かけ算", concepts: ["kuku_mastery", "cryptarithmetic"], learningGroupId: "multiplication" },
-          { id: "challenge_g3", name: "チャレンジ問題", concepts: ["number_reasoning", "pattern_reasoning", "systematic_counting", "spatial_reasoning", "time_reasoning", "measurement_reasoning", "logic_reasoning", "fraction_reasoning"] },
+          { id: "challenge_g3", name: "チャレンジ問題", concepts: ["number_reasoning", "pattern_reasoning", "systematic_counting", "spatial_reasoning", "time_reasoning", "measurement_reasoning", "logic_reasoning", "fraction_reasoning"], isChallenge: true },
           // V2.7.0: 図形タップ問題 (answerType: "figure_tap") の3年生向け単元
           { id: "angle_figure", name: "角と三角形（図形タップ）", concepts: ["angle_right_vertex", "angle_right_all", "tri_longest_side"] },
           { id: "area_grid_figure", name: "面積と方眼（図形タップ）", concepts: ["area_square_sides", "area_rect_sides", "area_square_equal_sides"] },

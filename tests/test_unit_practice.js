@@ -150,6 +150,7 @@ for (const [unitId, level] of [
 console.log("\n6. UI描画検証 (_renderUnitSelectScreen / _renderHomeScreen)");
 
 const unitSelectHTML = mockUI._renderUnitSelectScreen({ grade: 2 });
+check("チャレンジ単元は通常の単元選択に表示されない", !unitSelectHTML.includes("challenge_g2"));
 check("単元選択画面に「単元をえらんで練習」見出しが含まれる", unitSelectHTML.includes("単元をえらんで練習"));
 check("時こくと時間のカードが含まれる", unitSelectHTML.includes("時こくと時間"));
 check("かけ算・九九のカードが含まれる", unitSelectHTML.includes("かけ算・九九"));
@@ -192,6 +193,7 @@ check("移行後の統合単元に保存済みの練習履歴が引き続き表�
 
 const homeHTML = mockUI._renderHomeScreen(mockUI.getActiveProfile());
 check("ホーム画面に「たんげんをえらんで練習」ボタンが含まれる", homeHTML.includes("たんげんをえらんで練習"));
+check("ホーム画面にチャレンジコースへの入口がある", homeHTML.includes("app.navigate('challenge_course')"));
 
 // -------------------------------------------------------------
 // 7. 結果画面描画の検証 (_renderSessionResultScreen)

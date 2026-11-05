@@ -143,9 +143,9 @@ console.log("6. P1-1: 保存失敗ハンドラの実在確認");
 const fs = require("fs");
 const path = require("path");
 const uiSrc = fs.readFileSync(path.join(__dirname, "..", "js", "ui.js"), "utf8");
-check("ui.js に _saveOrAlert ヘルパーが定義されている", /_saveOrAlert\(\)\s*\{/.test(uiSrc));
+check("ui.js に _saveOrAlert ヘルパーが定義されている", /_saveOrAlert\([^)]*\)\s*\{/.test(uiSrc));
 // ヘルパー本体を除いた範囲に、素の saveState 呼び出し（戻り値無視）が残っていないこと
-const uiWithoutHelper = uiSrc.replace(/_saveOrAlert\(\)\s*\{[\s\S]*?\n  \}/, "");
+const uiWithoutHelper = uiSrc.replace(/_saveOrAlert\([^)]*\)\s*\{[\s\S]*?\n  \}/, "");
 check(
   "ui.js の保存呼び出しが _saveOrAlert 経由 (素の saveState 呼び出しは残っていない)",
   !/this\.storage\.saveState\(this\.state\);/.test(uiWithoutHelper)
@@ -158,4 +158,3 @@ check("test_engine.js が saveRes.success を検査している", /saveRes\.succ
 console.log("\n==========================================");
 console.log(`V2.9.7 Date/History tests: ${passCount} assertions passed.`);
 console.log("==========================================");
-

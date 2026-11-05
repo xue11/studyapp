@@ -40,6 +40,7 @@ class UnitSelector {
     // V2.6.2 (minimal B): skip review items whose unit no longer exists in any level
     // V2.6.4: if figureEnabled===false, also skip figure (shape_*) review items
     const validReviews = activeReviews.filter(r =>
+      !this._isChallengeUnit(currentGrade, r.unitId) &&
       this._unitExistsInAnyLevel(currentGrade, r.unitId) &&
       (this._isFigureEnabled(profile) || this._reviewHasEnabledTemplates(r))
     );
@@ -63,10 +64,11 @@ class UnitSelector {
     // 2. Normal unit selection (Coverage vs Weakness Phase)
     // V2.6.4: if figureEnabled===false, exclude shape_* units
     let availableUnits = this._getUnitsForLevel("math", currentGrade, level);
+    availableUnits = availableUnits.filter(unit => !unit.isChallenge);
     availableUnits = this._filterFigureUnits(availableUnits, profile, "math", currentGrade, level);
     if (!availableUnits || availableUnits.length === 0) {
       // Safety fallback: restore unfiltered list (grade1 Lv1 keeps 3 calc units, so normally not empty)
-      availableUnits = this._getUnitsForLevel("math", currentGrade, level);
+      availableUnits = this._getUnitsForLevel("math", currentGrade, level).filter(unit => !unit.isChallenge);
     }
     if (!availableUnits || availableUnits.length === 0) {
       throw new Error(`UnitSelector: No units registered for grade ${currentGrade} level ${level}`);
@@ -128,6 +130,14 @@ class UnitSelector {
     for (let lv = 1; lv <= 3; lv++) {
       const units = this._getUnitsForLevel("math", grade, lv);
       if (units && units.some(u => u.id === unitId)) return true;
+    }
+    return false;
+  }
+
+  static _isChallengeUnit(grade, unitId) {
+    for (let lv = 1; lv <= 3; lv++) {
+      const units = this._getUnitsForLevel("math", grade, lv);
+      if (units && units.some(unit => unit.id === unitId && unit.isChallenge)) return true;
     }
     return false;
   }

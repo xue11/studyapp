@@ -419,6 +419,33 @@ console.log("22. selectNextUnit: Math.random が復元される");
 }
 
 // ---------------------------------------------------------------
+console.log("23. selectNextUnit: チャレンジ単元を通常出題・復習から除外");
+// ---------------------------------------------------------------
+{
+  const challengeReview = {
+    reviewId: "challenge-review",
+    subjectId: "math",
+    grade: 1,
+    unitId: "challenge_g1",
+    dueAt: TODAY,
+    status: "active",
+    failCount: 0,
+    successCount: 0,
+    registeredAt: TODAY,
+    templateId: "g1_challenge_01",
+    conceptId: "number_reasoning"
+  };
+  const profile = makeProfile(1, 3, {
+    learningStartDate: "2026-08-25",
+    reviewQueue: [challengeReview]
+  });
+  check("チャレンジ単元を識別する", UnitSelector._isChallengeUnit(1, "challenge_g1"));
+  const res = withRandom(0.5, () => UnitSelector.selectNextUnit(profile, APP_CONFIG, TODAY));
+  check("期限到来したチャレンジ復習より通常単元を選ぶ",
+    res.type === "normal" && res.unitId !== "challenge_g1");
+}
+
+// ---------------------------------------------------------------
 console.log("\n==========================================");
 console.log(`UnitSelector tests: ${passCount} assertions passed.`);
 console.log("==========================================");

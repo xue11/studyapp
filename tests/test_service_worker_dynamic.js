@@ -50,6 +50,7 @@ console.log("2. urlsToCache に必須リソースがすべて含まれている"
     "/", "/index.html", "/css/app.css", "/manifest.json",
     "/js/config.js", "/js/storage.js", "/js/session_coordinator.js",
     "/js/learning_engine.js", "/js/review_engine.js", "/js/unit_selector.js",
+    "/js/challenge_engine.js",
     "/icon-192.png", "/icon-512.png"
   ];
   for (const url of requiredUrls) {

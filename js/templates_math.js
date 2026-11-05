@@ -3773,6 +3773,10 @@ MATH_TEMPLATES.push(
 );
 
 function createChallengeTemplate(definition) {
+  const challengeInfo = CHALLENGE_TEMPLATE_INFO[definition.id];
+  if (!challengeInfo) {
+    throw new Error("Missing challenge metadata for " + definition.id);
+  }
   return {
     templateId: definition.id,
     grade: definition.grade,
@@ -3787,6 +3791,7 @@ function createChallengeTemplate(definition) {
       answer: { formula: definition.answer }
     },
     answer: { expression: "answer", normalization: "integer" },
+    challenge: challengeInfo,
     hintSteps: definition.hints,
     explanationTemplate: definition.explanation,
     understandingCheck: {
@@ -3801,6 +3806,39 @@ function createChallengeTemplate(definition) {
     }
   };
 }
+
+const CHALLENGE_TEMPLATE_INFO = {
+  g1_challenge_01: { stage: 1, category: "number_reasoning", method: "organize" },
+  g1_challenge_02: { stage: 2, category: "pattern_reasoning", method: "pattern" },
+  g1_challenge_03: { stage: 3, category: "systematic_counting", method: "search" },
+  g1_challenge_04: { stage: 1, category: "pattern_reasoning", method: "pattern" },
+  g1_challenge_05: { stage: 2, category: "number_reasoning", method: "organize" },
+  g2_challenge_01: { stage: 1, category: "number_reasoning", method: "cases" },
+  g2_challenge_02: { stage: 1, category: "number_reasoning", method: "organize" },
+  g2_challenge_03: { stage: 2, category: "systematic_counting", method: "search" },
+  g2_challenge_04: { stage: 1, category: "number_reasoning", method: "reverse" },
+  g2_challenge_05: { stage: 1, category: "number_reasoning", method: "search" },
+  g2_challenge_06: { stage: 2, category: "number_reasoning", method: "organize" },
+  g2_challenge_07: { stage: 2, category: "time_reasoning", method: "convert" },
+  g2_challenge_08: { stage: 1, category: "time_reasoning", method: "pattern" },
+  g2_challenge_09: { stage: 2, category: "systematic_counting", method: "search" },
+  g2_challenge_10: { stage: 2, category: "measurement_reasoning", method: "convert" },
+  g2_challenge_11: { stage: 3, category: "measurement_reasoning", method: "convert" },
+  g2_challenge_12: { stage: 3, category: "number_reasoning", method: "organize" },
+  g2_challenge_13: { stage: 3, category: "systematic_counting", method: "organize" },
+  g2_challenge_14: { stage: 3, category: "number_reasoning", method: "cases" },
+  g3_challenge_01: { stage: 1, category: "number_reasoning", method: "cases" },
+  g3_challenge_02: { stage: 1, category: "spatial_reasoning", method: "organize" },
+  g3_challenge_03: { stage: 1, category: "spatial_reasoning", method: "organize" },
+  g3_challenge_04: { stage: 1, category: "number_reasoning", method: "organize" },
+  g3_challenge_05: { stage: 2, category: "logic_reasoning", method: "organize" },
+  g3_challenge_06: { stage: 2, category: "systematic_counting", method: "cases" },
+  g3_challenge_07: { stage: 2, category: "logic_reasoning", method: "cases" },
+  g3_challenge_08: { stage: 2, category: "systematic_counting", method: "search" },
+  g3_challenge_09: { stage: 3, category: "number_reasoning", method: "cases" },
+  g3_challenge_10: { stage: 3, category: "spatial_reasoning", method: "pattern" },
+  g3_challenge_11: { stage: 3, category: "fraction_reasoning", method: "convert" }
+};
 
 const CHALLENGE_TEMPLATES = [
   // Grade 1: number relationships, patterns and counting.

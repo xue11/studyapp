@@ -421,6 +421,7 @@ class RuleBasedQuestionSource {
       understandingCheck: understandingCheck,
       isReview: !!options.isReview,
       isFallback: !!options.isFallback,
+      challenge: template.challenge || null,
       commutativePairs: Array.isArray(template.commutativePairs) ? template.commutativePairs : null,
       // V2.6.12: DiversitySelector の多様性判定 (story系 Level 1〜3) に必要なメタ情報を伝搬
       story: template.story || null,

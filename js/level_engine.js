@@ -30,7 +30,8 @@ class LevelEngine {
       unitCompletionAttempts: 5
     };
 
-    const availableUnits = this._getUnitsForLevel("math", currentGrade, currentLevel);
+    const availableUnits = this._getUnitsForLevel("math", currentGrade, currentLevel)
+      .filter(unit => !unit.isChallenge);
     const totalUnitsCount = availableUnits.length;
     if (totalUnitsCount === 0) {
       return { evaluated: false, levelChanged: false, previousLevel: currentLevel, newLevel: currentLevel, reason: "no_units", reachedMaxLevelNotice: false };
@@ -153,4 +154,3 @@ if (typeof module !== "undefined" && module.exports) {
 } else {
   window.LevelEngine = LevelEngine;
 }
-

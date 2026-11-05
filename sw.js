@@ -1,5 +1,5 @@
 // PWA Service Worker (V2.9.15 theme cache refresh)
-const CACHE_NAME = 'arith-study-v2.9.22-theme-cache-v2';
+const CACHE_NAME = 'arith-study-v2.9.22-challenge-course';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -33,6 +33,7 @@ const urlsToCache = [
   '/js/test_engine.js',
   '/js/session_coordinator.js',
   '/js/parent_dashboard.js',
+  '/js/challenge_engine.js',
   '/js/ui.js',
   '/js/audio.js',
   '/manifest.json',

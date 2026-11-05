@@ -66,6 +66,7 @@ function createNewProfile(id, name, grade, character = "cat", taste = "standard"
     },
     history: [],      // 完了したquestionInstanceの履歴
     reviewQueue: [],  // unit単位の復習キュー (一意キー: subjectId + grade + unitId)
+    challengeProgress: {}, // 学年別チャレンジ段階の解放・分野別記録
     tests: [],        // テスト履歴
     badges: [],       // 獲得バッジID配列
     settings: {
