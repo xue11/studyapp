@@ -3865,10 +3865,15 @@ const CHALLENGE_TEMPLATES = [
   createChallengeTemplate({
     id: "g1_challenge_03", grade: 1, concept: "systematic_counting",
     format: "1から{maxCard}までのカードからちがうカードを2まいえらび、合計を7にします。組み合わせは何通り？",
-    generate: { maxCard: { type: "integer", range: [4, 6] } },
+    generate: {
+      maxCard: { type: "integer", range: [4, 6] },
+      combinationText: {
+        formula: "maxCard === 4 ? '3と4' : (maxCard === 5 ? '2と5、3と4' : '1と6、2と5、3と4')"
+      }
+    },
     answer: "maxCard - 3",
     hints: ["いちばん小さいカードから順に、組になる数をさがそう。", "同じ組を順番をかえて2回数えないようにしよう。"],
-    explanation: "組は 2と5、3と4 の2通り。順番をかえただけの組は1通りとして数えるよ。"
+    explanation: "合計が7になる組は、{combinationText}。順番をかえただけの組は1通りとして数えるので、ぜんぶで{answer}通りだよ。"
   }),
   createChallengeTemplate({
     id: "g1_challenge_04", grade: 1, concept: "pattern_reasoning",
@@ -4031,12 +4036,13 @@ const CHALLENGE_TEMPLATES = [
     id: "g2_challenge_12", grade: 2, concept: "number_reasoning",
     format: "{candies}このおかしを{people}人で同じ数ずつ分けます。1人分は何こ？",
     generate: {
-      candies: { type: "choice", values: [17, 21, 25, 29] },
-      people: { type: "integer", range: [3, 5] }
+      people: { type: "integer", range: [3, 5] },
+      each: { type: "integer", range: [4, 8] },
+      candies: { formula: "people * each" }
     },
-    answer: "Math.floor(candies / people)",
+    answer: "each",
     hints: ["{people}人に同じ数ずつ配れる数を考えよう。", "人数分のまとまりを作って、1人分をたしかめよう。"],
-    explanation: "1人分は{answer}こ。みんなに同じ数ずつ配れるね。"
+    explanation: "{candies} ÷ {people} = {answer}。1人分は{answer}こだよ。"
   }),
   createChallengeTemplate({
     id: "g2_challenge_13", grade: 2, concept: "systematic_counting",

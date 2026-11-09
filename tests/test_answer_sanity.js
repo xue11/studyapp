@@ -571,7 +571,7 @@ const N = 40;
     g2_challenge_09: q => q.variables.tens + q.variables.fives + q.variables.ones,
     g2_challenge_10: q => q.variables.redTotal - q.variables.blueCm,
     g2_challenge_11: q => 1000 - q.variables.otherWeight,
-    g2_challenge_12: q => Math.floor(q.variables.candies / q.variables.people),
+    g2_challenge_12: q => q.variables.each,
     g2_challenge_13: q => q.variables.shirts * q.variables.pants,
     g2_challenge_14: q => q.variables.tens * 10 + q.variables.ones,
     g3_challenge_01: q => (q.variables.first + 3) * (q.variables.first + 2) + (q.variables.first + 1) * q.variables.first,
@@ -795,6 +795,23 @@ const N = 40;
       } else if (id === "g2_std_sub_missing_subtrahend_03") {
         assert.ok(q.variables.a % 10 < Number(q.answer),
           "Missing subtrahend problem must require borrowing");
+      } else if (id === "g1_challenge_03") {
+        const expectedCombinations = {
+          4: "3と4",
+          5: "2と5、3と4",
+          6: "1と6、2と5、3と4"
+        }[q.variables.maxCard];
+        assert.ok(q.explanation.includes(expectedCombinations),
+          "カードの範囲に合った組み合わせを解説に表示すること");
+        assert.ok(q.explanation.includes(Number(q.answer) + "通り"),
+          "組み合わせ数と解説の答えが一致すること");
+      } else if (id === "g2_challenge_12") {
+        assert.strictEqual(q.variables.candies % q.variables.people, 0,
+          "おかしが全員に余りなく分けられること");
+        assert.strictEqual(q.variables.candies / q.variables.people, Number(q.answer),
+          "おかしの個数・人数・1人分が一致すること");
+        assert.ok(q.explanation.includes(`${q.variables.candies} ÷ ${q.variables.people} = ${q.answer}`),
+          "解説に実際の割り算を表示すること");
       } else if (id === "g1_adv_3terms_10_make10_03") {
         assert.strictEqual(q.variables.a + q.variables.b, 10,
           "10までの計算で先に10を作れること");
