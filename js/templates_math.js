@@ -3813,6 +3813,8 @@ const CHALLENGE_TEMPLATE_INFO = {
   g1_challenge_03: { stage: 3, category: "systematic_counting", method: "search" },
   g1_challenge_04: { stage: 1, category: "pattern_reasoning", method: "pattern" },
   g1_challenge_05: { stage: 2, category: "number_reasoning", method: "organize" },
+  g1_challenge_06: { stage: 2, category: "number_reasoning", method: "organize" },
+  g1_challenge_07: { stage: 2, category: "number_reasoning", method: "cases" },
   g2_challenge_01: { stage: 1, category: "number_reasoning", method: "cases" },
   g2_challenge_02: { stage: 1, category: "number_reasoning", method: "organize" },
   g2_challenge_03: { stage: 2, category: "systematic_counting", method: "search" },
@@ -3827,6 +3829,7 @@ const CHALLENGE_TEMPLATE_INFO = {
   g2_challenge_12: { stage: 3, category: "number_reasoning", method: "organize" },
   g2_challenge_13: { stage: 3, category: "systematic_counting", method: "organize" },
   g2_challenge_14: { stage: 3, category: "number_reasoning", method: "cases" },
+  g2_challenge_15: { stage: 2, category: "systematic_counting", method: "organize" },
   g3_challenge_01: { stage: 1, category: "number_reasoning", method: "cases" },
   g3_challenge_02: { stage: 1, category: "spatial_reasoning", method: "organize" },
   g3_challenge_03: { stage: 1, category: "spatial_reasoning", method: "organize" },
@@ -3896,6 +3899,31 @@ const CHALLENGE_TEMPLATES = [
     answer: "total / 3",
     hints: ["まんなかの数より、1小さい数と1大きい数をたすよ。", "3つの数の平均が、まんなかの数になるね。"],
     explanation: "まんなかの数を{answer}とすると、{answer - 1} + {answer} + {answer + 1} = {total}。だから答えは{answer}だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g1_challenge_06", grade: 1, concept: "number_reasoning",
+    format: "りんごが好きな子は{appleFans}人、みかんが好きな子は{orangeFans}人です。両方好きな子が{bothFans}人いるとき、少なくともどちらかが好きな子は何人？",
+    generate: {
+      appleFans: { type: "integer", range: [5, 7] },
+      orangeFans: { type: "integer", range: [4, 6] },
+      bothFans: { type: "integer", range: [2, 3] }
+    },
+    answer: "appleFans + orangeFans - bothFans",
+    hints: ["両方好きな子は、りんごのグループとみかんのグループの両方に数えられているよ。", "2つの人数をたしてから、両方好きな人数を1回分ひこう。"],
+    explanation: "{appleFans} + {orangeFans} - {bothFans} = {answer}。両方好きな子を二重に数えないようにするので、答えは{answer}人だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g1_challenge_07", grade: 1, concept: "number_reasoning",
+    format: "にわとりと犬が合わせて{animals}ひきいて、足は全部で{legs}本です。犬は何ひき？",
+    generate: {
+      chickens: { type: "integer", range: [2, 4] },
+      dogs: { type: "integer", range: [1, 3] },
+      animals: { formula: "chickens + dogs" },
+      legs: { formula: "chickens * 2 + dogs * 4" }
+    },
+    answer: "dogs",
+    hints: ["まず、みんながにわとりだとしたら足は何本かな？", "犬はにわとりより1ぴきにつき足が2本多いよ。"],
+    explanation: "みんながにわとりなら足は{animals} × 2 = {animals * 2}本。ほんとうは{legs}本なので、ちがいの{legs - animals * 2}本は犬の分だよ。犬1ぴきで2本多いから、{legs - animals * 2} ÷ 2 = {answer}ひき。"
   }),
 
   // Grade 2: constraints, time, money, measurement and sharing.
@@ -4068,6 +4096,15 @@ const CHALLENGE_TEMPLATES = [
     answer: "tens * 10 + ones",
     hints: ["一の位を□とすると、十の位は□より{difference}大きいよ。", "数字の和から差をひくと、同じ□が2つ分になるね。"],
     explanation: "一の位は{ones}、十の位は{tens}。だから答えは{answer}だよ。"
+  }),
+  createChallengeTemplate({
+    id: "g2_challenge_15", grade: 2, concept: "systematic_counting",
+    problemType: "calculation",
+    format: "{people}人が、ほかの人全員と1回ずつ握手をします。握手は全部で何回？",
+    generate: { people: { type: "integer", range: [3, 6] } },
+    answer: "people * (people - 1) / 2",
+    hints: ["1人目は、まだ握手していない{people - 1}人と握手するよ。", "全員から見た握手を数えると同じ組を2回数えるので、最後に2でわろう。"],
+    explanation: "1人ずつ相手を数えると、同じ握手を2回数えることになるよ。だから{people} × ({people} - 1) ÷ 2 = {answer}回。"
   }),
 
   // Grade 3: spatial reasoning, ordering and complete case counting.

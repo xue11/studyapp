@@ -560,6 +560,8 @@ const N = 40;
     g1_challenge_03: q => q.variables.maxCard - 3,
     g1_challenge_04: q => q.variables.start + 3 * q.variables.up - 3 * q.variables.down,
     g1_challenge_05: q => q.variables.total / 3,
+    g1_challenge_06: q => q.variables.appleFans + q.variables.orangeFans - q.variables.bothFans,
+    g1_challenge_07: q => q.variables.dogs,
     g2_challenge_01: q => q.variables.hundreds * 100 + q.variables.tens * 10 + q.variables.ones,
     g2_challenge_02: q => (q.variables.total + q.variables.difference) / 2,
     g2_challenge_03: q => (q.variables.right + q.variables.up) * (q.variables.right + q.variables.up - 1) / 2,
@@ -574,6 +576,7 @@ const N = 40;
     g2_challenge_12: q => q.variables.each,
     g2_challenge_13: q => q.variables.shirts * q.variables.pants,
     g2_challenge_14: q => q.variables.tens * 10 + q.variables.ones,
+    g2_challenge_15: q => q.variables.people * (q.variables.people - 1) / 2,
     g3_challenge_01: q => (q.variables.first + 3) * (q.variables.first + 2) + (q.variables.first + 1) * q.variables.first,
     g3_challenge_02: q => q.variables.rows % 2 === 0
       ? q.variables.rows * (q.variables.rows + 2) * (2 * q.variables.rows + 1) / 8
@@ -679,7 +682,7 @@ const N = 40;
     );
   }
 
-  for (const [grade, expectedCount] of [[1, 5], [2, 14], [3, 11]]) {
+  for (const [grade, expectedCount] of [[1, 7], [2, 15], [3, 11]]) {
     assert.strictEqual(
       TemplateRegistry.getByUnit("math", grade, 3, "challenge_g" + grade).length,
       expectedCount,
@@ -812,6 +815,28 @@ const N = 40;
           "おかしの個数・人数・1人分が一致すること");
         assert.ok(q.explanation.includes(`${q.variables.candies} ÷ ${q.variables.people} = ${q.answer}`),
           "解説に実際の割り算を表示すること");
+      } else if (id === "g1_challenge_06") {
+        assert.ok(q.variables.bothFans <= Math.min(q.variables.appleFans, q.variables.orangeFans),
+          "両方好きな人数はそれぞれのグループ人数以下であること");
+        assert.strictEqual(
+          Number(q.answer),
+          q.variables.appleFans + q.variables.orangeFans - q.variables.bothFans,
+          "両方好きな人数を重複分として正しく差し引くこと"
+        );
+        assert.ok(q.explanation.includes(`${q.variables.appleFans} + ${q.variables.orangeFans} - ${q.variables.bothFans}`),
+          "解説に生成された人数を表示すること");
+      } else if (id === "g1_challenge_07") {
+        assert.strictEqual(q.variables.chickens + q.variables.dogs, q.variables.animals,
+          "動物の頭数が一致すること");
+        assert.strictEqual(q.variables.chickens * 2 + q.variables.dogs * 4, q.variables.legs,
+          "動物の足の合計が一致すること");
+        assert.ok(q.explanation.includes(`${q.variables.legs}本`),
+          "解説に問題文の足の合計を表示すること");
+      } else if (id === "g2_challenge_15") {
+        assert.strictEqual(Number(q.answer), q.variables.people * (q.variables.people - 1) / 2,
+          "握手の組み合わせ数が一意に数えられること");
+        assert.ok(q.explanation.includes(`${q.variables.people} × (${q.variables.people} - 1) ÷ 2`),
+          "解説に生成された人数を使った計算を表示すること");
       } else if (id === "g1_adv_3terms_10_make10_03") {
         assert.strictEqual(q.variables.a + q.variables.b, 10,
           "10までの計算で先に10を作れること");

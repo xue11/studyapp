@@ -25,8 +25,8 @@ function check(name, condition) {
 console.log("=== Challenge Course Verification ===");
 {
   const expectedDistribution = {
-    1: [2, 2, 1],
-    2: [5, 5, 4],
+    1: [2, 4, 1],
+    2: [5, 6, 4],
     3: [4, 4, 3]
   };
   for (let grade = 1; grade <= 3; grade++) {

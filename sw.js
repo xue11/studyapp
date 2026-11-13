@@ -1,5 +1,5 @@
 // PWA Service Worker (V2.9.15 theme cache refresh)
-const CACHE_NAME = 'arith-study-v2.9.22-challenge-course';
+const CACHE_NAME = 'arith-study-v2.9.22-challenge-course-v2';
 const urlsToCache = [
   '/',
   '/index.html',
